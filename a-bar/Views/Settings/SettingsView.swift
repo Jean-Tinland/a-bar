@@ -3,7 +3,6 @@ import SwiftUI
 /// Main settings view
 struct SettingsView: View {
   @EnvironmentObject var settings: SettingsManager
-  @EnvironmentObject var updaterService: UpdaterService
   @StateObject private var userWidgetManager = UserWidgetManager.shared
 
   @State private var selectedTab = SettingsTab.general
@@ -42,9 +41,9 @@ struct SettingsView: View {
           .ignoresSafeArea(edges: .top)
       )
       .frame(width: 200)
-      
+
       Divider()
-      
+
       // Detail view
       VStack(spacing: 0) {
         ScrollView {
@@ -108,7 +107,6 @@ struct SettingsView: View {
     }
     .frame(minWidth: 800, minHeight: 500)
     .environmentObject(userWidgetManager)
-    .environmentObject(updaterService)
   }
 }
 

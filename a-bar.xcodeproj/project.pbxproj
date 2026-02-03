@@ -9,8 +9,6 @@
 /* Begin PBXBuildFile section */
 		0FEC2C322F2E59FE00CDA90B /* StorageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */; };
 		0FEC2C342F30BE0000CDA90B /* WindowAXObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FEC2C332F30BE0000CDA90B /* WindowAXObserver.swift */; };
-		SPARKLE001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = SPARKLE002 /* Sparkle */; };
-		UPDATER001 /* UpdaterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = UPDATER002 /* UpdaterService.swift */; };
 		A1000001 /* ABarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000001 /* ABarApp.swift */; };
 		A1000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002 /* AppDelegate.swift */; };
 		A1000003 /* BarWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000003 /* BarWindow.swift */; };
@@ -70,7 +68,6 @@
 /* Begin PBXFileReference section */
 		0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageWidget.swift; sourceTree = "<group>"; };
 		0FEC2C332F30BE0000CDA90B /* WindowAXObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAXObserver.swift; sourceTree = "<group>"; };
-		UPDATER002 /* UpdaterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterService.swift; sourceTree = "<group>"; };
 		B1000001 /* ABarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ABarApp.swift; sourceTree = "<group>"; };
 		B1000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B1000003 /* BarWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarWindow.swift; sourceTree = "<group>"; };
@@ -124,7 +121,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				SPARKLE001 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -181,7 +177,6 @@
 			isa = PBXGroup;
 			children = (
 				0FEC2C332F30BE0000CDA90B /* WindowAXObserver.swift */,
-				UPDATER002 /* UpdaterService.swift */,
 				B1000020 /* YabaiService.swift */,
 				B1000022 /* SystemInfoService.swift */,
 				B1000084 /* RefreshWidgetCommand.swift */,
@@ -313,9 +308,6 @@
 			dependencies = (
 			);
 			name = "a-bar";
-			packageProductDependencies = (
-				SPARKLE002 /* Sparkle */,
-			);
 			productName = "a-bar";
 			productReference = D1000001 /* a-bar.app */;
 			productType = "com.apple.product-type.application";
@@ -364,9 +356,6 @@
 				Base,
 			);
 			mainGroup = G1000001;
-			packageReferences = (
-				SPARKLE003 /* XCRemoteSwiftPackageReference "Sparkle" */,
-			);
 			productRefGroup = G1000100 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -376,25 +365,6 @@
 			);
 		};
 /* End PBXProject section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		SPARKLE003 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.5.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		SPARKLE002 /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = SPARKLE003 /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
-		};
-/* End XCSwiftPackageProductDependency section */
 
 /* Begin PBXResourcesBuildPhase section */
 		R1000001 /* Resources */ = {
@@ -424,7 +394,6 @@
 				0FEC2C322F2E59FE00CDA90B /* StorageWidget.swift in Sources */,
 				A1000020 /* YabaiService.swift in Sources */,
 				A1000022 /* SystemInfoService.swift in Sources */,
-				UPDATER001 /* UpdaterService.swift in Sources */,
 				A1000084 /* RefreshWidgetCommand.swift in Sources */,
 				A1000030 /* SpacesWidget.swift in Sources */,
 				A1000031 /* SpaceView.swift in Sources */,

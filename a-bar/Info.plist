@@ -42,11 +42,5 @@
 		<string>a-bar.sdef</string>
 		<key>LSBackgroundOnly</key>
 		<false />
-		<key>SUFeedURL</key>
-		<string>https://github.com/Jean-Tinland/a-bar/releases/latest/download/appcast.xml</string>
-		<key>SUPublicEDKey</key>
-		<string>AV7+8dnmgZMqrnchLMas6zKb8ewj/tyFvNaaAUHACq8=</string>
-		<key>SUEnableAutomaticChecks</key>
-		<false />
 	</dict>
 </plist>

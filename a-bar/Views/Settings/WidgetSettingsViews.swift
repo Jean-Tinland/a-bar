@@ -177,7 +177,7 @@ struct BatterySettingsView: View {
       VStack(alignment: .leading, spacing: 16) {
         Section {
           Toggle("Show icon", isOn: binding(\.widgets.battery.showIcon))
-          
+
           Toggle(
             "Toggle caffeinate on click",
             isOn: binding(\.widgets.battery.toggleCaffeinateOnClick))
@@ -242,7 +242,7 @@ struct WeatherSettingsView: View {
         Section {
           Toggle("Show icon", isOn: binding(\.widgets.weather.showIcon))
           Toggle("Hide location", isOn: binding(\.widgets.weather.hideLocation))
-          
+
           VStack(alignment: .leading) {
             Text("Custom location")
             TextField(
@@ -679,7 +679,7 @@ struct GitHubSettingsView: View {
       VStack(alignment: .leading, spacing: 16) {
         Section {
           Toggle("Show icon", isOn: binding(\.widgets.github.showIcon))
-          
+
           VStack(alignment: .leading) {
             Text("GitHub CLI path")
             TextField("Path to gh binary", text: binding(\.widgets.github.ghBinaryPath))
@@ -1339,81 +1339,23 @@ struct IconPickerView: View {
 }
 
 struct AboutView: View {
-  @EnvironmentObject var updaterService: UpdaterService
-
   var body: some View {
-    VStack(spacing: 16) {
-      // App Logo and Info
-      VStack(spacing: 10) {
-        Image("AppLogo")
-          .resizable()
-          .scaledToFit()
-          .frame(height: 120)
+    VStack(spacing: 10) {
+      Image("AppLogo")
+        .resizable()
+        .scaledToFit()
+        .frame(height: 120)
 
-        Text("a-bar")
-          .font(.largeTitle)
-          .fontWeight(.bold)
+      Text("a-bar")
+        .font(.largeTitle)
+        .fontWeight(.bold)
 
-        Text("Yet a(nother) bar")
-          .font(.headline)
-          .foregroundColor(.secondary)
+      Text("Yet a(nother) bar")
+        .font(.headline)
+        .foregroundColor(.secondary)
 
-        Text("Version \(updaterService.currentVersion) (\(updaterService.buildNumber))")
-          .font(.caption)
-          .foregroundColor(.secondary)
-      }
-
-      Divider()
-
-      // Update Section
-      GroupBox {
-        VStack(alignment: .leading, spacing: 12) {
-          HStack {
-            Image(systemName: "arrow.triangle.2.circlepath")
-              .foregroundColor(.accentColor)
-            Text("Software Update")
-              .font(.headline)
-          }
-
-          HStack {
-            VStack(alignment: .leading, spacing: 4) {
-              if let lastCheck = updaterService.lastCheckDateString {
-                Text("Last checked: \(lastCheck)")
-                  .font(.caption)
-                  .foregroundColor(.secondary)
-              } else {
-                Text("Never checked for updates")
-                  .font(.caption)
-                  .foregroundColor(.secondary)
-              }
-            }
-
-            Spacer()
-
-            Button(action: {
-              updaterService.checkForUpdates()
-            }) {
-              HStack(spacing: 6) {
-                if updaterService.isCheckingForUpdates {
-                  ProgressView()
-                    .scaleEffect(0.7)
-                    .frame(width: 14, height: 14)
-                } else {
-                  Image(systemName: "arrow.clockwise")
-                }
-                Text("Check for Updates")
-              }
-            }
-            .disabled(!updaterService.canCheckForUpdates || updaterService.isCheckingForUpdates)
-          }
-
-          Divider()
-
-          Toggle("Automatically check for updates", isOn: $updaterService.automaticallyChecksForUpdates)
-            .toggleStyle(SwitchToggleStyle())
-        }
-        .padding(.vertical, 4)
-      }
+      Text("Version 1.0.0")
+        .font(.caption)
 
       Divider()
 
@@ -1423,38 +1365,16 @@ struct AboutView: View {
 
       Spacer()
 
-      // Links Section
-      HStack(spacing: 16) {
-        Button(action: {
+      HStack {
+        Button("GitHub") {
           if let url = URL(string: "https://github.com/Jean-Tinland/a-bar") {
             NSWorkspace.shared.open(url)
           }
-        }) {
-          HStack(spacing: 4) {
-            Image(systemName: "link")
-            Text("GitHub")
-          }
         }
 
-        Button(action: {
+        Button("Report Issue") {
           if let url = URL(string: "https://github.com/Jean-Tinland/a-bar/issues") {
             NSWorkspace.shared.open(url)
-          }
-        }) {
-          HStack(spacing: 4) {
-            Image(systemName: "exclamationmark.triangle")
-            Text("Report Issue")
-          }
-        }
-
-        Button(action: {
-          if let url = URL(string: "https://github.com/Jean-Tinland/a-bar/releases") {
-            NSWorkspace.shared.open(url)
-          }
-        }) {
-          HStack(spacing: 4) {
-            Image(systemName: "tag")
-            Text("Release Notes")
           }
         }
       }
