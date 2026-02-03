@@ -28,7 +28,7 @@
         <item>
             <title>Version 1.0.0</title>
             <sparkle:releaseNotesLink>https://github.com/Jean-Tinland/a-bar/releases/tag/v1.0.0</sparkle:releaseNotesLink>
-            <pubDate>Mon, 03 Feb 2026 12:00:00 +0000</pubDate>
+            <pubDate>Mon, 03 Feb 2026 13:25:00 +0000</pubDate>
             <enclosure
                 url="https://github.com/Jean-Tinland/a-bar/releases/download/v1.0.0/a-bar.zip"
                 sparkle:version="1"
