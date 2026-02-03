@@ -42,11 +42,9 @@ xcodebuild archive \
     CODE_SIGNING_REQUIRED=NO \
     CODE_SIGNING_ALLOWED=NO
 
-echo "Exporting..."
-xcodebuild -exportArchive \
-    -archivePath "$ARCHIVE_PATH" \
-    -exportPath "$EXPORT_PATH" \
-    -exportOptionsPlist "scripts/ExportOptions.plist"
+echo "Extracting app from archive..."
+mkdir -p "$EXPORT_PATH"
+cp -R "$ARCHIVE_PATH/Products/Applications/$APP_NAME.app" "$EXPORT_PATH/"
 
 echo "Creating zip..."
 cd "$EXPORT_PATH"
