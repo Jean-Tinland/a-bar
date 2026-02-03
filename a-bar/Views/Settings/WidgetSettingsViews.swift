@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import Combine
 import SwiftUI
 
 /// Reusable color picker component for theme colors
@@ -34,13 +35,13 @@ struct ThemeColorPicker: View {
 
 struct YabaiSettingsView: View {
   @EnvironmentObject var settings: SettingsManager
-  @State private var axTrusted: Bool = AXIsProcessTrusted()
+  @ObservedObject private var accessibilityHelper = AccessibilityHelper.shared
 
   var body: some View {
     Form {
       VStack(alignment: .leading, spacing: 16) {
         Section {
-          if !axTrusted {
+          if !accessibilityHelper.isTrusted {
             GroupBox(label: Label("Accessibility", systemImage: "lock.shield")) {
               VStack(alignment: .leading, spacing: 12) {
                 Text(
@@ -49,16 +50,20 @@ struct YabaiSettingsView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
                 HStack {
-                  Button(action: { requestAccessibility() }) {
+                  Button(action: {
+                    accessibilityHelper.requestAuthorization(prompt: true)
+                  }) {
                     Text("Request Accessibility")
                   }
-                  Button(action: { openAccessibilityPreferences() }) {
+                  Button(action: {
+                    accessibilityHelper.openAccessibilityPreferences()
+                  }) {
                     Text("Open Settings")
                   }
                   .buttonStyle(BorderlessButtonStyle())
                 }
 
-                Text("After enabling, you may need to restart the app for changes to take effect.")
+                Text("After enabling, the app will automatically detect the permission change.")
                   .font(.footnote)
                   .foregroundColor(.secondary)
               }
@@ -116,28 +121,6 @@ struct YabaiSettingsView: View {
       get: { settings.draftSettings[keyPath: keyPath] },
       set: { settings.draftSettings[keyPath: keyPath] = $0 }
     )
-  }
-
-  private func requestAccessibility() {
-    let options: CFDictionary =
-      [
-        kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true
-      ] as CFDictionary
-    let granted = AXIsProcessTrustedWithOptions(options)
-    DispatchQueue.main.async {
-      self.axTrusted = granted
-    }
-    if !granted {
-      openAccessibilityPreferences()
-    }
-  }
-
-  private func openAccessibilityPreferences() {
-    if let url = URL(
-      string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-    {
-      NSWorkspace.shared.open(url)
-    }
   }
 }
 
