@@ -1,0 +1,11 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+## [Unreleased]
+
+_No changes yet._
+
+## [1.0.0] - 2026-02-03
+
+- Initial release of the project.
