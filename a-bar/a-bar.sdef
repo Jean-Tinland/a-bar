@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<dictionary title="a-bar Terminology">
+    <suite name="a-bar Suite" code="ABrS" description="Commands for controlling a-bar">
+        <command name="refresh" code="ABrSRfrW" description="Refresh a specific custom widget by name">
+            <cocoa class="RefreshWidgetCommand"/>
+            <direct-parameter type="text" description="The name of the custom widget to refresh"/>
+            <result type="text" description="Success or error message"/>
+        </command>
+    </suite>
+</dictionary>

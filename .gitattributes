@@ -1,0 +1,20 @@
+# Treat Swift files as text with LF endings
+*.swift text eol=lf
+
+# Xcode project files are binary
+*.xcodeproj binary
+*.xcworkspace binary
+
+# Image and media files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.icns binary
+
+# Avoid merging user-specific Xcode files
+*.xcuserdatad  -text
+*.xcuserstate  -text
+
+# Ensure shell scripts are normalized
+*.sh text eol=lf
