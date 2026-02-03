@@ -13,8 +13,10 @@ struct AccessibilityPromptView: View {
                         Text("Accessibility access is enabled — no action needed.")
                     }
                 } else {
-                    Text("This app needs Accessibility permission to observe window focus and other events.\n\nWe only ask for this to provide reliable window tracking across apps and when switching between windows of the same application.")
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text(
+                        "This app needs Accessibility permission to observe window focus and other events.\n\nWe only ask for this to provide reliable window tracking across apps and when switching between windows of the same application."
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
 
                     HStack {
                         Button(action: {
@@ -30,7 +32,7 @@ struct AccessibilityPromptView: View {
                         .buttonStyle(BorderlessButtonStyle())
                     }
 
-                    Text("After enabling, you may need to restart the app for changes to take effect.")
+                    Text("After enabling, the app will automatically detect the permission change.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
