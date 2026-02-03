@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.0.2 - 2026-02-03
+
+- refactor: remove Sparkle integration and updater service from the project
+
 ## v1.0.1 - 2026-02-03
 
 - fix: enhance AccessibilityHelper with continuous monitoring
