@@ -47,6 +47,10 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
 - **Per-widget Settings**: Fine-tune each widget's behavior
 - **Custom Widgets**: Create shell command-based widgets
 
+## Backlog
+
+You'll find all the bugs and list of planned features in the [GitHub backlog](https://github.com/users/Jean-Tinland/projects/2/views/1).
+
 ## Requirements
 
 - macOS 13.0 or later
@@ -59,11 +63,13 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
 
 1. Download the latest release from the [Releases](https://github.com/Jean-Tinland/a-bar/releases) page
 2. Move `a-bar.app` to `/Applications`
-3. Launch a-bar
-4. As the app is not notarized, after launching the app for the first time, you will need to:
-   - Open `System Settings` > `Privacy & Security`
-   - Click `Open Anyway` next to the a-bar warning
-5. Grant necessary permissions when prompted
+3. As the app is not notarized you will need to do the following:
+   - before launching the app for the first time: run the following command in Terminal: `sudo xattr -rd com.apple.quarantine /Applications/a-bar.app` then launch a-bar
+   - after launching the app for the first time, you will need to: open `System Settings` > `Privacy & Security`, then click `Open Anyway` next to the a-bar warning
+4. Grant necessary permissions when prompted
+
+> [!NOTE]
+> `xattr` command requires administrator privileges, you will be prompted to enter your password. This command removes the quarantine attribute that macOS assigns to apps downloaded from the internet.
 
 ### Build from Source
 
