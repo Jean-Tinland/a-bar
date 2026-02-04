@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-_No changes yet._
+- chore: update logo
 
 ## v1.0.6 - 2026-02-04
 
