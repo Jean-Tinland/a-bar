@@ -35,42 +35,11 @@ struct ThemeColorPicker: View {
 
 struct YabaiSettingsView: View {
   @EnvironmentObject var settings: SettingsManager
-  @ObservedObject private var accessibilityHelper = AccessibilityHelper.shared
 
   var body: some View {
     Form {
       VStack(alignment: .leading, spacing: 16) {
         Section {
-          if !accessibilityHelper.isTrusted {
-            GroupBox(label: Label("Accessibility", systemImage: "lock.shield")) {
-              VStack(alignment: .leading, spacing: 12) {
-                Text(
-                  "This app needs Accessibility permission to observe window focus and other events.\n\nWe only ask for this to provide reliable window tracking across apps and when switching between windows of the same application."
-                )
-                .fixedSize(horizontal: false, vertical: true)
-
-                HStack {
-                  Button(action: {
-                    accessibilityHelper.requestAuthorization(prompt: true)
-                  }) {
-                    Text("Request Accessibility")
-                  }
-                  Button(action: {
-                    accessibilityHelper.openAccessibilityPreferences()
-                  }) {
-                    Text("Open Settings")
-                  }
-                  .buttonStyle(BorderlessButtonStyle())
-                }
-
-                Text("After enabling, the app will automatically detect the permission change.")
-                  .font(.footnote)
-                  .foregroundColor(.secondary)
-              }
-              .padding(.top, 6)
-            }
-            Divider()
-          }
           Toggle("Hide empty spaces", isOn: binding(\.widgets.spaces.hideEmptySpaces))
           Toggle(
             "Display sticky windows separately",

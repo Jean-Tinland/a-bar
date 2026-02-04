@@ -88,8 +88,6 @@ open a-bar.xcodeproj
 
 There is no need to enable yabai signals in your yabai configuration as a-bar uses the available native macOS APIs to monitor space and window changes and query yabai only when necessary.
 
-a-bar is also able to detect windows of the same app focus changes but you'll need to add a-bar to the list of trusted accessibility clients in `System Settings` > `Privacy & Security` > `Accessibility`. A message will be shown in the "yabai" section of the settings if this permission is not granted.
-
 ## Widget Configuration
 
 ### Native widgets

@@ -1,32 +1,27 @@
-import Foundation
-import Combine
 import AppKit
-
-import ApplicationServices
-
+import Combine
+import Foundation
 
 /// Service for interacting with yabai window manager
 class YabaiService: ObservableObject {
     static let shared = YabaiService()
-    
+
     @Published private(set) var state = YabaiState()
     @Published private(set) var isConnected = false
     @Published private(set) var lastError: Error?
-    
+
     private var refreshTimer: Timer?
     private var refreshWorkItem: DispatchWorkItem?
     private let refreshDebounceInterval: TimeInterval = 0.1
     private var cancellables = Set<AnyCancellable>()
     private let settingsManager = SettingsManager.shared
-    
+
     private var yabaiPath: String {
         settingsManager.settings.global.yabaiPath
     }
-    
+
     private var spaceObserver: NSObjectProtocol?
     private var appObservers: [NSObjectProtocol] = []
-    private var windowObservers: [pid_t: WindowAXObserver] = [:]
-    private var windowObserverCancellables: [pid_t: AnyCancellable] = [:]
     private var screenObserver: NSObjectProtocol?
 
     private init() {
@@ -47,7 +42,7 @@ class YabaiService: ObservableObject {
             NSWorkspace.didLaunchApplicationNotification,
             NSWorkspace.didTerminateApplicationNotification,
             NSWorkspace.didHideApplicationNotification,
-            NSWorkspace.didUnhideApplicationNotification
+            NSWorkspace.didUnhideApplicationNotification,
         ]
         for name in notifications {
             let observer = nc.addObserver(
@@ -69,44 +64,18 @@ class YabaiService: ObservableObject {
             self?.refresh()
         }
     }
-        // Handle NSWorkspace app notifications
-        private func handleAppNotification(_ note: Notification) {
-            // Always refresh on these events, but debounce to avoid overlapping
-            debounceRefresh()
 
-            // For active app change or newly launched app, try to observe focused window
-            if (note.name == NSWorkspace.didActivateApplicationNotification ||
-                note.name == NSWorkspace.didLaunchApplicationNotification),
-               let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication {
-                observeAppWindows(app)
-            }
-        }
+    // Handle NSWorkspace app notifications
+    private func handleAppNotification(_ note: Notification) {
+        // Always refresh on these events, but debounce to avoid overlapping
+        debounceRefresh()
+    }
 
-        // Observe window events for a given app using Accessibility API
-        private func observeAppWindows(_ app: NSRunningApplication) {
-            let pid = app.processIdentifier
-            guard windowObservers[pid] == nil else { return } // Already observing
-
-            let obs = WindowAXObserver(pid: pid, promptForAccessibility: false)
-            windowObservers[pid] = obs
-
-            let cancellable = obs.$focusedWindowTitle.sink(receiveValue: { [weak self] (_: String?) in
-                self?.debounceRefresh()
-            })
-            windowObserverCancellables[pid] = cancellable
-        }
-    
     /// Start the yabai service
     func start() {
         refresh()
-        // Ensure we observe the currently frontmost app so same-app
-        // window focus changes are caught even if the app was active
-        // before this service started.
-        if let front = NSWorkspace.shared.frontmostApplication {
-            observeAppWindows(front)
-        }
     }
-    
+
     /// Stop the yabai service
     func stop() {
         if let observer = spaceObserver {
@@ -123,15 +92,8 @@ class YabaiService: ObservableObject {
             NotificationCenter.default.removeObserver(observer)
             screenObserver = nil
         }
-
-        // Remove WindowAXObserver instances and their cancellables
-        for (_, cancellable) in windowObserverCancellables {
-            cancellable.cancel()
-        }
-        windowObserverCancellables.removeAll()
-        windowObservers.removeAll()
     }
-    
+
     /// Manually refresh all yabai data
     func refresh() {
         Task {
@@ -150,7 +112,7 @@ class YabaiService: ObservableObject {
         refreshWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + refreshDebounceInterval, execute: workItem)
     }
-    
+
     /// Refresh spaces data
     func refreshSpaces() async {
         do {
@@ -165,16 +127,18 @@ class YabaiService: ObservableObject {
             await handleError(error)
         }
     }
-    
+
     /// Refresh windows data
     func refreshWindows() async {
         do {
             let output = try await ShellExecutor.run("\(yabaiPath) -m query --windows")
             // Clean up the output (handle yabai quirks)
-            let cleanedOutput = output
+            let cleanedOutput =
+                output
                 .replacingOccurrences(of: "\\\n", with: "")
                 .replacingOccurrences(of: "00000", with: "0")
-            let windows = try JSONDecoder().decode([YabaiWindow].self, from: Data(cleanedOutput.utf8))
+            let windows = try JSONDecoder().decode(
+                [YabaiWindow].self, from: Data(cleanedOutput.utf8))
             await MainActor.run {
                 self.state.windows = windows
                 self.isConnected = true
@@ -184,7 +148,7 @@ class YabaiService: ObservableObject {
             await handleError(error)
         }
     }
-    
+
     /// Refresh displays data
     func refreshDisplays() async {
         do {
@@ -199,7 +163,7 @@ class YabaiService: ObservableObject {
             await handleError(error)
         }
     }
-    
+
     /// Focus on a specific space
     func goToSpace(_ index: Int) async {
         do {
@@ -208,7 +172,7 @@ class YabaiService: ObservableObject {
             await handleError(error)
         }
     }
-    
+
     /// Rename a space
     func renameSpace(_ index: Int, label: String) async {
         do {
@@ -217,7 +181,7 @@ class YabaiService: ObservableObject {
             await handleError(error)
         }
     }
-    
+
     /// Create a new space on a display
     func createSpace(onDisplay displayIndex: Int) async {
         do {
@@ -227,7 +191,7 @@ class YabaiService: ObservableObject {
             await handleError(error)
         }
     }
-    
+
     /// Remove a space
     func removeSpace(_ index: Int, onDisplay displayIndex: Int) async {
         do {
@@ -237,7 +201,7 @@ class YabaiService: ObservableObject {
             await handleError(error)
         }
     }
-    
+
     /// Swap a space with another in the given direction
     func swapSpace(_ index: Int, direction: SwapDirection) async {
         let targetIndex = direction == .left ? index - 1 : index + 1
@@ -247,7 +211,7 @@ class YabaiService: ObservableObject {
             await handleError(error)
         }
     }
-    
+
     /// Focus on a specific window
     func focusWindow(_ id: Int) async {
         do {
@@ -256,21 +220,21 @@ class YabaiService: ObservableObject {
             await handleError(error)
         }
     }
-    
+
     /// Focus on a specific display
     private func focusDisplay(_ index: Int) async throws {
         try await ShellExecutor.run("\(yabaiPath) -m display --focus \(index)")
     }
-    
+
     // Timer logic removed
-    
+
     @MainActor
     private func handleError(_ error: Error) {
         self.lastError = error
         self.isConnected = false
         print("Yabai error: \(error)")
     }
-    
+
     enum SwapDirection {
         case left
         case right

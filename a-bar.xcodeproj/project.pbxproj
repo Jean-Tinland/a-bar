@@ -7,9 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0F5602462F3298F600BBEA53 /* AccessibilityHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F5602452F3298F600BBEA53 /* AccessibilityHelper.swift */; };
 		0FEC2C322F2E59FE00CDA90B /* StorageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */; };
-		0FEC2C342F30BE0000CDA90B /* WindowAXObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FEC2C332F30BE0000CDA90B /* WindowAXObserver.swift */; };
 		A1000001 /* ABarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000001 /* ABarApp.swift */; };
 		A1000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002 /* AppDelegate.swift */; };
 		A1000003 /* BarWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000003 /* BarWindow.swift */; };
@@ -67,9 +65,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		0F5602452F3298F600BBEA53 /* AccessibilityHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityHelper.swift; sourceTree = "<group>"; };
 		0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageWidget.swift; sourceTree = "<group>"; };
-		0FEC2C332F30BE0000CDA90B /* WindowAXObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAXObserver.swift; sourceTree = "<group>"; };
 		B1000001 /* ABarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ABarApp.swift; sourceTree = "<group>"; };
 		B1000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B1000003 /* BarWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarWindow.swift; sourceTree = "<group>"; };
@@ -178,8 +174,6 @@
 		G1000004 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				0F5602452F3298F600BBEA53 /* AccessibilityHelper.swift */,
-				0FEC2C332F30BE0000CDA90B /* WindowAXObserver.swift */,
 				B1000020 /* YabaiService.swift */,
 				B1000022 /* SystemInfoService.swift */,
 				B1000084 /* RefreshWidgetCommand.swift */,
@@ -391,7 +385,6 @@
 				A1000002 /* AppDelegate.swift in Sources */,
 				A1000003 /* BarWindow.swift in Sources */,
 				A1000004 /* BarView.swift in Sources */,
-				0F5602462F3298F600BBEA53 /* AccessibilityHelper.swift in Sources */,
 				A1000010 /* YabaiTypes.swift in Sources */,
 				A1000011 /* WidgetTypes.swift in Sources */,
 				A1000012 /* Settings.swift in Sources */,
@@ -403,7 +396,6 @@
 				A1000031 /* SpaceView.swift in Sources */,
 				A1000032 /* OpenedAppsView.swift in Sources */,
 				A1000033 /* ProcessWidget.swift in Sources */,
-				0FEC2C342F30BE0000CDA90B /* WindowAXObserver.swift in Sources */,
 				A1000040 /* BatteryWidget.swift in Sources */,
 				A1000041 /* WeatherWidget.swift in Sources */,
 				A1000042 /* TimeWidget.swift in Sources */,
