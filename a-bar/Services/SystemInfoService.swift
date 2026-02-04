@@ -23,12 +23,19 @@ class SystemInfoService: ObservableObject {
     @Published private(set) var isCaffeinateActive: Bool = false
     private var caffeinateProcess: Process?
     private var caffeinateProcessKeepAlive: Process?
+    
+    // Disk I/O
+    @Published private(set) var diskStats = DiskIOStats()
+    private var previousDiskBytes: (read: UInt64, write: UInt64)?
+    private var lastDiskCheckTime: Date?
 
     // Graph histories
     @Published var cpuHistory = GraphHistory(maxLength: 40)
     @Published var gpuHistory = GraphHistory(maxLength: 40)
     @Published var downloadHistory = GraphHistory(maxLength: 30)
     @Published var uploadHistory = GraphHistory(maxLength: 30)
+    @Published var diskReadHistory = GraphHistory(maxLength: 30)
+    @Published var diskWriteHistory = GraphHistory(maxLength: 30)
 
     private var refreshTimers: [String: Timer] = [:]
     private var cancellables = Set<AnyCancellable>()
@@ -58,6 +65,7 @@ class SystemInfoService: ObservableObject {
         refreshMemory()
         refreshGPU()
         refreshNetworkStats()
+        refreshDiskStats()
         refreshWifi()
         refreshVolume()
         refreshMic()
@@ -78,6 +86,7 @@ class SystemInfoService: ObservableObject {
         refreshMemory()
         refreshGPU()
         refreshNetworkStats()
+        refreshDiskStats()
         refreshWifi()
         refreshVolume()
         refreshMic()
@@ -406,7 +415,7 @@ class SystemInfoService: ObservableObject {
         return NetworkStats()
     }
     
-    /// Fallback method using netstat command (works reliably on M4 Macs)
+    /// Fallback method using netstat command
     private func getNetworkStatsViaNetstat() async -> NetworkStats {
         do {
             // Get interface stats using netstat
@@ -486,6 +495,98 @@ class SystemInfoService: ObservableObject {
             name.hasPrefix("ipsec") ||   // IPSec tunnels
             name.hasPrefix("pdp_ip") ||  // iPhone tethering
             name.hasPrefix("ppp")        // Point-to-Point Protocol
+    }
+    
+    func refreshDiskStats() {
+        Task {
+            let stats = await getDiskStats()
+            await MainActor.run {
+                self.diskStats = stats
+                self.diskReadHistory.add(Double(stats.read))
+                self.diskWriteHistory.add(Double(stats.write))
+            }
+        }
+    }
+    
+    /// Get disk I/O statistics using IOKit (IOBlockStorageDriver)
+    private func getDiskStats() async -> DiskIOStats {
+        var readBytes: UInt64 = 0
+        var writeBytes: UInt64 = 0
+        
+        // Query IOBlockStorageDriver for accurate disk statistics
+        var iterator: io_iterator_t = 0
+        let matching = IOServiceMatching("IOBlockStorageDriver")
+        let result = IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iterator)
+        guard result == KERN_SUCCESS else { return DiskIOStats() }
+        
+        defer { IOObjectRelease(iterator) }
+        
+        var service = IOIteratorNext(iterator)
+        while service != 0 {
+            defer { IOObjectRelease(service) }
+            
+            // Get properties for this storage driver
+            var properties: Unmanaged<CFMutableDictionary>?
+            let propsResult = IORegistryEntryCreateCFProperties(service, &properties, kCFAllocatorDefault, 0)
+            
+            if propsResult == KERN_SUCCESS, let props = properties?.takeRetainedValue() as? [String: Any] {
+                // Get statistics from the driver
+                if let stats = props["Statistics"] as? [String: Any] {
+                    // Try different key formats - varies by macOS version
+                    if let read = stats["Bytes (Read)"] as? UInt64 {
+                        readBytes += read
+                    } else if let read = stats["Bytes Read"] as? UInt64 {
+                        readBytes += read
+                    }
+                    
+                    if let write = stats["Bytes (Write)"] as? UInt64 {
+                        writeBytes += write
+                    } else if let write = stats["Bytes Written"] as? UInt64 {
+                        writeBytes += write
+                    }
+                }
+                
+                // Alternative: Check for Operations statistics
+                if readBytes == 0 && writeBytes == 0 {
+                    if let stats = props["Statistics"] as? [String: Any] {
+                        // Some systems report in sectors (512 bytes each)
+                        if let readOps = stats["Operations (Read)"] as? UInt64,
+                           let bytesPerRead = stats["Bytes per Read"] as? UInt64 {
+                            readBytes += readOps * bytesPerRead
+                        }
+                        if let writeOps = stats["Operations (Write)"] as? UInt64,
+                           let bytesPerWrite = stats["Bytes per Write"] as? UInt64 {
+                            writeBytes += writeOps * bytesPerWrite
+                        }
+                    }
+                }
+            }
+            
+            service = IOIteratorNext(iterator)
+        }
+        
+        let now = Date()
+        
+        // Calculate bytes per second
+        if let previous = previousDiskBytes,
+           let lastTime = lastDiskCheckTime,
+           now.timeIntervalSince(lastTime) > 0 {
+            let timeDelta = now.timeIntervalSince(lastTime)
+            let readDelta = readBytes > previous.read ? readBytes - previous.read : 0
+            let writeDelta = writeBytes > previous.write ? writeBytes - previous.write : 0
+            
+            let readPerSec = UInt64(Double(readDelta) / timeDelta)
+            let writePerSec = UInt64(Double(writeDelta) / timeDelta)
+            
+            previousDiskBytes = (readBytes, writeBytes)
+            lastDiskCheckTime = now
+            
+            return DiskIOStats(read: readPerSec, write: writePerSec)
+        }
+        
+        previousDiskBytes = (readBytes, writeBytes)
+        lastDiskCheckTime = now
+        return DiskIOStats()
     }
 
     func refreshWifi() {
@@ -998,6 +1099,11 @@ class SystemInfoService: ObservableObject {
             self?.refreshNetworkStats()
         }
 
+        // Disk activity timer
+        scheduleTimer(id: "diskActivity", interval: settings.diskActivity.refreshInterval) { [weak self] in
+            self?.refreshDiskStats()
+        }
+
         // WiFi timer
         scheduleTimer(id: "wifi", interval: settings.wifi.refreshInterval) { [weak self] in
             self?.refreshWifi()
@@ -1112,5 +1218,30 @@ struct StorageVolume: Identifiable, Equatable {
 
     var formattedUsed: String {
         ByteCountFormatter.string(fromByteCount: Int64(usedBytes), countStyle: .file)
+    }
+}
+
+struct DiskIOStats: Equatable {
+    var read: UInt64 = 0
+    var write: UInt64 = 0
+    
+    var formattedRead: String {
+        formatSpeed(Double(read))
+    }
+    
+    var formattedWrite: String {
+        formatSpeed(Double(write))
+    }
+    
+    private func formatSpeed(_ bytesPerSecond: Double) -> String {
+        if bytesPerSecond < 1024 {
+            return String(format: "%.0f B/s", bytesPerSecond)
+        } else if bytesPerSecond < 1024 * 1024 {
+            return String(format: "%.1f K/s", bytesPerSecond / 1024)
+        } else if bytesPerSecond < 1024 * 1024 * 1024 {
+            return String(format: "%.1f M/s", bytesPerSecond / 1024 / 1024)
+        } else {
+            return String(format: "%.1f G/s", bytesPerSecond / 1024 / 1024 / 1024)
+        }
     }
 }

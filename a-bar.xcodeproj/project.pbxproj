@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0F5602482F33707500BBEA53 /* DiskActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F5602472F33707500BBEA53 /* DiskActivityWidget.swift */; };
 		0FEC2C322F2E59FE00CDA90B /* StorageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */; };
 		A1000001 /* ABarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000001 /* ABarApp.swift */; };
 		A1000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002 /* AppDelegate.swift */; };
@@ -65,6 +66,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0F5602472F33707500BBEA53 /* DiskActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskActivityWidget.swift; sourceTree = "<group>"; };
 		0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageWidget.swift; sourceTree = "<group>"; };
 		B1000001 /* ABarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ABarApp.swift; sourceTree = "<group>"; };
 		B1000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -224,6 +226,7 @@
 		G1000005C /* Graphs */ = {
 			isa = PBXGroup;
 			children = (
+				0F5602472F33707500BBEA53 /* DiskActivityWidget.swift */,
 				B1000050 /* CPUWidget.swift */,
 				B1000051 /* MemoryWidget.swift */,
 				B1000052 /* GPUWidget.swift */,
@@ -394,6 +397,7 @@
 				A1000084 /* RefreshWidgetCommand.swift in Sources */,
 				A1000030 /* SpacesWidget.swift in Sources */,
 				A1000031 /* SpaceView.swift in Sources */,
+				0F5602482F33707500BBEA53 /* DiskActivityWidget.swift in Sources */,
 				A1000032 /* OpenedAppsView.swift in Sources */,
 				A1000033 /* ProcessWidget.swift in Sources */,
 				A1000040 /* BatteryWidget.swift in Sources */,
@@ -578,7 +582,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.jeantinland.a-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -608,7 +612,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.5;
+				MARKETING_VERSION = 1.0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.jeantinland.a-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

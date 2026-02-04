@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// Network statistics widget with graph
-struct NetstatsWidget: View {
+/// Disk activity widget with graph showing read/write activity
+struct DiskActivityWidget: View {
   @EnvironmentObject var settings: SettingsManager
   @EnvironmentObject var systemInfo: SystemInfoService
 
-  private var netstatsSettings: NetstatsWidgetSettings {
-    settings.settings.widgets.netstats
+  private var diskSettings: DiskActivityWidgetSettings {
+    settings.settings.widgets.diskActivity
   }
 
   private var theme: ABarTheme {
@@ -40,28 +40,28 @@ struct NetstatsWidget: View {
   }
 
   var body: some View {
-    let downloadColor = netstatsSettings.downloadColor.color(from: theme)
-    let uploadColor = netstatsSettings.uploadColor.color(from: theme)
+    let readColor = diskSettings.readColor.color(from: theme)
+    let writeColor = diskSettings.writeColor.color(from: theme)
     
-    BaseWidgetView(noPadding: true, onClick: openNetworkUtility) {
+    BaseWidgetView(noPadding: true, onClick: openActivityMonitor) {
       ZStack {
         // Center graph
         GeometryReader { geometry in
           ZStack {
-            // Download graph (magenta)
+            // Read graph (blue)
             GraphView(
-              values: systemInfo.downloadHistory.values,
-              maxValue: max(1, systemInfo.downloadHistory.values.max() ?? 1) * 1.2,
-              fillColor: downloadColor,
-              lineColor: downloadColor,
+              values: systemInfo.diskReadHistory.values,
+              maxValue: max(1, systemInfo.diskReadHistory.values.max() ?? 1) * 1.2,
+              fillColor: readColor,
+              lineColor: readColor,
               showLabels: false
             )
-            // Upload graph (blue, overlayed)
+            // Write graph (red, overlayed)
             GraphView(
-              values: systemInfo.uploadHistory.values,
-              maxValue: max(1, systemInfo.uploadHistory.values.max() ?? 1) * 1.2,
-              fillColor: uploadColor,
-              lineColor: uploadColor,
+              values: systemInfo.diskWriteHistory.values,
+              maxValue: max(1, systemInfo.diskWriteHistory.values.max() ?? 1) * 1.2,
+              fillColor: writeColor,
+              lineColor: writeColor,
               showLabels: false
             )
           }
@@ -74,14 +74,14 @@ struct NetstatsWidget: View {
         .padding(.horizontal, 0)
         .frame(width: 140)
 
-        // Download icon and speed (left)
+        // Read icon and speed (left)
         HStack {
-          Image(systemName: "arrow.down")
+          Image(systemName: "arrow.down.doc")
             .font(.system(size: 10))
-            .foregroundColor(downloadColor)
+            .foregroundColor(readColor)
             .padding(.leading, 6)
             .padding(.top, -6)
-          Text(formatSpeed(Double(systemInfo.networkStats.download)))
+          Text(formatSpeed(Double(systemInfo.diskStats.read)))
             .font(settingsFont(scaledBy: 0.8))
             .foregroundColor(theme.foreground)
             .padding(.top, -6)
@@ -89,17 +89,17 @@ struct NetstatsWidget: View {
           Spacer()
         }
 
-        // Upload icon and speed (right)
+        // Write icon and speed (right)
         HStack {
           Spacer()
-          Text(formatSpeed(Double(systemInfo.networkStats.upload)))
+          Text(formatSpeed(Double(systemInfo.diskStats.write)))
             .font(settingsFont(scaledBy: 0.8))
             .foregroundColor(theme.foreground)
             .padding(.top, -6)
-            .padding(.leading, -4)
-          Image(systemName: "arrow.up")
+            .padding(.trailing, -4)
+          Image(systemName: "arrow.up.doc")
             .font(.system(size: 10))
-            .foregroundColor(uploadColor)
+            .foregroundColor(writeColor)
             .padding(.trailing, 6)
             .padding(.top, -6)
         }
@@ -119,11 +119,9 @@ struct NetstatsWidget: View {
     }
   }
 
-  private func openNetworkUtility() {
+  private func openActivityMonitor() {
     Task {
-      _ = try? await ShellExecutor.run(
-        "open /System/Library/CoreServices/Applications/Network\\ Utility.app 2>/dev/null || open -a 'Activity Monitor'"
-      )
+      _ = try? await ShellExecutor.run("open -a 'Activity Monitor'")
     }
   }
 }

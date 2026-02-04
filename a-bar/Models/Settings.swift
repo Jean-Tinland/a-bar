@@ -467,6 +467,7 @@ struct WidgetSettings: Codable, Equatable {
   var memory: MemoryWidgetSettings = MemoryWidgetSettings()
   var gpu: GPUWidgetSettings = GPUWidgetSettings()
   var netstats: NetstatsWidgetSettings = NetstatsWidgetSettings()
+  var diskActivity: DiskActivityWidgetSettings = DiskActivityWidgetSettings()
   var storage: StorageWidgetSettings = StorageWidgetSettings()
 }
 
@@ -599,6 +600,13 @@ struct NetstatsWidgetSettings: Codable, Equatable {
   var refreshInterval: TimeInterval = 4
   var downloadColor: ThemeColor = .magenta
   var uploadColor: ThemeColor = .blue
+  var showIcon: Bool = true
+}
+
+struct DiskActivityWidgetSettings: Codable, Equatable {
+  var refreshInterval: TimeInterval = 4
+  var readColor: ThemeColor = .blue
+  var writeColor: ThemeColor = .red
   var showIcon: Bool = true
 }
 

@@ -139,6 +139,8 @@ struct WidgetContainer: View {
         GPUWidget()
       case .netstats:
         NetstatsWidget()
+      case .diskActivity:
+        DiskActivityWidget()
       case .storage:
         StorageWidget()
       case .userWidget:

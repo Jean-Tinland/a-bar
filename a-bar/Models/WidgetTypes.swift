@@ -23,6 +23,7 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
   case memory = "memory"
   case gpu = "gpu"
   case netstats = "netstats"
+  case diskActivity = "disk-activity"
   case storage = "storage"
 
   // Custom widgets
@@ -48,6 +49,7 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
     case .memory: return "Memory"
     case .gpu: return "GPU"
     case .netstats: return "Network Stats"
+    case .diskActivity: return "Disk Activity"
     case .storage: return "Storage"
     case .userWidget: return "User Widget"
     }
@@ -71,6 +73,7 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
     case .memory: return "memorychip"
     case .gpu: return "cpu"
     case .netstats: return "network"
+    case .diskActivity: return "internaldrive"
     case .storage: return "externaldrive"
     case .userWidget: return "star"
     }
@@ -81,7 +84,7 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
     switch self {
     case .spaces, .process:
       return .yabai
-    case .cpu, .memory, .gpu, .netstats, .storage:
+    case .cpu, .memory, .gpu, .netstats, .diskActivity, .storage:
       return .graph
     case .userWidget:
       return .custom
@@ -98,18 +101,19 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
     case .userWidget: return .center(0)
     case .weather: return .right(0)
     case .netstats: return .right(1)
-    case .cpu: return .right(2)
-    case .memory: return .right(3)
-    case .gpu: return .right(4)
-    case .storage: return .right(5)
-    case .github: return .right(6)
-    case .wifi: return .right(7)
-    case .keyboard: return .right(8)
-    case .mic: return .right(9)
-    case .sound: return .right(10)
-    case .battery: return .right(11)
-    case .date: return .right(12)
-    case .time: return .right(13)
+    case .diskActivity: return .right(2)
+    case .cpu: return .right(3)
+    case .memory: return .right(4)
+    case .gpu: return .right(5)
+    case .storage: return .right(6)
+    case .github: return .right(7)
+    case .wifi: return .right(8)
+    case .keyboard: return .right(9)
+    case .mic: return .right(10)
+    case .sound: return .right(11)
+    case .battery: return .right(12)
+    case .date: return .right(13)
+    case .time: return .right(14)
     }
   }
 }

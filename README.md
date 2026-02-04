@@ -37,6 +37,7 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
 - **GPU**: GPU utilization
 - **Network Stats**: Upload/download speed graphs
 - **Storage usage**: Disk and external devices space usage indicator
+- **Disk Activity**: Read/write speed graphs
 
 ### Customization
 

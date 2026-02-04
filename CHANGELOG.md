@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.0.6 - 2026-02-04
+
+- feat: add Disk Activity widget
+
 ## v1.0.5 - 2026-02-04
 
 - fix: update signal handling in YabaiService

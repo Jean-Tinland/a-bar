@@ -595,6 +595,40 @@ struct SystemStatsSettingsView: View {
             )
           )
         }
+
+        Divider()
+
+        // Disk Activity
+        Section {
+          Text("Disk Activity").font(.headline)
+          Toggle("Show icon", isOn: binding(\.widgets.diskActivity.showIcon))
+
+          HStack(spacing: 4) {
+            Text("Refresh interval")
+            TextField(
+              "", value: binding(\.widgets.diskActivity.refreshInterval), formatter: NumberFormatter()
+            )
+            .frame(width: 60)
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            Text("seconds")
+          }
+
+          ThemeColorPicker(
+            label: "Read graph color",
+            selectedColor: Binding(
+              get: { settings.draftSettings.widgets.diskActivity.readColor },
+              set: { settings.draftSettings.widgets.diskActivity.readColor = $0 }
+            )
+          )
+
+          ThemeColorPicker(
+            label: "Write graph color",
+            selectedColor: Binding(
+              get: { settings.draftSettings.widgets.diskActivity.writeColor },
+              set: { settings.draftSettings.widgets.diskActivity.writeColor = $0 }
+            )
+          )
+        }
       }
       .padding()
     }
@@ -1306,7 +1340,7 @@ struct AboutView: View {
         .font(.headline)
         .foregroundColor(.secondary)
 
-      Text("Version 1.0.5")
+      Text("Version 1.0.6")
         .font(.caption)
 
       Divider()
