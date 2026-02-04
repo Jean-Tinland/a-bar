@@ -86,7 +86,19 @@ open a-bar.xcodeproj
 
 ## Configuration
 
-There is no need to enable yabai signals in your yabai configuration as a-bar uses the available native macOS APIs to monitor space and window changes and query yabai only when necessary.
+There is no need to enable yabai signals in your yabai configuration as a-bar uses the available native macOS APIs to monitor space and window changes and query yabai only when necessary. Windows title changes and window closing are triggering a-bar update via yabai signals automatically setup by a-bar on start.
+
+If needed, a-bar can be refreshed programmatically using AppleScript:
+
+```applescript
+tell application "a-bar" to refresh "yabai"
+```
+
+Or from the command line:
+
+```shell
+osascript -e 'tell application "a-bar" to refresh "yabai"'
+```
 
 ## Widget Configuration
 
