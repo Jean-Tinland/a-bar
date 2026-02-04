@@ -4,12 +4,31 @@ import UniformTypeIdentifiers
 /// Main entry point for the layout builder - shows list of configured displays
 struct LayoutBuilderView: View {
   @EnvironmentObject var settings: SettingsManager
+  @StateObject private var profileManager = ProfileManager.shared
+
+  /// The profile currently being edited in settings (synced with SettingsManager)
+  private var editingProfileId: Binding<UUID?> {
+    Binding(
+      get: { settings.editingProfileId },
+      set: { settings.editingProfileId = $0 }
+    )
+  }
 
   @State private var selectedDisplayWrapper: DisplayIndexWrapper? = nil
   @State private var showingAddDisplaySheet = false
+  @State private var showingNewProfileSheet = false
+  @State private var showingRenameProfileSheet = false
+  @State private var showingDeleteProfileAlert = false
 
-  private var layout: MultiDisplayLayout {
-    settings.draftSettings.multiDisplayLayout
+  /// The layout being edited (from the editing profile, stored in draftLayout)
+  private var editingLayout: MultiDisplayLayout {
+    settings.draftLayout
+  }
+
+  /// The profile currently being edited
+  private var editingProfile: LayoutProfile? {
+    guard let id = settings.editingProfileId else { return profileManager.activeProfile }
+    return profileManager.profile(withId: id)
   }
 
   private var connectedScreenCount: Int {
@@ -18,6 +37,21 @@ struct LayoutBuilderView: View {
 
   var body: some View {
     VStack(spacing: 20) {
+      // Profile selector
+      ProfileSelectorView(
+        profileManager: profileManager,
+        editingProfileId: editingProfileId,
+        onProfileSelected: { profile in
+          // Load the selected profile's layout into draft for editing
+          settings.draftLayout = profile.multiDisplayLayout
+        },
+        showingNewProfileSheet: $showingNewProfileSheet,
+        showingRenameProfileSheet: $showingRenameProfileSheet,
+        showingDeleteProfileAlert: $showingDeleteProfileAlert
+      )
+
+      Divider()
+
       // Header
       VStack(spacing: 8) {
         Text("Layout Builder")
@@ -53,7 +87,7 @@ struct LayoutBuilderView: View {
           .buttonStyle(.borderless)
         }
 
-        if layout.displays.isEmpty {
+        if editingLayout.displays.isEmpty {
           VStack(spacing: 12) {
             Image(systemName: "rectangle.on.rectangle.slash")
               .font(.system(size: 32))
@@ -73,7 +107,7 @@ struct LayoutBuilderView: View {
           .cornerRadius(8)
         } else {
           LazyVStack(spacing: 8) {
-            ForEach(layout.displays) { displayConfig in
+            ForEach(editingLayout.displays) { displayConfig in
               DisplayRowView(
                 config: displayConfig,
                 isConnected: displayConfig.displayIndex < connectedScreenCount,
@@ -94,7 +128,7 @@ struct LayoutBuilderView: View {
       // Actions
       HStack {
         Button("Reset to Default") {
-          settings.draftSettings.multiDisplayLayout = .defaultLayout
+          settings.draftLayout = .defaultLayout
         }
         .foregroundColor(.red)
 
@@ -102,9 +136,20 @@ struct LayoutBuilderView: View {
       }
     }
     .padding()
+    .onAppear {
+      // Initialize editing profile to active profile if not already set
+      if settings.editingProfileId == nil {
+        settings.editingProfileId = profileManager.activeProfileId
+      }
+      // Load the editing profile's layout into draft
+      if let id = settings.editingProfileId,
+         let profile = profileManager.profile(withId: id) {
+        settings.draftLayout = profile.multiDisplayLayout
+      }
+    }
     .sheet(isPresented: $showingAddDisplaySheet) {
       AddDisplaySheet(
-        existingIndices: Set(layout.displays.map { $0.displayIndex }),
+        existingIndices: Set(editingLayout.displays.map { $0.displayIndex }),
         connectedCount: connectedScreenCount,
         onAdd: { index, name in
           addDisplay(index: index, name: name)
@@ -118,6 +163,40 @@ struct LayoutBuilderView: View {
       )
       .environmentObject(settings)
     }
+    .sheet(isPresented: $showingNewProfileSheet) {
+      NewProfileSheet(
+        profileManager: profileManager,
+        editingProfileId: editingProfileId,
+        onCreated: { profile in
+          // Start editing the new profile
+          settings.editingProfileId = profile.id
+          settings.draftLayout = profile.multiDisplayLayout
+        }
+      )
+    }
+    .sheet(isPresented: $showingRenameProfileSheet) {
+      RenameProfileSheet(
+        profileManager: profileManager,
+        editingProfileId: settings.editingProfileId
+      )
+    }
+    .alert("Delete Profile", isPresented: $showingDeleteProfileAlert) {
+      Button("Cancel", role: .cancel) {}
+      Button("Delete", role: .destructive) {
+        if let id = settings.editingProfileId {
+          _ = profileManager.deleteProfile(id: id)
+          // Switch to editing the active profile
+          settings.editingProfileId = profileManager.activeProfileId
+          if let profile = profileManager.activeProfile {
+            settings.draftLayout = profile.multiDisplayLayout
+          }
+        }
+      }
+    } message: {
+      Text(
+        "Are you sure you want to delete the profile \"\(editingProfile?.name ?? "")\"? This action cannot be undone."
+      )
+    }
   }
 
   private func addDisplay(index: Int, name: String) {
@@ -127,11 +206,11 @@ struct LayoutBuilderView: View {
       topBar: nil,
       bottomBar: nil
     )
-    settings.draftSettings.multiDisplayLayout.setConfiguration(config, forDisplay: index)
+    settings.draftLayout.setConfiguration(config, forDisplay: index)
   }
 
   private func removeDisplay(_ index: Int) {
-    settings.draftSettings.multiDisplayLayout.removeConfiguration(forDisplay: index)
+    settings.draftLayout.removeConfiguration(forDisplay: index)
   }
 }
 
@@ -312,7 +391,7 @@ struct DisplayConfigurationSheet: View {
   @State private var displayName: String = ""
 
   private var displayConfig: DisplayConfiguration {
-    settings.draftSettings.multiDisplayLayout.configuration(forDisplay: displayIndex)
+    settings.draftLayout.configuration(forDisplay: displayIndex)
       ?? DisplayConfiguration(displayIndex: displayIndex, name: "Display \(displayIndex + 1)")
   }
 
@@ -406,7 +485,7 @@ struct DisplayConfigurationSheet: View {
     guard !newName.isEmpty else { return }
     var config = displayConfig
     config.name = newName
-    settings.draftSettings.multiDisplayLayout.setConfiguration(config, forDisplay: displayIndex)
+    settings.draftLayout.setConfiguration(config, forDisplay: displayIndex)
   }
 
   private func toggleBar(_ position: BarPosition) {
@@ -425,7 +504,7 @@ struct DisplayConfigurationSheet: View {
         config.bottomBar = nil
       }
     }
-    settings.draftSettings.multiDisplayLayout.setConfiguration(config, forDisplay: displayIndex)
+    settings.draftLayout.setConfiguration(config, forDisplay: displayIndex)
   }
 }
 
@@ -569,7 +648,7 @@ struct BarEditorSheet: View {
   @State private var saveTask: Task<Void, Never>? = nil
 
   private var barLayout: SingleBarLayout? {
-    settings.draftSettings.multiDisplayLayout.barLayout(
+    settings.draftLayout.barLayout(
       forDisplay: displayIndex, position: position)
   }
 
@@ -668,7 +747,7 @@ struct BarEditorSheet: View {
       )
 
       var displayConfig =
-        settings.draftSettings.multiDisplayLayout.configuration(forDisplay: displayIndex)
+        settings.draftLayout.configuration(forDisplay: displayIndex)
         ?? DisplayConfiguration(displayIndex: displayIndex, name: "Display \(displayIndex + 1)")
 
       switch position {
@@ -678,7 +757,7 @@ struct BarEditorSheet: View {
         displayConfig.bottomBar = layout
       }
 
-      settings.draftSettings.multiDisplayLayout.setConfiguration(
+      settings.draftLayout.setConfiguration(
         displayConfig, forDisplay: displayIndex)
     }
   }
@@ -1030,5 +1109,267 @@ struct DropIndicatorView: View {
       .cornerRadius(1.5)
       .padding(.horizontal, 2)
       .animation(.easeInOut(duration: 0.2), value: isVisible)
+  }
+}
+
+// MARK: - Profile Views
+
+/// Profile selector view displayed at the top of LayoutBuilderView
+/// This selects which profile to EDIT, not which profile is globally active
+struct ProfileSelectorView: View {
+  @ObservedObject var profileManager: ProfileManager
+  @Binding var editingProfileId: UUID?
+  var onProfileSelected: (LayoutProfile) -> Void
+  @Binding var showingNewProfileSheet: Bool
+  @Binding var showingRenameProfileSheet: Bool
+  @Binding var showingDeleteProfileAlert: Bool
+
+  /// The profile currently being edited
+  private var editingProfile: LayoutProfile? {
+    guard let id = editingProfileId else { return profileManager.activeProfile }
+    return profileManager.profile(withId: id)
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      HStack {
+        Text("Edit Profile")
+          .font(.subheadline)
+          .fontWeight(.semibold)
+
+        Spacer()
+
+        // Profile picker for selecting which profile to edit
+        Picker("", selection: Binding(
+          get: { editingProfileId },
+          set: { newValue in
+            if newValue == nil {
+              // "Create new profile" selected
+              showingNewProfileSheet = true
+            } else if let id = newValue, let profile = profileManager.profile(withId: id) {
+              editingProfileId = id
+              onProfileSelected(profile)
+            }
+          }
+        )) {
+          // Create new profile option
+          Text("Create a new profile")
+            .tag(nil as UUID?)
+
+          Divider()
+
+          // Existing profiles
+          ForEach(profileManager.profiles) { profile in
+            HStack {
+              Text(profile.name)
+              if profile.id == profileManager.activeProfileId {
+                Text("(Active)")
+              }
+              if profile.isDefault {
+                Text("• Default")
+              }
+            }
+            .tag(profile.id as UUID?)
+          }
+        }
+        .pickerStyle(.menu)
+        .frame(width: 220)
+      }
+
+      // Info and actions
+      if let profile = editingProfile {
+        HStack(spacing: 12) {
+          if profile.id == profileManager.activeProfileId {
+            Label("Currently active", systemImage: "checkmark.circle.fill")
+              .font(.caption)
+              .foregroundColor(.green)
+          } else {
+            Button(action: {
+              _ = profileManager.switchToProfile(id: profile.id)
+            }) {
+              Label("Make active", systemImage: "power")
+                .font(.caption)
+            }
+            .buttonStyle(.borderless)
+          }
+
+          Spacer()
+
+          Button(action: { showingRenameProfileSheet = true }) {
+            Label("Rename", systemImage: "pencil")
+              .font(.caption)
+          }
+          .buttonStyle(.borderless)
+
+          Button(action: {
+            if let newProfile = profileManager.duplicateProfile(id: profile.id) {
+              editingProfileId = newProfile.id
+              onProfileSelected(newProfile)
+            }
+          }) {
+            Label("Duplicate", systemImage: "doc.on.doc")
+              .font(.caption)
+          }
+          .buttonStyle(.borderless)
+
+          if !profile.isDefault {
+            Button(action: { showingDeleteProfileAlert = true }) {
+              Label("Delete", systemImage: "trash")
+                .font(.caption)
+                .foregroundColor(.red)
+            }
+            .buttonStyle(.borderless)
+          }
+        }
+      }
+    }
+    .padding()
+    .background(Color.gray.opacity(0.05))
+    .cornerRadius(8)
+  }
+}
+
+/// Sheet for creating a new profile
+struct NewProfileSheet: View {
+  @ObservedObject var profileManager: ProfileManager
+  @Binding var editingProfileId: UUID?
+  var onCreated: ((LayoutProfile) -> Void)?
+
+  @Environment(\.dismiss) private var dismiss
+  @State private var profileName = ""
+  @State private var copyFromCurrent = true
+
+  private var isNameValid: Bool {
+    !profileName.trimmingCharacters(in: .whitespaces).isEmpty
+  }
+
+  private var isNameUnique: Bool {
+    !profileManager.profiles.contains { $0.name.lowercased() == profileName.lowercased() }
+  }
+
+  /// The profile to copy from (the one being edited)
+  private var sourceProfile: LayoutProfile? {
+    guard let id = editingProfileId else { return profileManager.activeProfile }
+    return profileManager.profile(withId: id)
+  }
+
+  var body: some View {
+    VStack(spacing: 20) {
+      Text("Create New Profile")
+        .font(.headline)
+
+      Form {
+        TextField("Profile Name", text: $profileName)
+          .textFieldStyle(.roundedBorder)
+
+        if !isNameUnique && !profileName.isEmpty {
+          Text("A profile with this name already exists")
+            .font(.caption)
+            .foregroundColor(.red)
+        }
+
+        Toggle("Copy layout from \"\(sourceProfile?.name ?? "current")\"", isOn: $copyFromCurrent)
+      }
+      .padding()
+
+      HStack {
+        Button("Cancel") {
+          dismiss()
+        }
+        .keyboardShortcut(.cancelAction)
+
+        Spacer()
+
+        Button("Create") {
+          let layout: MultiDisplayLayout? =
+            copyFromCurrent ? sourceProfile?.multiDisplayLayout : nil
+          let newProfile = profileManager.createProfile(
+            name: profileName.trimmingCharacters(in: .whitespaces),
+            layout: layout
+          )
+          onCreated?(newProfile)
+          dismiss()
+        }
+        .keyboardShortcut(.defaultAction)
+        .buttonStyle(.borderedProminent)
+        .disabled(!isNameValid || !isNameUnique)
+      }
+      .padding()
+    }
+    .frame(width: 400, height: 220)
+    .onAppear {
+      profileName = "Profile \(profileManager.profiles.count + 1)"
+    }
+  }
+}
+
+/// Sheet for renaming an existing profile
+struct RenameProfileSheet: View {
+  @ObservedObject var profileManager: ProfileManager
+  var editingProfileId: UUID?
+
+  @Environment(\.dismiss) private var dismiss
+  @State private var newName = ""
+
+  private var editingProfile: LayoutProfile? {
+    guard let id = editingProfileId else { return nil }
+    return profileManager.profile(withId: id)
+  }
+
+  private var isNameValid: Bool {
+    !newName.trimmingCharacters(in: .whitespaces).isEmpty
+  }
+
+  private var isNameUnique: Bool {
+    let trimmedName = newName.trimmingCharacters(in: .whitespaces).lowercased()
+    let currentName = editingProfile?.name.lowercased() ?? ""
+    return trimmedName == currentName
+      || !profileManager.profiles.contains { $0.name.lowercased() == trimmedName }
+  }
+
+  var body: some View {
+    VStack(spacing: 20) {
+      Text("Rename Profile")
+        .font(.headline)
+
+      Form {
+        TextField("Profile Name", text: $newName)
+          .textFieldStyle(.roundedBorder)
+
+        if !isNameUnique && !newName.isEmpty {
+          Text("A profile with this name already exists")
+            .font(.caption)
+            .foregroundColor(.red)
+        }
+      }
+      .padding()
+
+      HStack {
+        Button("Cancel") {
+          dismiss()
+        }
+        .keyboardShortcut(.cancelAction)
+
+        Spacer()
+
+        Button("Rename") {
+          if let id = editingProfileId {
+            _ = profileManager.renameProfile(
+              id: id,
+              newName: newName.trimmingCharacters(in: .whitespaces)
+            )
+          }
+          dismiss()
+        }
+        .keyboardShortcut(.defaultAction)
+        .buttonStyle(.borderedProminent)
+        .disabled(!isNameValid || !isNameUnique)
+      }
+      .padding()
+    }
+    .frame(width: 400, height: 180)
+    .onAppear {
+      newName = editingProfile?.name ?? ""
+    }
   }
 }

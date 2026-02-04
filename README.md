@@ -43,7 +43,8 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
 
 - **2 Built-in Themes**: Night Shift and Day Shift
 - **Custom Colors**: Override any theme color
-- **Layout Configurator**: Manage up to 2 bars (top and bottom) on your built-in display or external monitors thanks to a new "Layout builder"
+- **Multiple profiles**: Save and switch between different layout configurations (via the system menu bar or AppleScript)
+- **Layout Builder**: Manage up to 2 bars (top and bottom) on your built-in display or external monitors thanks to a new "Layout builder"
 - **Widget Ordering**: Drag-and-drop to reorder widgets
 - **Per-widget Settings**: Fine-tune each widget's behavior
 - **Custom Widgets**: Create shell command-based widgets
@@ -89,16 +90,32 @@ open a-bar.xcodeproj
 
 There is no need to enable yabai signals in your yabai configuration as a-bar uses the available native macOS APIs to monitor space and window changes and query yabai only when necessary. Windows title changes and window closing are triggering a-bar update via yabai signals automatically setup by a-bar on start.
 
-If needed, a-bar can be refreshed programmatically using AppleScript:
-
-```applescript
-tell application "a-bar" to refresh "yabai"
-```
-
-Or from the command line:
+If needed, a-bar can be refreshed programmatically using AppleScript from the command line:
 
 ```shell
 osascript -e 'tell application "a-bar" to refresh "yabai"'
+```
+
+## Layout Configuration
+
+Use the Layout Builder accessible from the settings to create and manage multiple bars on different displays. You can add, remove, and arrange widgets in each bar, as well as save different profiles for quick switching.
+
+You can switch between saved profiles using AppleScript from the command line:
+
+```shell
+osascript -e 'tell application "a-bar" to switch to profile "Work"'
+```
+
+You can retrieve the current enabled profile name with:
+
+```shell
+osascript -e 'tell application "a-bar" to get profile'
+```
+
+And list all available profiles with:
+
+```shell
+osascript -e 'tell application "a-bar" to list profiles'
 ```
 
 ## Widget Configuration
@@ -116,19 +133,7 @@ Create shell command-based widgets with:
 - Click action command
 - Configurable refresh interval
 
-**AppleScript Support**: Programmatically refresh, toggle, hide or show custom widgets using AppleScript:
-
-```applescript
-tell application "a-bar" to refresh "My Widget"
-
-tell application "a-bar" to toggle "My Widget"
-
-tell application "a-bar" to hide "My Widget"
-
-tell application "a-bar" to show "My Widget"
-```
-
-From the command line, you can use:
+**AppleScript Support**: Programmatically refresh, toggle, hide or show custom widgets using AppleScript from the command line, you can use:
 
 ```shell
 osascript -e 'tell application "a-bar" to refresh "My Widget"'

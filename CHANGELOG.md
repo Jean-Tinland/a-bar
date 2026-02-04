@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+<!-- _No changes yet._ -->
+
+_No changes yet._
+
+## v1.1.0 - 2026-02-04
+
+- feat: add profile system for multiple layout configurations
 - chore: update logo
+- fix: correct padding direction in NetstatsWidget for better layout
 
 ## v1.0.6 - 2026-02-04
 

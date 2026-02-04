@@ -853,7 +853,7 @@ struct CustomWidgetSettingsView: View {
 
   // Helper function to update user widget indices after removal
   private func updateUserWidgetIndicesInLayout(removedIndex: Int) {
-    var layout = settings.draftSettings.multiDisplayLayout
+    var layout = settings.draftLayout
 
     for displayIndex in 0..<layout.displays.count {
       // Update top bar
@@ -873,7 +873,7 @@ struct CustomWidgetSettingsView: View {
       }
     }
 
-    settings.draftSettings.multiDisplayLayout = layout
+    settings.draftLayout = layout
   }
 
   private func updateUserWidgetIndices(in widgets: [WidgetInstance], removedIndex: Int)
@@ -896,7 +896,7 @@ struct CustomWidgetSettingsView: View {
 
   // Helper function to update user widget indices after move/reorder
   private func updateUserWidgetIndicesAfterMove(oldToNewIndex: [Int: Int]) {
-    var layout = settings.draftSettings.multiDisplayLayout
+    var layout = settings.draftLayout
 
     for displayIndex in 0..<layout.displays.count {
       // Update top bar
@@ -921,7 +921,7 @@ struct CustomWidgetSettingsView: View {
       }
     }
 
-    settings.draftSettings.multiDisplayLayout = layout
+    settings.draftLayout = layout
   }
 
   private func updateUserWidgetIndicesForMove(
@@ -1340,7 +1340,7 @@ struct AboutView: View {
         .font(.headline)
         .foregroundColor(.secondary)
 
-      Text("Version 1.0.6")
+      Text("Version 1.1.0")
         .font(.caption)
 
       Divider()

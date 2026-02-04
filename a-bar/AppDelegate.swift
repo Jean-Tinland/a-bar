@@ -73,9 +73,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       button.image = image
     }
 
+    rebuildMenu()
+
+    // Subscribe to profile changes to rebuild menu
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(profileDidChange),
+      name: .profileDidChange,
+      object: nil
+    )
+  }
+
+  /// Rebuild the status item menu (called when profiles change)
+  private func rebuildMenu() {
     let menu = NSMenu()
+
     menu.addItem(
       NSMenuItem(title: "Preferences...", action: #selector(openPreferences), keyEquivalent: ","))
+    menu.addItem(NSMenuItem.separator())
+
+    // Add profile submenu before Refresh
+    let profileMenu = NSMenu()
+    let profileManager = ProfileManager.shared
+
+    for profile in profileManager.profiles {
+      let item = NSMenuItem(
+        title: profile.name,
+        action: #selector(selectProfile(_:)),
+        keyEquivalent: ""
+      )
+      item.representedObject = profile.id
+      item.state = profile.id == profileManager.activeProfileId ? .on : .off
+      profileMenu.addItem(item)
+    }
+
+    let profileMenuItem = NSMenuItem(title: "Profile", action: nil, keyEquivalent: "")
+    profileMenuItem.submenu = profileMenu
+    menu.addItem(profileMenuItem)
+
     menu.addItem(NSMenuItem.separator())
     menu.addItem(NSMenuItem(title: "Refresh", action: #selector(refreshAll), keyEquivalent: "r"))
     menu.addItem(NSMenuItem.separator())
@@ -89,6 +124,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     menu.addItem(NSMenuItem(title: "Quit a-bar", action: #selector(quitApp), keyEquivalent: "q"))
 
     statusItem?.menu = menu
+  }
+
+  @objc private func selectProfile(_ sender: NSMenuItem) {
+    guard let profileId = sender.representedObject as? UUID else { return }
+    _ = ProfileManager.shared.switchToProfile(id: profileId)
+    rebuildMenu()
+  }
+
+  @objc private func profileDidChange(_ notification: Notification) {
+    rebuildMenu()
   }
 
   private func setupBarWindows() {

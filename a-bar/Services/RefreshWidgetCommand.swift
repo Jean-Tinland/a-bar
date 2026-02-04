@@ -99,3 +99,52 @@ class ShowWidgetCommand: NSScriptCommand {
     }
   }
 }
+
+/// AppleScript command handler for setting the active profile
+/// Usage: osascript -e 'tell application "a-bar" to set profile "Profile Name"'
+@objc(SetProfileCommand)
+class SetProfileCommand: NSScriptCommand {
+
+  override func performDefaultImplementation() -> Any? {
+    guard let profileName = directParameter as? String else {
+      return "error: missing profile name"
+    }
+
+    let profileManager = ProfileManager.shared
+    let success = profileManager.switchToProfile(named: profileName)
+
+    if success {
+      return "ok: switched to profile '\(profileName)'"
+    } else {
+      let availableProfiles = profileManager.profileNames.joined(separator: ", ")
+      return "error: profile '\(profileName)' not found. Available profiles: \(availableProfiles)"
+    }
+  }
+}
+
+/// AppleScript command handler for getting the current profile
+/// Usage: osascript -e 'tell application "a-bar" to get profile'
+@objc(GetProfileCommand)
+class GetProfileCommand: NSScriptCommand {
+
+  override func performDefaultImplementation() -> Any? {
+    let profileManager = ProfileManager.shared
+
+    if let activeProfile = profileManager.activeProfile {
+      return activeProfile.name
+    } else {
+      return "error: no active profile"
+    }
+  }
+}
+
+/// AppleScript command handler for listing all profiles
+/// Usage: osascript -e 'tell application "a-bar" to list profiles'
+@objc(ListProfilesCommand)
+class ListProfilesCommand: NSScriptCommand {
+
+  override func performDefaultImplementation() -> Any? {
+    let profileManager = ProfileManager.shared
+    return profileManager.profileNames.joined(separator: ", ")
+  }
+}

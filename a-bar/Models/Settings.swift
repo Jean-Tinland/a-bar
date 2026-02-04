@@ -56,6 +56,13 @@ class SettingsManager: ObservableObject {
   @Published var settings: ABarSettings
   @Published var draftSettings: ABarSettings
   @Published var hasUnsavedChanges: Bool = false
+  
+  /// The profile currently being edited in the Layout settings
+  /// This is NOT the same as the active profile - it's just what's being edited
+  @Published var editingProfileId: UUID? = nil
+  
+  /// Draft layout being edited (separate from profiles)
+  @Published var draftLayout: MultiDisplayLayout = .defaultLayout
 
   private let settingsKey = "abar-settings"
   private let userDefaults = UserDefaults.standard
@@ -110,9 +117,19 @@ class SettingsManager: ObservableObject {
         self.hasUnsavedChanges = (newDraft != self.settings)
       }
       .store(in: &cancellables)
+    
+    // Monitor changes to draftLayout
+    $draftLayout
+      .dropFirst()  // Skip the initial value
+      .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+      .sink { [weak self] _ in
+        guard let self = self else { return }
+        self.hasUnsavedChanges = true
+      }
+      .store(in: &cancellables)
   }
 
-  private func saveSettingsNow(_ settings: ABarSettings) {
+  func saveSettingsNow(_ settings: ABarSettings) {
     if let encoded = try? JSONEncoder().encode(settings) {
       userDefaults.set(encoded, forKey: settingsKey)
     }
@@ -120,6 +137,18 @@ class SettingsManager: ObservableObject {
   }
 
   func saveSettings() {
+    // Save the layout to the profile being edited (not necessarily the active one)
+    if let editId = editingProfileId {
+      ProfileManager.shared.updateProfileLayout(id: editId, layout: draftLayout)
+    } else if let activeId = ProfileManager.shared.activeProfile?.id {
+      // Fallback: save to active profile if no editing profile is set
+      ProfileManager.shared.updateProfileLayout(id: activeId, layout: draftLayout)
+    }
+    
+    // Sync profiles from ProfileManager before saving
+    draftSettings.profiles = ProfileManager.shared.profiles
+    draftSettings.activeProfileId = ProfileManager.shared.activeProfileId.uuidString
+    
     settings = draftSettings
     saveSettingsNow(settings)
     hasUnsavedChanges = false
@@ -322,27 +351,10 @@ extension SettingsManager {
 struct ABarSettings: Codable, Equatable {
   var global: GlobalSettings = GlobalSettings()
   var theme: ThemeSettings = ThemeSettings()
-  var multiDisplayLayout: MultiDisplayLayout = .defaultLayout
   var widgets: WidgetSettings = WidgetSettings()
   var userWidgets: [UserWidgetDefinition] = []
-
-  // Legacy layout property for migration support
-  var layout: BarLayout? {
-    get { nil }
-    set {
-      // If setting a legacy layout, convert it to multi-display layout
-      if let legacyLayout = newValue {
-        multiDisplayLayout = MultiDisplayLayout(displays: [
-          DisplayConfiguration(
-            displayIndex: 0,
-            name: "Main Display",
-            topBar: legacyLayout.toSingleBarLayout(),
-            bottomBar: nil
-          )
-        ])
-      }
-    }
-  }
+  var profiles: [LayoutProfile] = []
+  var activeProfileId: String? = nil
 
   // Custom decoder to handle migration from old layout format
   init(from decoder: Decoder) throws {
@@ -354,16 +366,9 @@ struct ABarSettings: Codable, Equatable {
       try container.decodeIfPresent(WidgetSettings.self, forKey: .widgets) ?? WidgetSettings()
     userWidgets =
       try container.decodeIfPresent([UserWidgetDefinition].self, forKey: .userWidgets) ?? []
-
-    // Try to decode new multi-display layout first
-    if let newLayout = try? container.decode(MultiDisplayLayout.self, forKey: .multiDisplayLayout) {
-      multiDisplayLayout = newLayout
-    } else if (try? container.decode(BarLayout.self, forKey: .layout)) != nil {
-      // Migrate from legacy layout - reset to default instead of converting
-      multiDisplayLayout = .defaultLayout
-    } else {
-      multiDisplayLayout = .defaultLayout
-    }
+    profiles =
+      try container.decodeIfPresent([LayoutProfile].self, forKey: .profiles) ?? []
+    activeProfileId = try container.decodeIfPresent(String.self, forKey: .activeProfileId)
   }
 
   init() {
@@ -371,17 +376,17 @@ struct ABarSettings: Codable, Equatable {
   }
 
   private enum CodingKeys: String, CodingKey {
-    case global, theme, multiDisplayLayout, widgets, userWidgets, layout
+    case global, theme, widgets, userWidgets, profiles, activeProfileId
   }
 
   func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(global, forKey: .global)
     try container.encode(theme, forKey: .theme)
-    try container.encode(multiDisplayLayout, forKey: .multiDisplayLayout)
     try container.encode(widgets, forKey: .widgets)
     try container.encode(userWidgets, forKey: .userWidgets)
-    // Don't encode legacy layout
+    try container.encode(profiles, forKey: .profiles)
+    try container.encodeIfPresent(activeProfileId, forKey: .activeProfileId)
   }
 }
 
@@ -618,25 +623,19 @@ struct StorageWidgetSettings: Codable, Equatable {
 class LayoutManager: ObservableObject {
   static let shared = LayoutManager()
 
-  @Published var multiDisplayLayout: MultiDisplayLayout {
-    didSet {
-      SettingsManager.shared.settings.multiDisplayLayout = multiDisplayLayout
-    }
-  }
+  @Published var multiDisplayLayout: MultiDisplayLayout
 
   private var cancellables = Set<AnyCancellable>()
 
   private init() {
-    self.multiDisplayLayout = SettingsManager.shared.settings.multiDisplayLayout
+    // Initialize with active profile's layout
+    self.multiDisplayLayout = ProfileManager.shared.activeProfile?.multiDisplayLayout ?? .defaultLayout
 
-    // Sync with settings manager
-    SettingsManager.shared.$settings
-      .map { $0.multiDisplayLayout }
-      .removeDuplicates()
-      .sink { [weak self] newLayout in
-        if self?.multiDisplayLayout != newLayout {
-          self?.multiDisplayLayout = newLayout
-        }
+    // Sync with active profile changes
+    NotificationCenter.default.publisher(for: .profileDidChange)
+      .compactMap { $0.object as? LayoutProfile }
+      .sink { [weak self] profile in
+        self?.multiDisplayLayout = profile.multiDisplayLayout
       }
       .store(in: &cancellables)
   }
