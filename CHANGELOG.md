@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.0.5 - 2026-02-04
+
+- fix: update signal handling in YabaiService
+
 ## v1.0.4 - 2026-02-04
 
 - refactor: remove AccessibilityHelper and WindowAXObserver, update YabaiSettingsView to eliminate accessibility prompts

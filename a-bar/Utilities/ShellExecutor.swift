@@ -15,7 +15,15 @@ enum ShellExecutor {
                 process.standardError = pipe
                 process.executableURL = URL(fileURLWithPath: "/bin/zsh")
                 process.arguments = ["-c", command]
-                process.environment = ProcessInfo.processInfo.environment
+                
+                // Ensure proper PATH environment for built apps
+                var env = ProcessInfo.processInfo.environment
+                if let existingPath = env["PATH"] {
+                    env["PATH"] = "/usr/local/bin:/opt/homebrew/bin:\(existingPath)"
+                } else {
+                    env["PATH"] = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin"
+                }
+                process.environment = env
                 
                 do {
                     try process.run()
@@ -47,7 +55,15 @@ enum ShellExecutor {
         process.standardError = pipe
         process.executableURL = URL(fileURLWithPath: "/bin/zsh")
         process.arguments = ["-c", command]
-        process.environment = ProcessInfo.processInfo.environment
+        
+        // Ensure proper PATH environment for built apps
+        var env = ProcessInfo.processInfo.environment
+        if let existingPath = env["PATH"] {
+            env["PATH"] = "/usr/local/bin:/opt/homebrew/bin:\(existingPath)"
+        } else {
+            env["PATH"] = "/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin"
+        }
+        process.environment = env
         
         do {
             try process.run()

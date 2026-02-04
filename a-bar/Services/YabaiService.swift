@@ -9,10 +9,12 @@ class YabaiService: ObservableObject {
     @Published private(set) var state = YabaiState()
     @Published private(set) var isConnected = false
     @Published private(set) var lastError: Error?
+    @Published private(set) var signalsRegistered = false
 
     private var refreshTimer: Timer?
     private var refreshWorkItem: DispatchWorkItem?
     private let refreshDebounceInterval: TimeInterval = 0.1
+    private var signalTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
     private let settingsManager = SettingsManager.shared
 
@@ -75,6 +77,7 @@ class YabaiService: ObservableObject {
     func start() {
         refresh()
         setupYabaiSignals()
+        startSignalTimer()
     }
 
     /// Stop the yabai service
@@ -94,39 +97,73 @@ class YabaiService: ObservableObject {
             screenObserver = nil
         }
         
+        // Stop signal timer
+        stopSignalTimer()
+        
         // Remove yabai signals on stop
-        removeYabaiSignals()
+        Task {
+            await removeYabaiSignals()
+        }
+    }
+    
+    /// Start the periodic timer to re-register yabai signals
+    private func startSignalTimer() {
+        // Stop any existing timer
+        stopSignalTimer()
+        
+        // Create a new timer that fires every 5 seconds
+        signalTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.setupYabaiSignals()
+        }
+    }
+    
+    /// Stop the periodic signal timer
+    private func stopSignalTimer() {
+        signalTimer?.invalidate()
+        signalTimer = nil
     }
     
     /// Set up yabai signals to automatically refresh on window events
     private func setupYabaiSignals() {
         Task {
             do {
+                // First check if yabai is accessible
+                _ = try await ShellExecutor.run("\(yabaiPath) -m query --spaces")
+                
                 // Remove any existing signals first
-                removeYabaiSignals()
+                await removeYabaiSignals()
                 
                 // Add signal for window destroyed
                 let destroyedCmd = "\(yabaiPath) -m signal --add event=window_destroyed action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-destroyed\""
-                _ = try await ShellExecutor.run(destroyedCmd)
+                let destroyedResult = try await ShellExecutor.run(destroyedCmd)
                 
                 // Add signal for window title changed
                 let titleCmd = "\(yabaiPath) -m signal --add event=window_title_changed action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-title-changed\""
-                _ = try await ShellExecutor.run(titleCmd)
+                let titleResult = try await ShellExecutor.run(titleCmd)
                 
-                print("✓ Yabai signals registered successfully")
+                await MainActor.run {
+                    self.signalsRegistered = true
+                }
+                
+                print("✅ Yabai signals registered successfully")
+                print("   - window_destroyed: \(destroyedResult.isEmpty ? "OK" : destroyedResult)")
+                print("   - window_title_changed: \(titleResult.isEmpty ? "OK" : titleResult)")
             } catch {
+                await MainActor.run {
+                    self.signalsRegistered = false
+                }
                 print("⚠️ Failed to register yabai signals: \(error)")
+                print("   yabai path: \(yabaiPath)")
+                print("   This is normal if yabai is not running. Will retry in 5 seconds.")
             }
         }
     }
     
     /// Remove yabai signals registered by a-bar
-    private func removeYabaiSignals() {
-        Task {
-            do {
-                _ = try? await ShellExecutor.run("\(yabaiPath) -m signal --remove abar-window-destroyed")
-                _ = try? await ShellExecutor.run("\(yabaiPath) -m signal --remove abar-window-title-changed")
-            }
+    private func removeYabaiSignals() async {
+        do {
+            _ = try? await ShellExecutor.run("\(yabaiPath) -m signal --remove abar-window-destroyed")
+            _ = try? await ShellExecutor.run("\(yabaiPath) -m signal --remove abar-window-title-changed")
         }
     }
 
