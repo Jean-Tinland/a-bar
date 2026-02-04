@@ -202,4 +202,49 @@ class UserWidgetManager: ObservableObject {
 
     return true
   }
+
+  /// Toggle visibility of a specific user widget by name
+  /// - Parameter name: The name of the widget to toggle
+  /// - Returns: Result with the new isActive state, or error if not found
+  func toggleWidget(named name: String) -> Result<Bool, UserWidgetError> {
+    guard let index = settingsManager.settings.userWidgets.firstIndex(where: { $0.name == name }) else {
+      return .failure(.widgetNotFound(name))
+    }
+
+    settingsManager.settings.userWidgets[index].isActive.toggle()
+    let newState = settingsManager.settings.userWidgets[index].isActive
+    return .success(newState)
+  }
+
+  /// Hide a specific user widget by name
+  /// - Parameter name: The name of the widget to hide
+  /// - Returns: Result with true if the widget was hidden, false if already hidden, or error if not found
+  func hideWidget(named name: String) -> Result<Bool, UserWidgetError> {
+    guard let index = settingsManager.settings.userWidgets.firstIndex(where: { $0.name == name }) else {
+      return .failure(.widgetNotFound(name))
+    }
+
+    if settingsManager.settings.userWidgets[index].isActive {
+      settingsManager.settings.userWidgets[index].isActive = false
+      return .success(true)
+    } else {
+      return .success(false)
+    }
+  }
+
+  /// Show a specific user widget by name
+  /// - Parameter name: The name of the widget to show
+  /// - Returns: Result with true if the widget was shown, false if already shown, or error if not found
+  func showWidget(named name: String) -> Result<Bool, UserWidgetError> {
+    guard let index = settingsManager.settings.userWidgets.firstIndex(where: { $0.name == name }) else {
+      return .failure(.widgetNotFound(name))
+    }
+
+    if !settingsManager.settings.userWidgets[index].isActive {
+      settingsManager.settings.userWidgets[index].isActive = true
+      return .success(true)
+    } else {
+      return .success(false)
+    }
+  }
 }

@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.0.4 - 2026-02-04
+
+- refactor: remove AccessibilityHelper and WindowAXObserver, update YabaiSettingsView to eliminate accessibility prompts
+- feat: add commands for toggling, hiding, and showing custom widgets; update refresh command description
+
 ## v1.0.3 - 2026-02-03
 
 - refactor: integrate AccessibilityHelper into YabaiSettingsView and remove AccessibilityPromptView

@@ -69,7 +69,7 @@ You'll find all the bugs and list of planned features in the [GitHub backlog](ht
 4. Grant necessary permissions when prompted
 
 > [!NOTE]
-> `xattr` command requires administrator privileges, you will be prompted to enter your password. This command removes the quarantine attribute that macOS assigns to apps downloaded from the internet.
+> `xattr` command removes the quarantine attribute that macOS assigns to apps downloaded from the internet.
 
 ### Build from Source
 
@@ -103,16 +103,28 @@ Create shell command-based widgets with:
 - Click action command
 - Configurable refresh interval
 
-**AppleScript Support**: Programmatically refresh custom widgets using AppleScript:
+**AppleScript Support**: Programmatically refresh, toggle, hide or show custom widgets using AppleScript:
 
 ```applescript
 tell application "a-bar" to refresh "My Widget"
+
+tell application "a-bar" to toggle "My Widget"
+
+tell application "a-bar" to hide "My Widget"
+
+tell application "a-bar" to show "My Widget"
 ```
 
 From the command line, you can use:
 
 ```shell
 osascript -e 'tell application "a-bar" to refresh "My Widget"'
+
+osascript -e 'tell application "a-bar" to toggle "My Widget"'
+
+osascript -e 'tell application "a-bar" to hide "My Widget"'
+
+osascript -e 'tell application "a-bar" to show "My Widget"'
 ```
 
 ## Contributing

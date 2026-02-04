@@ -74,6 +74,7 @@ class YabaiService: ObservableObject {
     /// Start the yabai service
     func start() {
         refresh()
+        setupYabaiSignals()
     }
 
     /// Stop the yabai service
@@ -91,6 +92,41 @@ class YabaiService: ObservableObject {
         if let observer = screenObserver {
             NotificationCenter.default.removeObserver(observer)
             screenObserver = nil
+        }
+        
+        // Remove yabai signals on stop
+        removeYabaiSignals()
+    }
+    
+    /// Set up yabai signals to automatically refresh on window events
+    private func setupYabaiSignals() {
+        Task {
+            do {
+                // Remove any existing signals first
+                removeYabaiSignals()
+                
+                // Add signal for window destroyed
+                let destroyedCmd = "\(yabaiPath) -m signal --add event=window_destroyed action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-destroyed\""
+                _ = try await ShellExecutor.run(destroyedCmd)
+                
+                // Add signal for window title changed
+                let titleCmd = "\(yabaiPath) -m signal --add event=window_title_changed action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-title-changed\""
+                _ = try await ShellExecutor.run(titleCmd)
+                
+                print("✓ Yabai signals registered successfully")
+            } catch {
+                print("⚠️ Failed to register yabai signals: \(error)")
+            }
+        }
+    }
+    
+    /// Remove yabai signals registered by a-bar
+    private func removeYabaiSignals() {
+        Task {
+            do {
+                _ = try? await ShellExecutor.run("\(yabaiPath) -m signal --remove abar-window-destroyed")
+                _ = try? await ShellExecutor.run("\(yabaiPath) -m signal --remove abar-window-title-changed")
+            }
         }
     }
 

@@ -1306,7 +1306,7 @@ struct AboutView: View {
         .font(.headline)
         .foregroundColor(.secondary)
 
-      Text("Version 1.0.3")
+      Text("Version 1.0.4")
         .font(.caption)
 
       Divider()
