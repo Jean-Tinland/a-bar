@@ -96,7 +96,7 @@ struct NetstatsWidget: View {
             .font(settingsFont(scaledBy: 0.8))
             .foregroundColor(theme.foreground)
             .padding(.top, -6)
-            .padding(.leading, -4)
+            .padding(.trailing, -4)
           Image(systemName: "arrow.up")
             .font(.system(size: 10))
             .foregroundColor(uploadColor)
