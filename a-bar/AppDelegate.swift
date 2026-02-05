@@ -64,8 +64,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   private func setupStatusItem() {
+    // Create status item with variable length to accommodate icon
     statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
+    // Set menu bar icon
     if let button = statusItem?.button {
       let image = NSImage(named: "MenuBarIcon")
       image?.isTemplate = true
@@ -73,6 +75,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       button.image = image
     }
 
+    // Initial menu setup
     rebuildMenu()
 
     // Subscribe to profile changes to rebuild menu
@@ -88,54 +91,69 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   private func rebuildMenu() {
     let menu = NSMenu()
 
+    // Add Preferences menu item
     menu.addItem(
       NSMenuItem(title: "Preferences...", action: #selector(openPreferences), keyEquivalent: ","))
+
     menu.addItem(NSMenuItem.separator())
 
     // Add profile submenu before Refresh
     let profileMenu = NSMenu()
     let profileManager = ProfileManager.shared
 
+
+    // Add profile items
     for profile in profileManager.profiles {
+      // Create menu item for each profile
       let item = NSMenuItem(
         title: profile.name,
         action: #selector(selectProfile(_:)),
         keyEquivalent: ""
       )
+      // Store profile ID in representedObject for later retrieval
       item.representedObject = profile.id
+      // Set state to indicate active profile
       item.state = profile.id == profileManager.activeProfileId ? .on : .off
       profileMenu.addItem(item)
     }
 
     let profileMenuItem = NSMenuItem(title: "Profile", action: nil, keyEquivalent: "")
+    // Attach the profile submenu to the main menu
     profileMenuItem.submenu = profileMenu
     menu.addItem(profileMenuItem)
 
     menu.addItem(NSMenuItem.separator())
+    // Add Refresh menu item
     menu.addItem(NSMenuItem(title: "Refresh", action: #selector(refreshAll), keyEquivalent: "r"))
     menu.addItem(NSMenuItem.separator())
 
     let toggleItem = NSMenuItem(
       title: "Show Bar", action: #selector(toggleBarVisibility), keyEquivalent: "")
     toggleItem.state = settingsManager.settings.global.barEnabled ? .on : .off
+    // Add toggle bar visibility menu item
     menu.addItem(toggleItem)
 
     menu.addItem(NSMenuItem.separator())
+    // Add Quit menu item
     menu.addItem(NSMenuItem(title: "Quit a-bar", action: #selector(quitApp), keyEquivalent: "q"))
 
     statusItem?.menu = menu
   }
 
+  // Handle profile selection from menu
   @objc private func selectProfile(_ sender: NSMenuItem) {
+    // Retrieve profile ID from representedObject and switch profile
     guard let profileId = sender.representedObject as? UUID else { return }
     _ = ProfileManager.shared.switchToProfile(id: profileId)
     rebuildMenu()
   }
 
+  // Handle profile changes to rebuild menu
   @objc private func profileDidChange(_ notification: Notification) {
     rebuildMenu()
   }
 
+  // Create bar windows based on current screen configuration and layout settings
   private func setupBarWindows() {
     // Remove existing windows
     barWindows.values.forEach { $0.close() }
@@ -146,7 +164,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let screens = NSScreen.screens
     let layout = layoutManager.multiDisplayLayout
 
-    // Create bar windows based on layout configuration
+    // Create bar windows on each screen based on layout configuration
     for (displayIndex, screen) in screens.enumerated() {
       guard let displayConfig = layout.configuration(forDisplay: displayIndex) else {
         continue  // No configuration for this display
@@ -177,7 +195,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       }
     }
   }
-
+  
+  // Observe screen changes to recreate bar windows when displays are added/removed or arrangement changes
   private func setupScreenObserver() {
     screenObserver = NotificationCenter.default.addObserver(
       forName: NSApplication.didChangeScreenParametersNotification,
@@ -196,6 +215,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     systemInfoService.start()
   }
 
+  // Subscribe to settings changes to update bar windows and launch at login status
   private func subscribeToSettingsChanges() {
     settingsManager.$settings
       .dropFirst()
@@ -215,6 +235,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       .store(in: &cancellables)
   }
 
+  // Handle changes in settings to update bar windows and launch at login status
   private func handleSettingsChange(_ settings: ABarSettings) {
     // Update bar visibility
     if settings.global.barEnabled {
@@ -229,6 +250,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     updateLaunchAtLogin(settings.global.launchAtLogin)
   }
 
+  // Update launch at login status using ServiceManagement framework (macOS 13+)
   private func updateLaunchAtLogin(_ enabled: Bool) {
     if #available(macOS 13.0, *) {
       do {
@@ -243,14 +265,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
   }
 
+  // Open the preferences window, creating it if it doesn't exist
   @objc private func openPreferences() {
     if settingsWindowController == nil {
+      // Create the settings view and embed it in a hosting controller
       let settingsView = SettingsView()
         .environmentObject(settingsManager)
         .environmentObject(yabaiService)
         .environmentObject(layoutManager)
 
+      // Create a new window for the settings and set its content to the hosting controller
       let hostingController = NSHostingController(rootView: settingsView)
+      // Configure the window properties (title, size, style)
       let window = NSWindow(contentViewController: hostingController)
       window.title = "a-bar Preferences"
       window.setContentSize(NSSize(width: 700, height: 500))
@@ -264,12 +290,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     NSApp.activate(ignoringOtherApps: true)
   }
 
+  // Refresh all bar windows and services (called from menu)
   @objc private func refreshAll() {
     yabaiService.refresh()
     systemInfoService.refresh()
     barWindows.values.forEach { $0.refresh() }
   }
 
+  // Toggle bar visibility and update menu item state accordingly
   @objc private func toggleBarVisibility() {
     settingsManager.settings.global.barEnabled.toggle()
 
@@ -281,6 +309,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
   }
 
+  // Quit the application
   @objc private func quitApp() {
     NSApplication.shared.terminate(nil)
   }

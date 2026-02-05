@@ -6,7 +6,9 @@ All notable changes to this project will be documented in this file.
 
 <!-- _No changes yet._ -->
 
-_No changes yet._
+- fix: remove unnecessary WidgetSeparator from SpacesWidget when displaying sticky windows
+- refactor: remove unused WidgetIcon and WidgetSeparator structs from WidgetContainer
+- refactor: add detailed comments in multiple files
 
 ## v1.1.0 - 2026-02-04
 
