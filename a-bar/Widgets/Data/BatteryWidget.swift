@@ -34,7 +34,7 @@ struct BatteryWidget: View {
       onClick: batterySettings.toggleCaffeinateOnClick ? toggleCaffeinate : nil
     ) {
       ZStack(alignment: .leading) {
-        HStack(spacing: 4) {
+        AdaptiveStack(hSpacing: 4, vSpacing: 2) {
           if batterySettings.showIcon {
             BatteryIconView(
               percentage: battery.percentage,

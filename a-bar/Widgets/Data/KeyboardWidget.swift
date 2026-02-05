@@ -4,6 +4,7 @@ import SwiftUI
 struct KeyboardWidget: View {
   @EnvironmentObject var settings: SettingsManager
   @EnvironmentObject var systemInfo: SystemInfoService
+  @Environment(\.widgetOrientation) var orientation
 
   private var globalSettings: GlobalSettings {
     settings.settings.global
@@ -17,6 +18,10 @@ struct KeyboardWidget: View {
     ThemeManager.currentTheme(for: settings.settings.theme)
   }
 
+  private var isVertical: Bool {
+    orientation == .vertical
+  }
+
   var body: some View {
     let bgColor = keyboardSettings.backgroundColor.color(from: theme)
     let fgColor =
@@ -28,7 +33,7 @@ struct KeyboardWidget: View {
         ? theme.minor.opacity(0.95) : bgColor.opacity(0.95),
       onRightClick: openKeyboardPreferences
     ) {
-      HStack(spacing: 4) {
+      AdaptiveStack(hSpacing: 4, vSpacing: 2) {
         if keyboardSettings.showIcon {
           Image(systemName: "keyboard")
             .font(.system(size: 10))
@@ -42,8 +47,14 @@ struct KeyboardWidget: View {
   }
 
   private var formattedLayout: String {
-    // Show abbreviated version if too long
     let layout = systemInfo.keyboardLayout
+
+    if isVertical {
+      // Very short format for vertical: first 2-3 chars
+      return layout.prefix(3).uppercased()
+    }
+
+    // Show abbreviated version if too long
     if layout.count > 10 {
       // Try to get first word or abbreviation
       if let firstWord = layout.split(separator: " ").first {

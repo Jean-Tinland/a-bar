@@ -4,23 +4,37 @@ import SwiftUI
 struct OpenedAppsView: View {
     let space: YabaiSpace
     let displayIndex: Int
-    
+
     @EnvironmentObject var settings: SettingsManager
     @EnvironmentObject var yabaiService: YabaiService
-    
+    @Environment(\.widgetOrientation) var orientation
+
     private var spacesSettings: SpacesWidgetSettings {
         settings.settings.widgets.spaces
     }
-    
+
     private var theme: ABarTheme {
         ThemeManager.currentTheme(for: settings.settings.theme)
     }
-    
+
+    private var isVertical: Bool {
+        orientation == .vertical
+    }
+
     var body: some View {
         if !displayedApps.isEmpty {
-            HStack(spacing: 1) {
-                ForEach(displayedApps, id: \.id) { window in
-                    AppIconButton(window: window)
+            if isVertical {
+                // In vertical mode, show fewer icons or wrap them
+                VStack(spacing: 1) {
+                    ForEach(displayedApps.prefix(3), id: \.id) { window in
+                        AppIconButton(window: window)
+                    }
+                }
+            } else {
+                HStack(spacing: 1) {
+                    ForEach(displayedApps, id: \.id) { window in
+                        AppIconButton(window: window)
+                    }
                 }
             }
         }

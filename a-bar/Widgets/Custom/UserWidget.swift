@@ -64,7 +64,7 @@ struct UserWidget: View {
         backgroundColor: customBackgroundColor,
         onClick: config.clickCommand != nil ? executeClick : nil
       ) {
-        HStack(spacing: 4) {
+        AdaptiveStack(hSpacing: 4, vSpacing: 2) {
           if !config.hideIcon {
             Image(systemName: config.icon)
               .font(.system(size: 10))

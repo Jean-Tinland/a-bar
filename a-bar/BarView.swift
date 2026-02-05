@@ -102,6 +102,7 @@ struct BarView: View {
           WidgetContainer(widget: widget, displayIndex: displayIndex, orientation: orientation)
         }
       }
+      .frame(maxWidth: .infinity)
       .frame(maxHeight: .infinity, alignment: .top)
 
       // Middle section (mapped from center)
@@ -110,6 +111,7 @@ struct BarView: View {
           WidgetContainer(widget: widget, displayIndex: displayIndex, orientation: orientation)
         }
       }
+      .frame(maxWidth: .infinity)
 
       // Bottom section (mapped from right)
       VStack(spacing: globalSettings.barElementGap) {
@@ -117,9 +119,11 @@ struct BarView: View {
           WidgetContainer(widget: widget, displayIndex: displayIndex, orientation: orientation)
         }
       }
+      .frame(maxWidth: .infinity)
       .frame(maxHeight: .infinity, alignment: .bottom)
     }
     .padding(.vertical, 8)
+    .padding(.horizontal, 4)
   }
 
   // MARK: - Border Overlays
@@ -254,7 +258,7 @@ struct WidgetContainer: View {
 
 // MARK: - Widget Orientation Environment Key
 
-private struct WidgetOrientationKey: EnvironmentKey {
+struct WidgetOrientationKey: EnvironmentKey {
   static let defaultValue: WidgetOrientation = .horizontal
 }
 
@@ -262,5 +266,44 @@ extension EnvironmentValues {
   var widgetOrientation: WidgetOrientation {
     get { self[WidgetOrientationKey.self] }
     set { self[WidgetOrientationKey.self] = newValue }
+  }
+}
+
+// MARK: - Adaptive Stack for Orientation-Aware Layout
+
+/// A stack that switches between HStack and VStack based on widget orientation
+struct AdaptiveStack<Content: View>: View {
+  @Environment(\.widgetOrientation) var orientation
+
+  let horizontalSpacing: CGFloat
+  let verticalSpacing: CGFloat
+  let horizontalAlignment: VerticalAlignment
+  let verticalAlignment: HorizontalAlignment
+  @ViewBuilder let content: () -> Content
+
+  init(
+    hSpacing: CGFloat = 4,
+    vSpacing: CGFloat = 2,
+    hAlignment: VerticalAlignment = .center,
+    vAlignment: HorizontalAlignment = .center,
+    @ViewBuilder content: @escaping () -> Content
+  ) {
+    self.horizontalSpacing = hSpacing
+    self.verticalSpacing = vSpacing
+    self.horizontalAlignment = hAlignment
+    self.verticalAlignment = vAlignment
+    self.content = content
+  }
+
+  var body: some View {
+    if orientation == .vertical {
+      VStack(alignment: verticalAlignment, spacing: verticalSpacing) {
+        content()
+      }
+    } else {
+      HStack(alignment: horizontalAlignment, spacing: horizontalSpacing) {
+        content()
+      }
+    }
   }
 }
