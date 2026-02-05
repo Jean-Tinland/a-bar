@@ -111,7 +111,6 @@
 		B1000083 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		B1000084 /* RefreshWidgetCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshWidgetCommand.swift; sourceTree = "<group>"; };
 		D1000001 /* a-bar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "a-bar.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		D1000002 /* abar */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = abar; sourceTree = BUILT_PRODUCTS_DIR; };
 		E1000010 /* a-bar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "a-bar.entitlements"; sourceTree = "<group>"; };
 		E1000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E1000012 /* sfsymbols.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = sfsymbols.txt; sourceTree = "<group>"; };
@@ -290,7 +289,6 @@
 			isa = PBXGroup;
 			children = (
 				D1000001 /* a-bar.app */,
-				D1000002 /* abar */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -314,23 +312,6 @@
 			productName = "a-bar";
 			productReference = D1000001 /* a-bar.app */;
 			productType = "com.apple.product-type.application";
-		};
-		T2000001 /* abar */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = X2000001 /* Build configuration list for PBXNativeTarget "abar" */;
-			buildPhases = (
-				S2000001 /* Sources */,
-				F2000001 /* Frameworks */,
-				E1000001 /* CopyFiles */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = abar;
-			productName = abar;
-			productReference = D1000002 /* abar */;
-			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
 
@@ -364,7 +345,6 @@
 			projectRoot = "";
 			targets = (
 				T1000001 /* a-bar */,
-				T2000001 /* abar */,
 			);
 		};
 /* End PBXProject section */
@@ -665,15 +645,6 @@
 			buildConfigurations = (
 				Y1000001 /* Debug */,
 				Y1000002 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		X2000001 /* Build configuration list for PBXNativeTarget "abar" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				Y2000001 /* Debug */,
-				Y2000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
