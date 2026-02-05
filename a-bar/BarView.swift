@@ -155,35 +155,3 @@ struct WidgetContainer: View {
     }
   }
 }
-
-struct WidgetIcon: View {
-  let systemName: String
-  var color: Color? = nil
-
-  @EnvironmentObject var settings: SettingsManager
-
-  private var theme: ABarTheme {
-    ThemeManager.currentTheme(for: settings.settings.theme)
-  }
-
-  var body: some View {
-    Image(systemName: systemName)
-      .font(.system(size: 10))
-      .foregroundColor(color ?? theme.foreground)
-  }
-}
-
-struct WidgetSeparator: View {
-  @EnvironmentObject var settings: SettingsManager
-
-  private var theme: ABarTheme {
-    ThemeManager.currentTheme(for: settings.settings.theme)
-  }
-
-  var body: some View {
-    Rectangle()
-      .fill(theme.minor.opacity(0.3))
-      .frame(width: 1, height: 12)
-      .padding(.horizontal, 4)
-  }
-}
