@@ -62,7 +62,7 @@ struct UserWidget: View {
     if config.isActive && !(config.hideWhenEmpty && output.isEmpty && !isLoading) {
       BaseWidgetView(
         backgroundColor: customBackgroundColor,
-        onClick: config.clickCommand != nil ? executeClick : nil,
+        onClick: config.clickCommand != nil ? executeClick : nil
       ) {
         HStack(spacing: 4) {
           if !config.hideIcon {

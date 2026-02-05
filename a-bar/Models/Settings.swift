@@ -244,6 +244,11 @@ class SettingsManager: ObservableObject {
       validated.global.barHeight = 34
     }
 
+    if validated.global.barWidth < 40 || validated.global.barWidth > 300 {
+      print("⚠️ Invalid barWidth (\(validated.global.barWidth)), using default")
+      validated.global.barWidth = 120
+    }
+
     if validated.global.fontSize < 6 || validated.global.fontSize > 72 {
       print("⚠️ Invalid fontSize (\(validated.global.fontSize)), using default")
       validated.global.fontSize = 11
@@ -392,6 +397,7 @@ struct GlobalSettings: Codable, Equatable {
   var barEnabled: Bool = true
   var launchAtLogin: Bool = false
   var barHeight: CGFloat = 34
+  var barWidth: CGFloat = 120  // Width for vertical bars (left/right)
   var fontSize: CGFloat = 11
   var fontName: String = ""
   var barPadding: CGFloat = 4
