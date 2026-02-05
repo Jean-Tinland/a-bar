@@ -4,11 +4,12 @@ Yet **a(nother) bar** :)
 
 A native macOS menu bar replacement inspired by [simple-bar](https://github.com/Jean-Tinland/simple-bar), built with Swift and SwiftUI. It is a standalone recreation of simple-bar with a focus on performance, stability, and extensibility.
 
-<img width="1680" alt="a-bar-preview" src="./images/a-bar-preview.jpg">
+[Website](https://www.jeantinland.com/toolbox/a-bar) • [Documentation](https://www.jeantinland.com/toolbox/a-bar/documentation)
+
+> [!CAUTION]
+> Note of caution: Even in v1.x.x, a-bar stays in early development. Expect bugs, missing features, and breaking changes. Feedback and contributions are welcome!
 
 ## Features
-
-### Window Management Integration
 
 - **Yabai Integration**: Full support for [yabai](https://github.com/koekeishiya/yabai) window manager
   - Display workspaces and processes with app icons
@@ -16,38 +17,15 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
   - Rename, move, and manage spaces via context menu
   - Show/hide empty spaces
   - Sticky windows support
+- **A handful selection of widgets**: 14+ widgets for system information and performance monitoring
+- **Custom widgets**: Create your own widgets that reads data from `shell` commands or scripts
+- **Theming, customization, and profiles**
 
-### System Information Widgets
+[See all features in documentation](https://www.jeantinland.com/toolbox/a-bar/documentation/features/).
 
-- **Process**: Shows currently focused application
-- **Battery**: Battery percentage with charging indicator, caffeinate toggle
-- **Weather**: Current conditions from Open-Meteo with auto-location
-- **Time**: Digital clock with optional day progress
-- **Date**: Current date with calendar app integration
-- **WiFi**: Network status with toggle support
-- **Sound**: Volume level indicator
-- **Microphone**: Mic input level
-- **Keyboard**: Current keyboard layout
-- **GitHub**: Notification count (requires `gh` CLI)
+## Preview
 
-### Performance Graphs
-
-- **CPU**: Real-time CPU usage graph
-- **Memory**: Memory usage with pie chart visualization
-- **GPU**: GPU utilization
-- **Network Stats**: Upload/download speed graphs
-- **Storage usage**: Disk and external devices space usage indicator
-- **Disk Activity**: Read/write speed graphs
-
-### Customization
-
-- **2 Built-in Themes**: Night Shift and Day Shift
-- **Custom Colors**: Override any theme color
-- **Multiple profiles**: Save and switch between different layout configurations (via the system menu bar or AppleScript)
-- **Layout Builder**: Manage up to 2 bars (top and bottom) on your built-in display or external monitors thanks to a new "Layout builder"
-- **Widget Ordering**: Drag-and-drop to reorder widgets
-- **Per-widget Settings**: Fine-tune each widget's behavior
-- **Custom Widgets**: Create shell command-based widgets
+![image](./images/a-bar-preview.jpg)
 
 ## Backlog
 
@@ -61,7 +39,9 @@ You'll find all the bugs and list of planned features in the [GitHub backlog](ht
 
 ## Installation
 
-### From Release
+You'll find the full installation guide in the [documentation](https://www.jeantinland.com/toolbox/a-bar/documentation/installation/).
+
+Here's a quick summary:
 
 1. Download the latest release from the [Releases](https://github.com/Jean-Tinland/a-bar/releases) page
 2. Move `a-bar.app` to `/Applications`
@@ -72,78 +52,6 @@ You'll find all the bugs and list of planned features in the [GitHub backlog](ht
 
 > [!NOTE]
 > `xattr` command removes the quarantine attribute that macOS assigns to apps downloaded from the internet.
-
-### Build from Source
-
-```bash
-# Clone the repository
-git clone https://github.com/Jean-Tinland/a-bar.git
-cd a-bar
-
-# Open in Xcode
-open a-bar.xcodeproj
-
-# Build and run (⌘R)
-```
-
-## Configuration
-
-There is no need to enable yabai signals in your yabai configuration as a-bar uses the available native macOS APIs to monitor space and window changes and query yabai only when necessary. Windows title changes and window closing are triggering a-bar update via yabai signals automatically setup by a-bar on start.
-
-If needed, a-bar can be refreshed programmatically using AppleScript from the command line:
-
-```shell
-osascript -e 'tell application "a-bar" to refresh "yabai"'
-```
-
-## Layout Configuration
-
-Use the Layout Builder accessible from the settings to create and manage multiple bars on different displays. You can add, remove, and arrange widgets in each bar, as well as save different profiles for quick switching.
-
-You can switch between saved profiles using AppleScript from the command line:
-
-```shell
-osascript -e 'tell application "a-bar" to switch to profile "Work"'
-```
-
-You can retrieve the current enabled profile name with:
-
-```shell
-osascript -e 'tell application "a-bar" to get profile'
-```
-
-And list all available profiles with:
-
-```shell
-osascript -e 'tell application "a-bar" to list profiles'
-```
-
-## Widget Configuration
-
-### Native widgets
-
-Configure built-in widgets via the settings panel: each widget has its own settings view accessible in the "Widgets" section.
-
-### Custom Widgets
-
-Create shell command-based widgets with:
-
-- Custom label and icon (label will be used for targeting in AppleScript)
-- Shell command for output
-- Click action command
-- Configurable refresh interval
-
-**AppleScript Support**: Programmatically refresh, toggle, hide or show custom widgets using AppleScript from the command line, you can use:
-
-```shell
-osascript -e 'tell application "a-bar" to refresh "My Widget"'
-
-osascript -e 'tell application "a-bar" to toggle "My Widget"'
-
-osascript -e 'tell application "a-bar" to hide "My Widget"'
-
-osascript -e 'tell application "a-bar" to show "My Widget"'
-```
 
 ## Contributing
 
