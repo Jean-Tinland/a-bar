@@ -26,7 +26,6 @@ struct SpacesWidget: View {
                 let stickyWindows = yabaiService.state.stickyWindows()
                 if !stickyWindows.isEmpty {
                     StickyWindowsView(windows: stickyWindows)
-                    WidgetSeparator()
                 }
             }
             
