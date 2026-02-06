@@ -111,8 +111,8 @@ class YabaiService: ObservableObject {
         // Stop any existing timer
         stopSignalTimer()
         
-        // Create a new timer that fires every 5 seconds
-        signalTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+        // Create a new timer that fires every 20 seconds
+        signalTimer = Timer.scheduledTimer(withTimeInterval: 20.0, repeats: true) { [weak self] _ in
             self?.setupYabaiSignals()
         }
     }
@@ -151,7 +151,7 @@ class YabaiService: ObservableObject {
                 }
                 print("⚠️ Failed to register yabai signals: \(error)")
                 print("   yabai path: \(yabaiPath)")
-                print("   This is normal if yabai is not running. Will retry in 5 seconds.")
+                print("   This is normal if yabai is not running. Will retry in 20 seconds.")
             }
         }
     }
