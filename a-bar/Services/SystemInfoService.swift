@@ -48,6 +48,13 @@ class SystemInfoService: ObservableObject {
     @Published private(set) var volumes: [StorageVolume] = []
     private var timer: Timer?
 
+    /// Cached host port to avoid Mach port leaks.
+    /// Each call to mach_host_self() creates a new send right that must be
+    /// manually deallocated. Caching it once avoids leaking ~2,700 ports/hour
+    /// which would exhaust the per-task port limit after ~1.5 days, causing
+    /// system-wide input freeze (keyboard/mouse unresponsive).
+    private let hostPort: mach_port_t = mach_host_self()
+
     private init() {
         setupKeyboardLayoutObserver()
         refreshVolumes()
@@ -154,7 +161,7 @@ class SystemInfoService: ObservableObject {
         let CPU_USAGE_IDLE = 2
         let CPU_STATE_MAX = 4
 
-        kr = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &numCPUsU, &cpuInfo, &numCPU)
+        kr = host_processor_info(hostPort, PROCESSOR_CPU_LOAD_INFO, &numCPUsU, &cpuInfo, &numCPU)
         guard kr == KERN_SUCCESS else { return 0 }
         guard let cpuInfoPtr = cpuInfo else { return 0 }
 
@@ -209,7 +216,6 @@ class SystemInfoService: ObservableObject {
     private func getMemoryUsage() -> Double {
         var stats = vm_statistics64()
         var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64_data_t>.stride / MemoryLayout<integer_t>.stride)
-        let hostPort: mach_port_t = mach_host_self()
         let result = withUnsafeMutablePointer(to: &stats) {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
                 host_statistics64(hostPort, HOST_VM_INFO64, $0, &count)
