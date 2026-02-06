@@ -971,10 +971,19 @@ class SystemInfoService: ObservableObject {
     }
 
     func refreshCaffeinate() {
-        // Check if our process is still running
-        let active = caffeinateProcess?.isRunning ?? false
-        DispatchQueue.main.async {
-            self.isCaffeinateActive = active
+        // Check both our managed process and any existing system-wide caffeinate
+        DispatchQueue.global(qos: .background).async {
+            let managedActive = self.caffeinateProcess?.isRunning ?? false
+            let active: Bool
+            if managedActive {
+                active = true
+            } else {
+                // If our managed process isn't running, see if any caffeinate is already active on the system
+                active = self.isAnyCaffeinateRunning()
+            }
+            DispatchQueue.main.async {
+                self.isCaffeinateActive = active
+            }
         }
     }
 
@@ -983,7 +992,7 @@ class SystemInfoService: ObservableObject {
             caffeinateProcess?.terminate()
             caffeinateProcess = nil
             caffeinateProcessKeepAlive = nil
-            print("[Caffeinate] Deactivated.")
+            killAllCaffeinateProcesses()
         } else {
             // Kill all existing caffeinate processes before starting a new one
             killAllCaffeinateProcesses()
@@ -1061,6 +1070,25 @@ class SystemInfoService: ObservableObject {
         try? process.run()
         process.waitUntilExit()
     }
+  
+    private func isAnyCaffeinateRunning() -> Bool {
+        let process = Process()
+        process.launchPath = "/usr/bin/pgrep"
+        process.arguments = ["-x", "caffeinate"]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = nil
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+            // pgrep exits with 0 when it finds a matching process
+            return process.terminationStatus == 0
+        } catch {
+            return false
+        }
+    }
 
     private func startTimers() {
         // Ensure caffeinate is stopped on bar restart
@@ -1073,6 +1101,7 @@ class SystemInfoService: ObservableObject {
         // Battery timer
         scheduleTimer(id: "battery", interval: settings.battery.refreshInterval) { [weak self] in
             self?.refreshBattery()
+            self?.refreshCaffeinate()
         }
 
         // CPU timer
