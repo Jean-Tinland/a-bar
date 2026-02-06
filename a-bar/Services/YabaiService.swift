@@ -135,11 +135,11 @@ class YabaiService: ObservableObject {
                 
                 // Add signal for window destroyed
                 let destroyedCmd = "\(yabaiPath) -m signal --add event=window_destroyed action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-destroyed\""
-                let destroyedResult = try await ShellExecutor.run(destroyedCmd)
+                try await ShellExecutor.run(destroyedCmd)
                 
                 // Add signal for window title changed
                 let titleCmd = "\(yabaiPath) -m signal --add event=window_title_changed action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-title-changed\""
-                let titleResult = try await ShellExecutor.run(titleCmd)
+                try await ShellExecutor.run(titleCmd)
                 
                 await MainActor.run {
                     self.signalsRegistered = true

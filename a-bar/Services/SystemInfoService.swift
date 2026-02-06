@@ -1010,16 +1010,6 @@ class SystemInfoService: ObservableObject {
             process.standardError = nil
             process.qualityOfService = .userInitiated
             process.terminationHandler = { [weak self] proc in
-                let code = proc.terminationStatus
-                let reason: String
-                switch proc.terminationReason {
-                case .exit:
-                    reason = "exit"
-                case .uncaughtSignal:
-                    reason = "uncaughtSignal"
-                @unknown default:
-                    reason = "unknown"
-                }
                 DispatchQueue.main.async {
                     self?.isCaffeinateActive = false
                 }

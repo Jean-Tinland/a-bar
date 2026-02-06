@@ -1169,19 +1169,6 @@ struct CustomWidgetEditorView: View {
             return
           }
 
-          let config = UserWidgetDefinition(
-            id: widget?.id ?? UUID(),
-            name: name,
-            icon: icon,
-            command: command,
-            refreshInterval: refreshInterval,
-            clickCommand: clickCommand.isEmpty ? nil : clickCommand,
-            rightClickCommand: nil,
-            backgroundColor: backgroundColor.isEmpty ? nil : backgroundColor,
-            isActive: isActive,
-            hideIcon: hideIcon,
-            hideWhenEmpty: hideWhenEmpty
-          )
           presentationMode.wrappedValue.dismiss()
         }
         .disabled(name.isEmpty || icon.isEmpty)
@@ -1333,7 +1320,7 @@ struct AboutView: View {
         .font(.headline)
         .foregroundColor(.secondary)
 
-      Text("Version 1.1.0")
+      Text("Version 1.1.1")
         .font(.caption)
 
       Divider()

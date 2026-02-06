@@ -6,12 +6,18 @@ All notable changes to this project will be documented in this file.
 
 <!-- _No changes yet._ -->
 
+_No changes yet._
+
+## v1.1.1 - 2026-02-06
+
 - fix: remove unnecessary WidgetSeparator from SpacesWidget when displaying sticky windows
 - refactor: remove unused WidgetIcon and WidgetSeparator structs from WidgetContainer
 - refactor: add detailed comments in multiple files
 - refactor: remove debug print statements from various services and widgets
 - refactor: increase signal timer interval from 5 to 20 seconds for improved performance
 - fix: enhance `caffeinate` management by checking system-wide processes
+- fix: cache host port to prevent Mach port leaks and improve system stability
+- refactor: remove unused variable assignments in SystemInfoService and CustomWidgetEditorView
 
 ## v1.1.0 - 2026-02-04
 
