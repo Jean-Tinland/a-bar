@@ -1007,19 +1007,16 @@ class SystemInfoService: ObservableObject {
                 }
                 DispatchQueue.main.async {
                     self?.isCaffeinateActive = false
-                    print("[Caffeinate] Process exited. Code: \(code), Reason: \(reason)")
                 }
             }
             caffeinateProcess = process
             caffeinateProcessKeepAlive = process
             do {
                 try process.run()
-                print("[Caffeinate] Activated with args: \(args)")
                 DispatchQueue.main.async {
                     self.isCaffeinateActive = true
                 }
             } catch {
-                print("[Caffeinate] Failed to start: \(error)")
                 caffeinateProcess = nil
                 caffeinateProcessKeepAlive = nil
                 DispatchQueue.main.async {
@@ -1052,7 +1049,6 @@ class SystemInfoService: ObservableObject {
             if trimmed.hasPrefix("-") {
                 return [trimmed]
             } else {
-                print("[Caffeinate] Unknown option: \(option). Using default -di.")
                 return ["-di"]
             }
         }

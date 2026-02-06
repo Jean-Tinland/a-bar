@@ -175,7 +175,6 @@ class SettingsManager: ObservableObject {
       encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
       let data = try encoder.encode(settings)
       try data.write(to: filePath, options: .atomic)
-      print("✓ Settings saved to \(filePath.path)")
     } catch {
       print("⚠️ Failed to save settings to file: \(error.localizedDescription)")
     }
@@ -208,7 +207,6 @@ class SettingsManager: ObservableObject {
     do {
       let settings = try decoder.decode(ABarSettings.self, from: data)
       if let validated = validateSettings(settings) {
-        print("✓ Settings loaded from \(filePath.path)")
         return validated
       } else {
         print("⚠️ Settings validation failed - using recovery mode")
@@ -227,7 +225,6 @@ class SettingsManager: ObservableObject {
   private func tryRecoverSettings(from data: Data, filePath: URL) -> ABarSettings? {
     if let recovered = SettingsManager.recoverSettingsByMergingDefaults(with: data) {
       if let validated = validateSettings(recovered) {
-        print("✓ Settings recovered by merging with defaults")
         // Save the recovered settings back to file to prevent future errors
         saveSettingsToFile(validated)
         return validated

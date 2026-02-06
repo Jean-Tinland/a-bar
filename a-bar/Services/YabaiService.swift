@@ -145,9 +145,6 @@ class YabaiService: ObservableObject {
                     self.signalsRegistered = true
                 }
                 
-                print("✅ Yabai signals registered successfully")
-                print("   - window_destroyed: \(destroyedResult.isEmpty ? "OK" : destroyedResult)")
-                print("   - window_title_changed: \(titleResult.isEmpty ? "OK" : titleResult)")
             } catch {
                 await MainActor.run {
                     self.signalsRegistered = false

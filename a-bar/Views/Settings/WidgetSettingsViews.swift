@@ -1157,8 +1157,6 @@ struct CustomWidgetEditorView: View {
         Spacer()
 
         Button("Save") {
-          print("[CustomWidgetEditorView] Save button clicked")
-
           // Validate unique name (exclude current widget if editing)
           let nameTaken = existingWidgets.contains { existingWidget in
             existingWidget.name == name && existingWidget.id != widget?.id
@@ -1184,11 +1182,6 @@ struct CustomWidgetEditorView: View {
             hideIcon: hideIcon,
             hideWhenEmpty: hideWhenEmpty
           )
-          print(
-            "[CustomWidgetEditorView] Created widget config: name=\(config.name), id=\(config.id)")
-          print("[CustomWidgetEditorView] Calling onSave callback...")
-          onSave(config)
-          print("[CustomWidgetEditorView] onSave callback completed, dismissing...")
           presentationMode.wrappedValue.dismiss()
         }
         .disabled(name.isEmpty || icon.isEmpty)

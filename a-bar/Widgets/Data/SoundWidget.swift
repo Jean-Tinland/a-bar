@@ -34,12 +34,10 @@ struct SoundWidget: View {
         ? theme.minor.opacity(0.95) : bgColor.opacity(0.95),
       onClick: {
         if showPopper {
-          print("[SoundWidget] Click: closing popover")
           showPopper = false
           popoverManager.scheduleClose()
           OutsideClickMonitor.shared.stop()
         } else {
-          print("[SoundWidget] Click: opening popover")
           // Activate abar so the popover can render even if not focused
           NSApp.activate(ignoringOtherApps: true)
           tempVolume = Double(systemInfo.volumeLevel)
@@ -49,7 +47,6 @@ struct SoundWidget: View {
           DispatchQueue.main.async {
             OutsideClickMonitor.shared.start {
               if showPopper {
-                print("[SoundWidget] Outside click: closing popover")
                 showPopper = false
                 popoverManager.scheduleClose()
                 OutsideClickMonitor.shared.stop()
@@ -117,7 +114,6 @@ struct SoundWidget: View {
 
     func start(_ handler: @escaping () -> Void) {
       stop()
-      print("[SoundWidget] OutsideClickMonitor: start")
       self.handler = handler
       // Global monitor: catches clicks when app is inactive
       globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown])
@@ -134,12 +130,10 @@ struct SoundWidget: View {
 
     func stop() {
       if let globalMonitor = globalMonitor {
-        print("[SoundWidget] OutsideClickMonitor: stop (global)")
         NSEvent.removeMonitor(globalMonitor)
         self.globalMonitor = nil
       }
       if let localMonitor = localMonitor {
-        print("[SoundWidget] OutsideClickMonitor: stop (local)")
         NSEvent.removeMonitor(localMonitor)
         self.localMonitor = nil
       }

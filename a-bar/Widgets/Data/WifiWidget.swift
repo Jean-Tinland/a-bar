@@ -31,10 +31,8 @@ func getCurrentSSID() -> String? {
   if let interface = CWWiFiClient.shared().interface(),
     let ssid = interface.ssid()
   {
-    print("Current SSID: \(ssid)")
     return ssid
   }
-  print("Current SSID: nil")
   return nil
 }
 
