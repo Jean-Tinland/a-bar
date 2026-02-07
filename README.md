@@ -9,6 +9,9 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
 > [!CAUTION]
 > Note of caution: Even in v1.x.x, a-bar stays in early development. Expect bugs, missing features, and breaking changes. Feedback and contributions are welcome!
 
+> [!NOTE]
+> About signing and notarization: a-bar is currently not signed or notarized. This means that you will need to bypass macOS security to run it, and you may see warnings about the app being from an unidentified developer. I'm not planning to notarize the app: Apple is already collecting enough money from developers.
+
 ## Features
 
 - **Yabai Integration**: Full support for [yabai](https://github.com/koekeishiya/yabai) window manager
