@@ -60,6 +60,10 @@ Here's a quick summary:
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## AI notice
+
+I wrote this with some help from Claude Opus: it mainly worked on the interfaces with native macOS APIs, layout builder and the profile system. I'm still in the process of learning Swift and SwiftUI, so I expect some code to be unoptimized or not following best practices. If you have suggestions for improvement, please let me know!
+
 ## License
 
 GPL-3.0 license - see [LICENSE](LICENSE) for details.
