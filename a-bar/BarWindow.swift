@@ -10,7 +10,7 @@ class BarWindow: NSPanel {
   // The hosting view that contains the SwiftUI content of the bar
   private var hostingView: NSHostingView<AnyView>?
 
-  // Initialize the bar window with the appropriate screen, display index, and position (top or bottom)
+  // Initialize the bar window with the appropriate screen, display index, and position (top, bottom, left, or right)
   init(screen: NSScreen, displayIndex: Int, position: BarPosition) {
     self.barScreen = screen
     self.displayIndex = displayIndex
@@ -19,30 +19,46 @@ class BarWindow: NSPanel {
     // Calculate frame for the bar
     let settings = SettingsManager.shared.settings.global
     let barHeight = settings.barHeight
+    let barWidth = settings.barWidth
     // Padding is hardcoded for now, but can be made user-configurable if needed. It provides spacing from the screen edges.
     let padding: CGFloat = 0
 
     let screenFrame = screen.frame
 
-    let barY: CGFloat
+    let barFrame: NSRect
     switch position {
     case .top:
       // Position the bar at the top of the screen, accounting for the menu bar height and padding
-      barY = screenFrame.maxY - barHeight - padding
+      barFrame = NSRect(
+        x: screenFrame.minX + padding,
+        y: screenFrame.maxY - barHeight - padding,
+        width: screenFrame.width - (padding * 2),
+        height: barHeight
+      )
     case .bottom:
       // Position the bar at the bottom of the screen, accounting for padding
-      barY = screenFrame.minY + padding
+      barFrame = NSRect(
+        x: screenFrame.minX + padding,
+        y: screenFrame.minY + padding,
+        width: screenFrame.width - (padding * 2),
+        height: barHeight
+      )
+    case .left:
+      barFrame = NSRect(
+        x: screenFrame.minX + padding,
+        y: screenFrame.minY + padding,
+        width: barWidth,
+        height: screenFrame.height - (padding * 2)
+      )
+    case .right:
+      barFrame = NSRect(
+        x: screenFrame.maxX - barWidth - padding,
+        y: screenFrame.minY + padding,
+        width: barWidth,
+        height: screenFrame.height - (padding * 2)
+      )
     }
 
-    // The bar spans the full width of the screen, minus any horizontal padding
-    let barFrame = NSRect(
-      x: screenFrame.minX + padding,
-      y: barY,
-      width: screenFrame.width - (padding * 2),
-      height: barHeight
-    )
-    
-    //
     super.init(
       contentRect: barFrame,
       styleMask: [.borderless, .nonactivatingPanel, .hudWindow],

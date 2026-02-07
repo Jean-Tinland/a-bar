@@ -3,6 +3,7 @@ import SwiftUI
 /// Date display widget
 struct DateWidget: View {
   @EnvironmentObject var settings: SettingsManager
+  @Environment(\.widgetOrientation) var orientation
 
   @State private var currentDate = Date()
 
@@ -18,6 +19,10 @@ struct DateWidget: View {
     ThemeManager.currentTheme(for: settings.settings.theme)
   }
 
+  private var isVertical: Bool {
+    orientation == .vertical
+  }
+
   var body: some View {
     let bgColor = dateSettings.backgroundColor.color(from: theme)
     let fgColor =
@@ -29,7 +34,7 @@ struct DateWidget: View {
         ? theme.minor.opacity(0.95) : bgColor.opacity(0.95),
       onClick: openCalendar
     ) {
-      HStack(spacing: 4) {
+      AdaptiveStack(hSpacing: 4, vSpacing: 2) {
         if dateSettings.showIcon {
           Image(systemName: "calendar")
             .font(.system(size: 10))
@@ -49,7 +54,10 @@ struct DateWidget: View {
     let formatter = DateFormatter()
     formatter.locale = Locale(identifier: dateSettings.locale)
 
-    if dateSettings.shortFormat {
+    if isVertical {
+      // Compact format for vertical bars: "Thu 6"
+      formatter.dateFormat = "EE d"
+    } else if dateSettings.shortFormat {
       formatter.dateFormat = "EE, MMM d"
     } else {
       formatter.dateFormat = "EEEE, MMM d"

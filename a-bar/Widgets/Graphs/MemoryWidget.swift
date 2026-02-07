@@ -25,7 +25,7 @@ struct MemoryWidget: View {
 
   var body: some View {
     BaseWidgetView(onClick: openActivityMonitor) {
-      HStack(spacing: 4) {
+      AdaptiveStack(hSpacing: 4, vSpacing: 2) {
         PieChartView(
           usedPercentage: systemInfo.memoryPressure,
           usedColor: memoryColor,

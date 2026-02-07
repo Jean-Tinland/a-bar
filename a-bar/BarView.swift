@@ -1,5 +1,11 @@
 import SwiftUI
 
+/// Orientation for widget layout
+enum WidgetOrientation {
+  case horizontal
+  case vertical
+}
+
 /// Main bar view containing all widgets arranged in sections
 struct BarView: View {
   let displayIndex: Int
@@ -25,61 +31,144 @@ struct BarView: View {
     layoutManager.barLayout(forDisplay: displayIndex, position: position)
   }
 
+  /// Whether this bar is vertical (left or right edge)
+  private var isVertical: Bool {
+    position.isVertical
+  }
+
+  /// Widget orientation based on bar position
+  private var orientation: WidgetOrientation {
+    isVertical ? .vertical : .horizontal
+  }
+
   // The body of the view constructs the layout of the bar using an HStack to arrange the left, center, and right sections. Each section contains its respective widgets, which are rendered using the WidgetContainer view. The bar's background and optional border are also applied here based on user settings.
   var body: some View {
     GeometryReader { geometry in
       let borderEnabled = globalSettings.showBorder
-      HStack(spacing: 0) {
-        // Left section
-        HStack(spacing: globalSettings.barElementGap) {
-          ForEach(leftWidgets) { widget in
-            WidgetContainer(widget: widget, displayIndex: displayIndex)
-          }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
 
-        // Center section
-        HStack(spacing: globalSettings.barElementGap) {
-          ForEach(centerWidgets) { widget in
-            WidgetContainer(widget: widget, displayIndex: displayIndex)
-          }
-        }
-
-        // Right section
-        HStack(spacing: globalSettings.barElementGap) {
-          ForEach(rightWidgets) { widget in
-            WidgetContainer(widget: widget, displayIndex: displayIndex)
-          }
-        }
-        .frame(maxWidth: .infinity, alignment: .trailing)
+      if isVertical {
+        verticalBarContent
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .background(barBackground)
+          .overlay(verticalBorderOverlay(enabled: borderEnabled))
+      } else {
+        horizontalBarContent
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .background(barBackground)
+          .overlay(horizontalBorderOverlay(enabled: borderEnabled))
       }
-      // A minimal padding is necessary on the built-in screen as it has rounded corners
-      // Without it, the content might be clipped or appear too close to the edges
-      .padding(.horizontal, 8)
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(barBackground)
-      .overlay(
-        Group {
-          if borderEnabled {
-            // Border at top for bottom bar, at bottom for top bar
-            if position == .top {
-              VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                Rectangle()
-                  .fill(theme.minor)
-                  .frame(height: 1)
-              }
-            } else {
-              VStack(spacing: 0) {
-                Rectangle()
-                  .fill(theme.minor)
-                  .frame(height: 1)
-                Spacer(minLength: 0)
-              }
-            }
-          }
-        }, alignment: position == .top ? .bottom : .top
-      )
+    }
+  }
+
+  // MARK: - Horizontal Bar Layout (Top/Bottom)
+
+  @ViewBuilder
+  private var horizontalBarContent: some View {
+    HStack(spacing: 0) {
+      // Left section
+      HStack(spacing: globalSettings.barElementGap) {
+        ForEach(leftWidgets) { widget in
+          WidgetContainer(widget: widget, displayIndex: displayIndex, orientation: orientation)
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      // Center section
+      HStack(spacing: globalSettings.barElementGap) {
+        ForEach(centerWidgets) { widget in
+          WidgetContainer(widget: widget, displayIndex: displayIndex, orientation: orientation)
+        }
+      }
+
+      // Right section
+      HStack(spacing: globalSettings.barElementGap) {
+        ForEach(rightWidgets) { widget in
+          WidgetContainer(widget: widget, displayIndex: displayIndex, orientation: orientation)
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+    .padding(.horizontal, 8)
+  }
+
+  // MARK: - Vertical Bar Layout (Left/Right)
+
+  @ViewBuilder
+  private var verticalBarContent: some View {
+    VStack(spacing: 0) {
+      // Top section (mapped from left)
+      VStack(spacing: globalSettings.barElementGap) {
+        ForEach(leftWidgets) { widget in
+          WidgetContainer(widget: widget, displayIndex: displayIndex, orientation: orientation)
+        }
+      }
+      .frame(maxWidth: .infinity)
+      .frame(maxHeight: .infinity, alignment: .top)
+
+      // Middle section (mapped from center)
+      VStack(spacing: globalSettings.barElementGap) {
+        ForEach(centerWidgets) { widget in
+          WidgetContainer(widget: widget, displayIndex: displayIndex, orientation: orientation)
+        }
+      }
+      .frame(maxWidth: .infinity)
+
+      // Bottom section (mapped from right)
+      VStack(spacing: globalSettings.barElementGap) {
+        ForEach(rightWidgets) { widget in
+          WidgetContainer(widget: widget, displayIndex: displayIndex, orientation: orientation)
+        }
+      }
+      .frame(maxWidth: .infinity)
+      .frame(maxHeight: .infinity, alignment: .bottom)
+    }
+    .padding(.vertical, 8)
+    .padding(.horizontal, 4)
+  }
+
+  // MARK: - Border Overlays
+
+  @ViewBuilder
+  private func horizontalBorderOverlay(enabled: Bool) -> some View {
+    if enabled {
+      // Border at bottom for top bar, at top for bottom bar
+      if position == .top {
+        VStack(spacing: 0) {
+          Spacer(minLength: 0)
+          Rectangle()
+            .fill(theme.minor)
+            .frame(height: 1)
+        }
+      } else {
+        VStack(spacing: 0) {
+          Rectangle()
+            .fill(theme.minor)
+            .frame(height: 1)
+          Spacer(minLength: 0)
+        }
+      }
+    }
+  }
+
+  @ViewBuilder
+  private func verticalBorderOverlay(enabled: Bool) -> some View {
+    if enabled {
+      // Border on right edge for left bar, on left edge for right bar
+      if position == .left {
+        HStack(spacing: 0) {
+          Spacer(minLength: 0)
+          Rectangle()
+            .fill(theme.minor)
+            .frame(width: 1)
+        }
+      } else {
+        HStack(spacing: 0) {
+          Rectangle()
+            .fill(theme.minor)
+            .frame(width: 1)
+          Spacer(minLength: 0)
+        }
+      }
     }
   }
 
@@ -108,6 +197,7 @@ struct BarView: View {
 struct WidgetContainer: View {
   let widget: WidgetInstance
   let displayIndex: Int
+  var orientation: WidgetOrientation = .horizontal
 
   @EnvironmentObject var settings: SettingsManager
   @EnvironmentObject var yabaiService: YabaiService
@@ -160,6 +250,59 @@ struct WidgetContainer: View {
         } else {
           EmptyView()
         }
+      }
+    }
+    .environment(\.widgetOrientation, orientation)
+  }
+}
+
+// MARK: - Widget Orientation Environment Key
+
+struct WidgetOrientationKey: EnvironmentKey {
+  static let defaultValue: WidgetOrientation = .horizontal
+}
+
+extension EnvironmentValues {
+  var widgetOrientation: WidgetOrientation {
+    get { self[WidgetOrientationKey.self] }
+    set { self[WidgetOrientationKey.self] = newValue }
+  }
+}
+
+// MARK: - Adaptive Stack for Orientation-Aware Layout
+
+/// A stack that switches between HStack and VStack based on widget orientation
+struct AdaptiveStack<Content: View>: View {
+  @Environment(\.widgetOrientation) var orientation
+
+  let horizontalSpacing: CGFloat
+  let verticalSpacing: CGFloat
+  let horizontalAlignment: VerticalAlignment
+  let verticalAlignment: HorizontalAlignment
+  @ViewBuilder let content: () -> Content
+
+  init(
+    hSpacing: CGFloat = 4,
+    vSpacing: CGFloat = 2,
+    hAlignment: VerticalAlignment = .center,
+    vAlignment: HorizontalAlignment = .center,
+    @ViewBuilder content: @escaping () -> Content
+  ) {
+    self.horizontalSpacing = hSpacing
+    self.verticalSpacing = vSpacing
+    self.horizontalAlignment = hAlignment
+    self.verticalAlignment = vAlignment
+    self.content = content
+  }
+
+  var body: some View {
+    if orientation == .vertical {
+      VStack(alignment: verticalAlignment, spacing: verticalSpacing) {
+        content()
+      }
+    } else {
+      HStack(alignment: horizontalAlignment, spacing: horizontalSpacing) {
+        content()
       }
     }
   }

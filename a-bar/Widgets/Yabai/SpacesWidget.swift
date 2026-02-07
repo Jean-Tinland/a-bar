@@ -3,9 +3,10 @@ import SwiftUI
 /// Widget displaying yabai spaces
 struct SpacesWidget: View {
     let displayIndex: Int
-    
+
     @EnvironmentObject var settings: SettingsManager
     @EnvironmentObject var yabaiService: YabaiService
+    @Environment(\.widgetOrientation) var orientation
 
     private var globalSettings: GlobalSettings {
         settings.settings.global
@@ -14,12 +15,25 @@ struct SpacesWidget: View {
     private var spacesSettings: SpacesWidgetSettings {
         settings.settings.widgets.spaces
     }
-    
+
     private var theme: ABarTheme {
         ThemeManager.currentTheme(for: settings.settings.theme)
     }
-    
+
+    private var isVertical: Bool {
+        orientation == .vertical
+    }
+
     var body: some View {
+        if isVertical {
+            verticalContent
+        } else {
+            horizontalContent
+        }
+    }
+
+    @ViewBuilder
+    private var horizontalContent: some View {
         HStack(spacing: globalSettings.barElementGap) {
             // Sticky windows section (if enabled)
             if spacesSettings.displayStickyWindowsSeparately {
@@ -28,7 +42,7 @@ struct SpacesWidget: View {
                     StickyWindowsView(windows: stickyWindows)
                 }
             }
-            
+
             // Spaces
             ForEach(filteredSpaces) { space in
                 SpaceView(
@@ -37,7 +51,35 @@ struct SpacesWidget: View {
                     currentSpaceIndex: currentSpaceIndex
                 )
             }
-            
+
+            // Create space button (requires SIP disabled)
+            if !spacesSettings.hideCreateSpaceButton {
+                CreateSpaceButton(displayIndex: displayIndex)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var verticalContent: some View {
+        VStack(spacing: globalSettings.barElementGap) {
+            // Sticky windows section (if enabled)
+            if spacesSettings.displayStickyWindowsSeparately {
+                let stickyWindows = yabaiService.state.stickyWindows()
+                if !stickyWindows.isEmpty {
+                    StickyWindowsView(windows: stickyWindows)
+                    WidgetSeparator()
+                }
+            }
+
+            // Spaces
+            ForEach(filteredSpaces) { space in
+                SpaceView(
+                    space: space,
+                    displayIndex: displayIndex,
+                    currentSpaceIndex: currentSpaceIndex
+                )
+            }
+
             // Create space button (requires SIP disabled)
             if !spacesSettings.hideCreateSpaceButton {
                 CreateSpaceButton(displayIndex: displayIndex)
@@ -89,25 +131,44 @@ struct SpacesWidget: View {
 
 struct StickyWindowsView: View {
     let windows: [YabaiWindow]
-    
+
     @EnvironmentObject var settings: SettingsManager
-    
+    @Environment(\.widgetOrientation) var orientation
+
     private var globalSettings: GlobalSettings {
         settings.settings.global
     }
-    
+
     private var theme: ABarTheme {
         ThemeManager.currentTheme(for: settings.settings.theme)
     }
-    
+
+    private var isVertical: Bool {
+        orientation == .vertical
+    }
+
     var body: some View {
-        HStack(spacing: globalSettings.barElementGap) {
-            Image(systemName: "pin.fill")
-                .font(.system(size: 8))
-                .foregroundColor(theme.minor)
-            
-            ForEach(uniqueApps, id: \.id) { window in
-                AppIconView(appName: window.app, size: 14)
+        Group {
+            if isVertical {
+                VStack(spacing: 2) {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 8))
+                        .foregroundColor(theme.minor)
+
+                    ForEach(uniqueApps, id: \.id) { window in
+                        AppIconView(appName: window.app, size: 14)
+                    }
+                }
+            } else {
+                HStack(spacing: globalSettings.barElementGap) {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 8))
+                        .foregroundColor(theme.minor)
+
+                    ForEach(uniqueApps, id: \.id) { window in
+                        AppIconView(appName: window.app, size: 14)
+                    }
+                }
             }
         }
         .padding(.horizontal, 4)
@@ -117,7 +178,7 @@ struct StickyWindowsView: View {
                 .fill(theme.mainAlt)
         )
     }
-    
+
     private var uniqueApps: [YabaiWindow] {
         var seen = Set<String>()
         return windows.filter { window in

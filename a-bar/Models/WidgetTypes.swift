@@ -149,11 +149,33 @@ enum WidgetSection: String, Codable, CaseIterable {
 enum BarPosition: String, Codable, CaseIterable {
   case top
   case bottom
+  case left
+  case right
 
   var displayName: String {
     switch self {
     case .top: return "Top"
     case .bottom: return "Bottom"
+    case .left: return "Left"
+    case .right: return "Right"
+    }
+  }
+
+  /// Whether this is a vertical bar (left or right edge)
+  var isVertical: Bool {
+    self == .left || self == .right
+  }
+
+  /// Display name for sections in vertical bars (left→top, center→middle, right→bottom)
+  func sectionDisplayName(for section: WidgetSection) -> String {
+    if isVertical {
+      switch section {
+      case .left: return "Top"
+      case .center: return "Middle"
+      case .right: return "Bottom"
+      }
+    } else {
+      return section.displayName
     }
   }
 }
@@ -244,24 +266,30 @@ struct DisplayConfiguration: Codable, Identifiable, Equatable {
   var name: String  // User-friendly name (e.g., "Built-in Display", "External Monitor")
   var topBar: SingleBarLayout?
   var bottomBar: SingleBarLayout?
+  var leftBar: SingleBarLayout?
+  var rightBar: SingleBarLayout?
 
   init(
     id: UUID = UUID(),
     displayIndex: Int,
     name: String = "Display",
     topBar: SingleBarLayout? = nil,
-    bottomBar: SingleBarLayout? = nil
+    bottomBar: SingleBarLayout? = nil,
+    leftBar: SingleBarLayout? = nil,
+    rightBar: SingleBarLayout? = nil
   ) {
     self.id = id
     self.displayIndex = displayIndex
     self.name = name
     self.topBar = topBar
     self.bottomBar = bottomBar
+    self.leftBar = leftBar
+    self.rightBar = rightBar
   }
 
   /// Check if display has any bars configured
   var hasBars: Bool {
-    topBar != nil || bottomBar != nil
+    topBar != nil || bottomBar != nil || leftBar != nil || rightBar != nil
   }
 }
 
@@ -284,6 +312,8 @@ struct MultiDisplayLayout: Codable, Equatable {
     switch position {
     case .top: return config.topBar
     case .bottom: return config.bottomBar
+    case .left: return config.leftBar
+    case .right: return config.rightBar
     }
   }
 

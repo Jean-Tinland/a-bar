@@ -40,6 +40,7 @@ func getCurrentSSID() -> String? {
 struct WifiWidget: View {
   @EnvironmentObject var settings: SettingsManager
   @EnvironmentObject var systemInfo: SystemInfoService
+  @Environment(\.widgetOrientation) var orientation
 
   private var wifiSettings: WifiWidgetSettings {
     settings.settings.widgets.wifi
@@ -55,6 +56,10 @@ struct WifiWidget: View {
 
   private var wifiInfo: WifiInfo {
     systemInfo.wifiInfo
+  }
+
+  private var isVertical: Bool {
+    orientation == .vertical
   }
 
   var body: some View {
@@ -73,14 +78,15 @@ struct WifiWidget: View {
         onClick: wifiSettings.toggleOnClick ? toggleWifi : nil,
         onRightClick: openWifiPreferences
       ) {
-        HStack(spacing: 4) {
+        AdaptiveStack(hSpacing: 4, vSpacing: 2) {
           if wifiSettings.showIcon {
             Image(systemName: wifiInfo.isActive ? "wifi" : "wifi.slash")
               .font(.system(size: 11))
               .foregroundColor(wifiInfo.isActive ? fgColor : theme.red)
           }
 
-          if !wifiSettings.hideNetworkName {
+          // In vertical mode, only show icon (hide network name)
+          if !wifiSettings.hideNetworkName && !isVertical {
             Text(displayName)
               .foregroundColor(wifiInfo.isActive ? fgColor : theme.minor)
           }

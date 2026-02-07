@@ -57,7 +57,7 @@ struct SoundWidget: View {
       },
       onRightClick: openSoundPreferences
     ) {
-      HStack(spacing: 4) {
+      AdaptiveStack(hSpacing: 4, vSpacing: 2) {
         if soundSettings.showIcon {
           Image(systemName: volumeIcon)
             .font(.system(size: 11))

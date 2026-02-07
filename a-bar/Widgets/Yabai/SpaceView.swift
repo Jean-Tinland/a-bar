@@ -5,24 +5,29 @@ struct SpaceView: View {
     let space: YabaiSpace
     let displayIndex: Int
     let currentSpaceIndex: Int
-    
+
     @EnvironmentObject var settings: SettingsManager
     @EnvironmentObject var yabaiService: YabaiService
-    
+    @Environment(\.widgetOrientation) var orientation
+
     @State private var isHovered = false
     @State private var isEditing = false
     @State private var editedLabel: String = ""
-    
+
     private var spacesSettings: SpacesWidgetSettings {
         settings.settings.widgets.spaces
     }
-    
+
     private var theme: ABarTheme {
         ThemeManager.currentTheme(for: settings.settings.theme)
     }
 
     private var globalSettings: GlobalSettings {
         settings.settings.global
+    }
+
+    private var isVertical: Bool {
+        orientation == .vertical
     }
 
     private func settingsFont(scaledBy factor: Double = 1.0, weight: Font.Weight? = nil, design: Font.Design? = nil) -> Font {
@@ -38,37 +43,24 @@ struct SpaceView: View {
         }
         return .custom(globalSettings.fontName, size: size)
     }
-    
+
     private var isFocused: Bool {
         space.hasFocus
     }
-    
+
     private var isVisible: Bool {
         space.isVisible
     }
-    
+
     var body: some View {
-        HStack(spacing: 4) {
-            // Space label
-            if isEditing {
-                TextField("", text: $editedLabel, onCommit: saveLabel)
-                    .textFieldStyle(.plain)
-                    .font(settingsFont(scaledBy: 1.0, weight: .medium))
-                    .foregroundColor(theme.foreground)
-                    .frame(width: CGFloat(max(1, editedLabel.count)) * 12)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+        Group {
+            if isVertical {
+                verticalContent
             } else {
-                Text(space.displayLabel)
-                    .font(settingsFont(scaledBy: 1.0, weight: .medium))
-                    .foregroundColor(labelColor)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                horizontalContent
             }
-            // Opened apps icons
-            OpenedAppsView(space: space, displayIndex: displayIndex)
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, isVertical ? 4 : 8)
         .padding(.vertical, 4)
         .background(spaceBackground)
         .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -90,6 +82,42 @@ struct SpaceView: View {
         }
         .contextMenu {
             spaceContextMenu
+        }
+    }
+
+    @ViewBuilder
+    private var horizontalContent: some View {
+        HStack(spacing: 4) {
+            spaceLabel
+            OpenedAppsView(space: space, displayIndex: displayIndex)
+        }
+    }
+
+    @ViewBuilder
+    private var verticalContent: some View {
+        VStack(spacing: 2) {
+            spaceLabel
+            // In vertical mode, show compact app icons or hide them
+            OpenedAppsView(space: space, displayIndex: displayIndex)
+        }
+    }
+
+    @ViewBuilder
+    private var spaceLabel: some View {
+        if isEditing {
+            TextField("", text: $editedLabel, onCommit: saveLabel)
+                .textFieldStyle(.plain)
+                .font(settingsFont(scaledBy: 1.0, weight: .medium))
+                .foregroundColor(theme.foreground)
+                .frame(width: CGFloat(max(1, editedLabel.count)) * 12)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        } else {
+            Text(space.displayLabel)
+                .font(settingsFont(scaledBy: 1.0, weight: .medium))
+                .foregroundColor(labelColor)
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
     }
     

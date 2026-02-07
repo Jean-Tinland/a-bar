@@ -3,22 +3,27 @@ import SwiftUI
 /// Weather widget showing current conditions
 struct WeatherWidget: View {
     @EnvironmentObject var settings: SettingsManager
-    
+    @Environment(\.widgetOrientation) var orientation
+
     @State private var weatherData: WeatherData?
     @State private var lastWeatherData: WeatherData?
     @State private var isLoading = true
     @State private var location: String = ""
-    
+
     private var weatherSettings: WeatherWidgetSettings {
         settings.settings.widgets.weather
     }
-    
+
     private var theme: ABarTheme {
         ThemeManager.currentTheme(for: settings.settings.theme)
     }
 
     private var globalSettings: GlobalSettings {
         settings.settings.global
+    }
+
+    private var isVertical: Bool {
+        orientation == .vertical
     }
 
     private func settingsFont(scaledBy factor: Double = 1.0, weight: Font.Weight? = nil, design: Font.Design? = nil) -> Font {
@@ -34,7 +39,7 @@ struct WeatherWidget: View {
         }
         return .custom(globalSettings.fontName, size: size)
     }
-    
+
     var body: some View {
         BaseWidgetView(onRightClick: refreshWeather) {
             if isLoading {
@@ -42,22 +47,23 @@ struct WeatherWidget: View {
                     .scaleEffect(0.5)
                     .frame(width: 16, height: 16)
             } else if let data = (weatherData ?? lastWeatherData) {
-                HStack(spacing: 4) {
+                AdaptiveStack(hSpacing: 4, vSpacing: 2) {
                     if weatherSettings.showIcon {
                         weatherIcon(for: data.description, atNight: data.isNight)
                     }
-                    
+
                     Text(temperatureString(weatherSettings.unit == .fahrenheit ? data.temperatureF : data.temperatureC))
                         .foregroundColor(theme.foreground)
-                    
-                    if !weatherSettings.hideLocation {
+
+                    // Hide location in vertical mode
+                    if !weatherSettings.hideLocation && !isVertical {
                             Text(location.truncated(to: 15))
                                 .font(settingsFont(scaledBy: 0.75))
                                 .foregroundColor(theme.minor)
                     }
                 }
             } else {
-                HStack(spacing: 4) {
+                AdaptiveStack(hSpacing: 4, vSpacing: 2) {
                     if weatherSettings.showIcon {
                         Image(systemName: "cloud.fill")
                             .font(.system(size: 10))

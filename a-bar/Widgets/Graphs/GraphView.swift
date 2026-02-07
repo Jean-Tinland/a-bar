@@ -8,6 +8,7 @@ struct GraphView: View {
     let lineColor: Color
     let showLabels: Bool
     let labelPrefix: String
+    let vertical: Bool  // When true, draws values from bottom to top
 
     @EnvironmentObject var settings: SettingsManager
 
@@ -39,7 +40,8 @@ struct GraphView: View {
         fillColor: Color = .blue,
         lineColor: Color = .blue,
         showLabels: Bool = false,
-        labelPrefix: String = ""
+        labelPrefix: String = "",
+        vertical: Bool = false
     ) {
         self.values = values
         self.maxValue = maxValue
@@ -47,6 +49,7 @@ struct GraphView: View {
         self.lineColor = lineColor
         self.showLabels = showLabels
         self.labelPrefix = labelPrefix
+        self.vertical = vertical
     }
 
     var body: some View {
@@ -56,47 +59,11 @@ struct GraphView: View {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(theme.minor.opacity(0.2))
 
-                // Graph fill
-                Path { path in
-                    guard !values.isEmpty else { return }
-
-                    let width = geometry.size.width
-                    let height = geometry.size.height
-                    let stepX = width / CGFloat(max(1, values.count - 1))
-
-                    path.move(to: CGPoint(x: 0, y: height))
-
-                    for (index, value) in values.enumerated() {
-                        let x = CGFloat(index) * stepX
-                        let y = height - (CGFloat(value / maxValue) * height)
-                        path.addLine(to: CGPoint(x: x, y: y))
-                    }
-
-                    path.addLine(to: CGPoint(x: width, y: height))
-                    path.closeSubpath()
+                if vertical {
+                    verticalGraphContent(geometry: geometry)
+                } else {
+                    horizontalGraphContent(geometry: geometry)
                 }
-                .fill(fillColor.opacity(0.3))
-
-                // Graph line
-                Path { path in
-                    guard !values.isEmpty else { return }
-
-                    let width = geometry.size.width
-                    let height = geometry.size.height
-                    let stepX = width / CGFloat(max(1, values.count - 1))
-
-                    for (index, value) in values.enumerated() {
-                        let x = CGFloat(index) * stepX
-                        let y = height - (CGFloat(value / maxValue) * height)
-
-                        if index == 0 {
-                            path.move(to: CGPoint(x: x, y: y))
-                        } else {
-                            path.addLine(to: CGPoint(x: x, y: y))
-                        }
-                    }
-                }
-                .stroke(lineColor, lineWidth: 1)
 
                 // Current value label
                 if showLabels, let lastValue = values.last {
@@ -106,10 +73,103 @@ struct GraphView: View {
                         .padding(1)
                         .background(theme.background.opacity(0.7))
                         .cornerRadius(2)
-                        .position(x: geometry.size.width, y: 6)
+                        .position(
+                            x: vertical ? geometry.size.width / 2 : geometry.size.width,
+                            y: vertical ? 10 : 6
+                        )
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func horizontalGraphContent(geometry: GeometryProxy) -> some View {
+        // Graph fill (horizontal: left to right, newest on right)
+        Path { path in
+            guard !values.isEmpty else { return }
+
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let stepX = width / CGFloat(max(1, values.count - 1))
+
+            path.move(to: CGPoint(x: 0, y: height))
+
+            for (index, value) in values.enumerated() {
+                let x = CGFloat(index) * stepX
+                let y = height - (CGFloat(value / maxValue) * height)
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+
+            path.addLine(to: CGPoint(x: width, y: height))
+            path.closeSubpath()
+        }
+        .fill(fillColor.opacity(0.3))
+
+        // Graph line
+        Path { path in
+            guard !values.isEmpty else { return }
+
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let stepX = width / CGFloat(max(1, values.count - 1))
+
+            for (index, value) in values.enumerated() {
+                let x = CGFloat(index) * stepX
+                let y = height - (CGFloat(value / maxValue) * height)
+
+                if index == 0 {
+                    path.move(to: CGPoint(x: x, y: y))
+                } else {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
+        }
+        .stroke(lineColor, lineWidth: 1)
+    }
+
+    @ViewBuilder
+    private func verticalGraphContent(geometry: GeometryProxy) -> some View {
+        // Graph fill (vertical: bottom to top, newest on top)
+        Path { path in
+            guard !values.isEmpty else { return }
+
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let stepY = height / CGFloat(max(1, values.count - 1))
+
+            path.move(to: CGPoint(x: 0, y: height))
+
+            for (index, value) in values.enumerated() {
+                let y = height - (CGFloat(index) * stepY)
+                let x = CGFloat(value / maxValue) * width
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+
+            path.addLine(to: CGPoint(x: 0, y: 0))
+            path.closeSubpath()
+        }
+        .fill(fillColor.opacity(0.3))
+
+        // Graph line
+        Path { path in
+            guard !values.isEmpty else { return }
+
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let stepY = height / CGFloat(max(1, values.count - 1))
+
+            for (index, value) in values.enumerated() {
+                let y = height - (CGFloat(index) * stepY)
+                let x = CGFloat(value / maxValue) * width
+
+                if index == 0 {
+                    path.move(to: CGPoint(x: x, y: y))
+                } else {
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
+        }
+        .stroke(lineColor, lineWidth: 1)
     }
 }
 

@@ -193,6 +193,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         barWindows[key] = barWindow
         barWindow.makeKeyAndOrderFront(nil)
       }
+
+      // Create left bar if configured
+      if displayConfig.leftBar != nil {
+        let key = BarWindowKey(displayIndex: displayIndex, position: .left)
+        let barWindow = BarWindow(
+          screen: screen,
+          displayIndex: displayIndex,
+          position: .left
+        )
+        barWindows[key] = barWindow
+        barWindow.makeKeyAndOrderFront(nil)
+      }
+
+      // Create right bar if configured
+      if displayConfig.rightBar != nil {
+        let key = BarWindowKey(displayIndex: displayIndex, position: .right)
+        let barWindow = BarWindow(
+          screen: screen,
+          displayIndex: displayIndex,
+          position: .right
+        )
+        barWindows[key] = barWindow
+        barWindow.makeKeyAndOrderFront(nil)
+      }
     }
   }
   

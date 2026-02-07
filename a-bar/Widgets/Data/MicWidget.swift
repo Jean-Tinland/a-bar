@@ -28,7 +28,7 @@ struct MicWidget: View {
         ? theme.minor.opacity(0.95) : bgColor.opacity(0.95),
       onRightClick: openSoundPreferences
     ) {
-      HStack(spacing: 4) {
+      AdaptiveStack(hSpacing: 4, vSpacing: 2) {
         if micSettings.showIcon {
           Image(systemName: micIcon)
             .font(.system(size: 11))
