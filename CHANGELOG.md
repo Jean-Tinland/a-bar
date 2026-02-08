@@ -6,7 +6,8 @@ All notable changes to this project will be documented in this file.
 
 <!-- _No changes yet._ -->
 
-_No changes yet._
+- feat: add microphone control functionality in SystemInfoService
+- feat: enhance MicWidget with popover functionality for microphone control
 
 ## v1.1.1 - 2026-02-06
 
