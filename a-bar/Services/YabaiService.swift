@@ -127,11 +127,24 @@ class YabaiService: ObservableObject {
     private func setupYabaiSignals() {
         Task {
             do {
-                // First check if yabai is accessible
-                _ = try await ShellExecutor.run("\(yabaiPath) -m query --spaces")
-                
-                // Remove any existing signals first
-                await removeYabaiSignals()
+
+                // Check if yabai is running by trying to list signals
+                let output = try await ShellExecutor.run("\(yabaiPath) -m signal --list")
+                let yabaiSignals = try JSONDecoder().decode([YabaiSignal].self, from: Data(output.utf8))
+
+                // Check if our signals are already registered
+                let hasDestroyedSignal = yabaiSignals.contains { $0.label == "abar-window-destroyed" }
+                let hasTitleSignal = yabaiSignals.contains { $0.label == "abar-window-title-changed" }
+                let hasFocusSignal = yabaiSignals.contains { $0.label == "abar-window-focused" }
+
+                print("Yabai signals: \(yabaiSignals.map { $0.label })")
+
+                if hasDestroyedSignal && hasTitleSignal && hasFocusSignal {
+                    await MainActor.run {
+                        self.signalsRegistered = true
+                    }
+                    return
+                }
                 
                 // Add signal for window destroyed
                 let destroyedCmd = "\(yabaiPath) -m signal --add event=window_destroyed action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-destroyed\""
@@ -140,6 +153,10 @@ class YabaiService: ObservableObject {
                 // Add signal for window title changed
                 let titleCmd = "\(yabaiPath) -m signal --add event=window_title_changed action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-title-changed\""
                 try await ShellExecutor.run(titleCmd)
+              
+                // Add signal for window focus changed
+                let focusCmd = "\(yabaiPath) -m signal --add event=window_focused action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-focused\""
+                try await ShellExecutor.run(focusCmd)
                 
                 await MainActor.run {
                     self.signalsRegistered = true
@@ -161,6 +178,7 @@ class YabaiService: ObservableObject {
         do {
             _ = try? await ShellExecutor.run("\(yabaiPath) -m signal --remove abar-window-destroyed")
             _ = try? await ShellExecutor.run("\(yabaiPath) -m signal --remove abar-window-title-changed")
+            _ = try? await ShellExecutor.run("\(yabaiPath) -m signal --remove abar-window-focused")
         }
     }
 

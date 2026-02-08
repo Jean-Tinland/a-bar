@@ -232,3 +232,12 @@ struct YabaiState: Equatable {
     }
 }
 
+struct YabaiSignal: Codable, Equatable {
+    let index: Int
+    let label: String
+    let app: String
+    let title: String
+    let active: Bool?
+    let event: String
+    let action: String
+}
