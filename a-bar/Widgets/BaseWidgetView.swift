@@ -12,6 +12,7 @@ struct BaseWidgetView<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     @EnvironmentObject var settings: SettingsManager
+    @Environment(\.widgetOrientation) var orientation
 
     @State private var isHovered = false
 
@@ -44,6 +45,10 @@ struct BaseWidgetView<Content: View>: View {
         settings.settings.global
     }
 
+    private var isVertical: Bool {
+        orientation == .vertical
+    }
+
     var body: some View {
         content()
             .font(
@@ -53,11 +58,14 @@ struct BaseWidgetView<Content: View>: View {
             )
             .lineLimit(1)
             .truncationMode(.tail)
-            .fixedSize(horizontal: true, vertical: false)
-            .padding(.horizontal, noPadding ? 0 : 6)
+            .multilineTextAlignment(isVertical ? .center : .leading)
+            .fixedSize(horizontal: !isVertical, vertical: false)
+            .padding(.horizontal, noPadding ? 0 : (isVertical ? 4 : 6))
             .padding(.vertical, noPadding ? 0 : 4)
-            .frame(maxHeight: .infinity)
-            .frame(width: width)
+            .frame(maxHeight: isVertical ? nil : .infinity)
+            .frame(maxWidth: isVertical ? .infinity : nil)
+            .frame(width: isVertical ? nil : width)
+            .clipped()
             .background(backgroundView)
             .contentShape(Rectangle())
             .onTapGesture {
@@ -80,7 +88,8 @@ struct BaseWidgetView<Content: View>: View {
                     }
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, isVertical ? 2 : 4)
+            .padding(.horizontal, isVertical ? 2 : 0)
     }
 
     @ViewBuilder

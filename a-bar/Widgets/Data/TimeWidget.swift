@@ -3,6 +3,7 @@ import SwiftUI
 /// Time widget
 struct TimeWidget: View {
   @EnvironmentObject var settings: SettingsManager
+  @Environment(\.widgetOrientation) var orientation
 
   @State private var currentTime = Date()
 
@@ -18,6 +19,10 @@ struct TimeWidget: View {
     ThemeManager.currentTheme(for: settings.settings.theme)
   }
 
+  private var isVertical: Bool {
+    orientation == .vertical
+  }
+
   var body: some View {
     let bgColor = timeSettings.backgroundColor.color(from: theme)
     let fgColor =
@@ -30,11 +35,11 @@ struct TimeWidget: View {
       noPadding: true
     ) {
       ZStack {
-        if timeSettings.showDayProgress {
+        if timeSettings.showDayProgress && !isVertical {
           DayProgressView(progress: currentTime.dayProgress, backgroundColor: fgColor)
             .ignoresSafeArea()
         }
-        HStack(spacing: 4) {
+        AdaptiveStack(hSpacing: 4, vSpacing: 2) {
           if timeSettings.showIcon {
             TimeIconView(time: currentTime, iconColor: fgColor)
           }
@@ -53,7 +58,10 @@ struct TimeWidget: View {
   private var formattedTime: String {
     let formatter = DateFormatter()
 
-    if timeSettings.hour12 {
+    if isVertical {
+      // Compact format for vertical bars: no seconds, no AM/PM
+      formatter.dateFormat = "HH:mm"
+    } else if timeSettings.hour12 {
       formatter.dateFormat = timeSettings.showSeconds ? "h:mm:ss a" : "h:mm a"
     } else {
       formatter.dateFormat = timeSettings.showSeconds ? "HH:mm:ss" : "HH:mm"

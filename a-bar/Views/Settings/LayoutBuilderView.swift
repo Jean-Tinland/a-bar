@@ -268,6 +268,18 @@ struct DisplayRowView: View {
               .foregroundColor(.blue)
           }
 
+          if config.leftBar != nil {
+            Label("Left", systemImage: "rectangle.leadingthird.inset.filled")
+              .font(.caption2)
+              .foregroundColor(.orange)
+          }
+
+          if config.rightBar != nil {
+            Label("Right", systemImage: "rectangle.trailingthird.inset.filled")
+              .font(.caption2)
+              .foregroundColor(.purple)
+          }
+
           if !config.hasBars {
             Text("No bars configured")
               .font(.caption2)
@@ -446,6 +458,13 @@ struct DisplayConfigurationSheet: View {
 
           // Bar configurations
           VStack(spacing: 16) {
+            // Horizontal bars
+            Text("Horizontal Bars")
+              .font(.subheadline)
+              .fontWeight(.semibold)
+              .foregroundColor(.secondary)
+              .frame(maxWidth: .infinity, alignment: .leading)
+
             BarConfigurationRow(
               title: "Top Bar",
               position: .top,
@@ -460,6 +479,31 @@ struct DisplayConfigurationSheet: View {
               barLayout: displayConfig.bottomBar,
               onToggle: { toggleBar(.bottom) },
               onEdit: { editingBarPosition = .bottom }
+            )
+
+            Divider()
+
+            // Vertical bars
+            Text("Vertical Bars")
+              .font(.subheadline)
+              .fontWeight(.semibold)
+              .foregroundColor(.secondary)
+              .frame(maxWidth: .infinity, alignment: .leading)
+
+            BarConfigurationRow(
+              title: "Left Bar",
+              position: .left,
+              barLayout: displayConfig.leftBar,
+              onToggle: { toggleBar(.left) },
+              onEdit: { editingBarPosition = .left }
+            )
+
+            BarConfigurationRow(
+              title: "Right Bar",
+              position: .right,
+              barLayout: displayConfig.rightBar,
+              onToggle: { toggleBar(.right) },
+              onEdit: { editingBarPosition = .right }
             )
           }
           .padding()
@@ -503,6 +547,18 @@ struct DisplayConfigurationSheet: View {
       } else {
         config.bottomBar = nil
       }
+    case .left:
+      if config.leftBar == nil {
+        config.leftBar = SingleBarLayout()
+      } else {
+        config.leftBar = nil
+      }
+    case .right:
+      if config.rightBar == nil {
+        config.rightBar = SingleBarLayout()
+      } else {
+        config.rightBar = nil
+      }
     }
     settings.draftLayout.setConfiguration(config, forDisplay: displayIndex)
   }
@@ -529,19 +585,46 @@ struct DisplayPreviewView: View {
           )
       }
 
-      // Screen area
-      Rectangle()
-        .fill(Color.gray.opacity(0.1))
-        .overlay(
-          VStack {
-            Image(systemName: config.displayIndex == 0 ? "laptopcomputer" : "display")
-              .font(.system(size: 40))
-              .foregroundColor(.secondary)
-            Text(config.name)
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
-        )
+      // Middle row with left bar, screen area, right bar
+      HStack(spacing: 0) {
+        // Left bar indicator
+        if config.leftBar != nil {
+          Rectangle()
+            .fill(Color.orange.opacity(0.3))
+            .frame(width: 30)
+            .overlay(
+              Text("L")
+                .font(.caption2)
+                .foregroundColor(.orange)
+            )
+        }
+
+        // Screen area
+        Rectangle()
+          .fill(Color.gray.opacity(0.1))
+          .overlay(
+            VStack {
+              Image(systemName: config.displayIndex == 0 ? "laptopcomputer" : "display")
+                .font(.system(size: 40))
+                .foregroundColor(.secondary)
+              Text(config.name)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+          )
+
+        // Right bar indicator
+        if config.rightBar != nil {
+          Rectangle()
+            .fill(Color.purple.opacity(0.3))
+            .frame(width: 30)
+            .overlay(
+              Text("R")
+                .font(.caption2)
+                .foregroundColor(.purple)
+            )
+        }
+      }
 
       // Bottom bar indicator
       if config.bottomBar != nil {
@@ -579,16 +662,30 @@ struct BarConfigurationRow: View {
     return layout.left.count + layout.center.count + layout.right.count
   }
 
+  private var iconName: String {
+    switch position {
+    case .top: return "rectangle.topthird.inset.filled"
+    case .bottom: return "rectangle.bottomthird.inset.filled"
+    case .left: return "rectangle.leadingthird.inset.filled"
+    case .right: return "rectangle.trailingthird.inset.filled"
+    }
+  }
+
+  private var iconColor: Color {
+    switch position {
+    case .top: return .green
+    case .bottom: return .blue
+    case .left: return .orange
+    case .right: return .purple
+    }
+  }
+
   var body: some View {
     HStack(spacing: 12) {
       // Icon
-      Image(
-        systemName: position == .top
-          ? "rectangle.topthird.inset.filled"
-          : "rectangle.bottomthird.inset.filled"
-      )
+      Image(systemName: iconName)
       .font(.system(size: 20))
-      .foregroundColor(isEnabled ? (position == .top ? .green : .blue) : .secondary)
+      .foregroundColor(isEnabled ? iconColor : .secondary)
       .frame(width: 32)
 
       // Info
@@ -652,6 +749,19 @@ struct BarEditorSheet: View {
       forDisplay: displayIndex, position: position)
   }
 
+  /// Section labels based on bar orientation
+  private var firstSectionTitle: String {
+    position.sectionDisplayName(for: .left)
+  }
+
+  private var middleSectionTitle: String {
+    position.sectionDisplayName(for: .center)
+  }
+
+  private var lastSectionTitle: String {
+    position.sectionDisplayName(for: .right)
+  }
+
   var body: some View {
     VStack(spacing: 0) {
       // Header
@@ -686,22 +796,28 @@ struct BarEditorSheet: View {
             .font(.subheadline)
             .foregroundColor(.secondary)
 
+          if position.isVertical {
+            Text("Vertical bar: sections flow from top to bottom")
+              .font(.caption)
+              .foregroundColor(.secondary)
+          }
+
           // Bar sections
           VStack(spacing: 16) {
             WidgetSectionView(
-              title: "Left",
+              title: firstSectionTitle,
               widgets: $leftWidgets,
               onWidgetsChanged: saveLayout
             )
 
             WidgetSectionView(
-              title: "Center",
+              title: middleSectionTitle,
               widgets: $centerWidgets,
               onWidgetsChanged: saveLayout
             )
 
             WidgetSectionView(
-              title: "Right",
+              title: lastSectionTitle,
               widgets: $rightWidgets,
               onWidgetsChanged: saveLayout
             )
@@ -755,6 +871,10 @@ struct BarEditorSheet: View {
         displayConfig.topBar = layout
       case .bottom:
         displayConfig.bottomBar = layout
+      case .left:
+        displayConfig.leftBar = layout
+      case .right:
+        displayConfig.rightBar = layout
       }
 
       settings.draftLayout.setConfiguration(

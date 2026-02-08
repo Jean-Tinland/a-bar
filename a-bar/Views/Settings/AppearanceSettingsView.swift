@@ -24,6 +24,17 @@ struct AppearanceSettingsView: View {
             }
 
             HStack {
+              Text("Bar width (vertical)")
+              Spacer()
+              Slider(value: binding(\.global.barWidth), in: 40...300, step: 1)
+                .frame(width: 150)
+              TextField("", value: binding(\.global.barWidth), formatter: NumberFormatter())
+                .frame(width: 60)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+              Text("px")
+            }
+
+            HStack {
               Text("Bar padding")
               Spacer()
               TextField("", value: binding(\.global.barPadding), formatter: NumberFormatter())
