@@ -949,6 +949,110 @@ class SystemInfoService: ObservableObject {
         return muted != 0
     }
 
+    /// Set microphone input level (0.0 - 1.0) using CoreAudio and update published state.
+    @discardableResult
+    func setMicLevel(_ level: Float) -> Bool {
+        let clampedValue = min(max(level, 0.0), 1.0)
+        var didSet = false
+        DispatchQueue.global(qos: .userInitiated).async {
+            var deviceID = AudioObjectID(kAudioObjectUnknown)
+            var size = UInt32(MemoryLayout<AudioObjectID>.size)
+
+            var address = AudioObjectPropertyAddress(
+                mSelector: kAudioHardwarePropertyDefaultInputDevice,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+
+            guard AudioObjectGetPropertyData(
+                AudioObjectID(kAudioObjectSystemObject),
+                &address,
+                0,
+                nil,
+                &size,
+                &deviceID
+            ) == noErr else {
+                return
+            }
+
+            var volume = clampedValue
+            let propertySize = UInt32(MemoryLayout<Float32>.size)
+            var volumeAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyVolumeScalar,
+                mScope: kAudioDevicePropertyScopeInput,
+                mElement: kAudioObjectPropertyElementMain
+            )
+
+            var isSettable: DarwinBoolean = false
+            guard AudioObjectHasProperty(deviceID, &volumeAddress),
+                  AudioObjectIsPropertySettable(deviceID, &volumeAddress, &isSettable) == noErr,
+                  isSettable != false,
+                  AudioObjectSetPropertyData(
+                      deviceID,
+                      &volumeAddress,
+                      0,
+                      nil,
+                      propertySize,
+                      &volume
+                  ) == noErr
+            else {
+                return
+            }
+
+            didSet = true
+
+            if didSet {
+                DispatchQueue.main.async {
+                    self.micLevel = clampedValue
+                    self.isMicMuted = self.checkIfMicMuted()
+                }
+            }
+        }
+        return didSet
+    }
+
+    /// Set microphone mute state using CoreAudio and update published state.
+    func setMicMuted(_ muted: Bool) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            var defaultInputDeviceID = AudioObjectID(kAudioObjectUnknown)
+            var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
+
+            var propertyAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioHardwarePropertyDefaultInputDevice,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+
+            let status = AudioObjectGetPropertyData(
+                AudioObjectID(kAudioObjectSystemObject),
+                &propertyAddress,
+                0,
+                nil,
+                &propertySize,
+                &defaultInputDeviceID
+            )
+
+            guard status == noErr else { return }
+
+            var mutedValue: UInt32 = muted ? 1 : 0
+            propertySize = UInt32(MemoryLayout<UInt32>.size)
+
+            propertyAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyMute,
+                mScope: kAudioDevicePropertyScopeInput,
+                mElement: kAudioObjectPropertyElementMain
+            )
+
+            AudioObjectSetPropertyData(
+                defaultInputDeviceID, &propertyAddress, 0, nil, propertySize, &mutedValue)
+
+            DispatchQueue.main.async {
+                self.isMicMuted = self.checkIfMicMuted()
+                self.micLevel = self.getMicLevel()
+            }
+        }
+    }
+
     func refreshKeyboard() {
         let layout = getCurrentKeyboardLayout()
         DispatchQueue.main.async {
