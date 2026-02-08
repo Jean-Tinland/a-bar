@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 <!-- _No changes yet._ -->
 
+- fix: enhance YabaiService with JSON cleanup and filtering for spaces, windows, and displays
 - feat: add microphone control functionality in SystemInfoService
 - feat: enhance MicWidget with popover functionality for microphone control
 

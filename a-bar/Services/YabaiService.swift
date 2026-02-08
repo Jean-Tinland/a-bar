@@ -187,7 +187,8 @@ class YabaiService: ObservableObject {
     func refreshSpaces() async {
         do {
             let output = try await ShellExecutor.run("\(yabaiPath) -m query --spaces")
-            let spaces = try JSONDecoder().decode([YabaiSpace].self, from: Data(output.utf8))
+            let cleanedOutput = cleanupJSON(output)
+            let spaces = try JSONDecoder().decode([YabaiSpace].self, from: Data(cleanedOutput.utf8))
             await MainActor.run {
                 self.state.spaces = spaces
                 self.isConnected = true
@@ -202,15 +203,16 @@ class YabaiService: ObservableObject {
     func refreshWindows() async {
         do {
             let output = try await ShellExecutor.run("\(yabaiPath) -m query --windows")
-            // Clean up the output (handle yabai quirks)
-            let cleanedOutput =
-                output
-                .replacingOccurrences(of: "\\\n", with: "")
-                .replacingOccurrences(of: "00000", with: "0")
+            let cleanedOutput = cleanupJSON(output)
             let windows = try JSONDecoder().decode(
                 [YabaiWindow].self, from: Data(cleanedOutput.utf8))
+            // Filter out windows with empty subroles or AXDialog subrole
+            let filteredWindows = windows.filter { window in
+                guard let subrole = window.subrole else { return false }
+                return !subrole.isEmpty && subrole != "AXDialog"
+            }
             await MainActor.run {
-                self.state.windows = windows
+                self.state.windows = filteredWindows
                 self.isConnected = true
                 self.lastError = nil
             }
@@ -223,7 +225,8 @@ class YabaiService: ObservableObject {
     func refreshDisplays() async {
         do {
             let output = try await ShellExecutor.run("\(yabaiPath) -m query --displays")
-            let displays = try JSONDecoder().decode([YabaiDisplay].self, from: Data(output.utf8))
+            let cleanedOutput = cleanupJSON(output)
+            let displays = try JSONDecoder().decode([YabaiDisplay].self, from: Data(cleanedOutput.utf8))
             await MainActor.run {
                 self.state.displays = displays
                 self.isConnected = true
@@ -297,6 +300,34 @@ class YabaiService: ObservableObject {
     }
 
     // Timer logic removed
+
+    /// Clean up JSON with escape sequences and malformed arrays
+    private func cleanupJSON(_ json: String) -> String {
+        var cleaned = json
+        
+        // Remove newline escape sequences
+        cleaned = cleaned.replacingOccurrences(of: "\\\n", with: "")
+        
+        // Fix empty arrays with commas: [,] -> []
+        cleaned = cleaned.replacingOccurrences(of: "\\[,+", with: "[", options: .regularExpression)
+        cleaned = cleaned.replacingOccurrences(of: ",+\\]", with: "]", options: .regularExpression)
+        
+        // Fix multiple consecutive commas
+        cleaned = cleaned.replacingOccurrences(of: ",+,", with: ",", options: .regularExpression)
+        
+        // Fix comma after opening bracket and before closing bracket
+        cleaned = cleaned.replacingOccurrences(of: "\\[,", with: "[", options: .regularExpression)
+        cleaned = cleaned.replacingOccurrences(of: ",\\]", with: "]", options: .regularExpression)
+        
+        // Escape backslashes then unescape quotes
+        cleaned = cleaned.replacingOccurrences(of: "\\", with: "\\\\")
+        cleaned = cleaned.replacingOccurrences(of: "\\\\\"", with: "\"")
+        
+        // Handle yabai quirks with 00000
+        cleaned = cleaned.replacingOccurrences(of: "00000", with: "0")
+        
+        return cleaned
+    }
 
     @MainActor
     private func handleError(_ error: Error) {
