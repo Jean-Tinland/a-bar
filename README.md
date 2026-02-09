@@ -20,10 +20,10 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
   - Rename, move, and manage spaces via context menu
   - Show/hide empty spaces
   - Sticky windows support
-- **AeroSpace Integration**: Full support for [AeroSpace](https://github.com/nikitabobko/AeroSpace) window manager
+  <!-- - **AeroSpace Integration**: Full support for [AeroSpace](https://github.com/nikitabobko/AeroSpace) window manager
   - Display workspaces and windows with app icons
   - Click to switch workspaces or focus windows
-  - Show/hide empty workspaces
+  - Show/hide empty workspaces -->
 - **A handful selection of widgets**: 14+ widgets for system information and performance monitoring
 - **Custom widgets**: Create your own widgets that reads data from `shell` commands or scripts
 - **Theming, customization, and profiles**
@@ -41,7 +41,7 @@ You'll find all the bugs and list of planned features in the [GitHub backlog](ht
 ## Requirements
 
 - macOS 13.0 or later
-- [yabai](https://github.com/koekeishiya/yabai) or [AeroSpace](https://github.com/nikitabobko/AeroSpace) (for window management features)
+- [yabai](https://github.com/koekeishiya/yabai) <!-- or [AeroSpace](https://github.com/nikitabobko/AeroSpace) --> (for window management features)
 - [gh CLI](https://cli.github.com/) (optional, for GitHub notifications)
 
 ## Installation
