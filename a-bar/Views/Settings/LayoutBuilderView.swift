@@ -651,6 +651,34 @@ struct BarEditorSheet: View {
     settings.draftLayout.barLayout(
       forDisplay: displayIndex, position: position)
   }
+  
+  private func findWidget(id: UUID) -> (widget: WidgetInstance, section: WidgetSection)? {
+    if let widget = leftWidgets.first(where: { $0.id == id }) {
+      return (widget, .left)
+    }
+    if let widget = centerWidgets.first(where: { $0.id == id }) {
+      return (widget, .center)
+    }
+    if let widget = rightWidgets.first(where: { $0.id == id }) {
+      return (widget, .right)
+    }
+    return nil
+  }
+  
+  private func removeWidget(id: UUID, from section: WidgetSection?) {
+    if let section = section {
+      switch section {
+      case .left: leftWidgets.removeAll { $0.id == id }
+      case .center: centerWidgets.removeAll { $0.id == id }
+      case .right: rightWidgets.removeAll { $0.id == id }
+      }
+    } else {
+      // Remove from all sections
+      leftWidgets.removeAll { $0.id == id }
+      centerWidgets.removeAll { $0.id == id }
+      rightWidgets.removeAll { $0.id == id }
+    }
+  }
 
   var body: some View {
     VStack(spacing: 0) {
@@ -690,20 +718,29 @@ struct BarEditorSheet: View {
           VStack(spacing: 16) {
             WidgetSectionView(
               title: "Left",
+              section: .left,
               widgets: $leftWidgets,
-              onWidgetsChanged: saveLayout
+              onWidgetsChanged: saveLayout,
+              findWidget: findWidget,
+              removeWidget: removeWidget
             )
 
             WidgetSectionView(
               title: "Center",
+              section: .center,
               widgets: $centerWidgets,
-              onWidgetsChanged: saveLayout
+              onWidgetsChanged: saveLayout,
+              findWidget: findWidget,
+              removeWidget: removeWidget
             )
 
             WidgetSectionView(
               title: "Right",
+              section: .right,
               widgets: $rightWidgets,
-              onWidgetsChanged: saveLayout
+              onWidgetsChanged: saveLayout,
+              findWidget: findWidget,
+              removeWidget: removeWidget
             )
           }
 
@@ -715,7 +752,7 @@ struct BarEditorSheet: View {
         .padding()
       }
     }
-    .frame(width: 650, height: 600)
+    .frame(width: 650, height: 750)
     .onAppear {
       loadLayout()
     }
@@ -765,8 +802,11 @@ struct BarEditorSheet: View {
 
 struct WidgetSectionView: View {
   let title: String
+  let section: WidgetSection
   @Binding var widgets: [WidgetInstance]
   var onWidgetsChanged: (() -> Void)? = nil
+  var findWidget: ((UUID) -> (widget: WidgetInstance, section: WidgetSection)?)? = nil
+  var removeWidget: ((UUID, WidgetSection?) -> Void)? = nil
 
   @State private var dropIndex: Int? = nil
 
@@ -802,15 +842,18 @@ struct WidgetSectionView: View {
               onChanged: onWidgetsChanged
             )
             .onDrag {
-              NSItemProvider(object: "reorder:\(index)" as NSString)
+              NSItemProvider(object: "widget:\(widget.id.uuidString)" as NSString)
             }
             .onDrop(
               of: [UTType.text, UTType.plainText],
               delegate: WidgetInstanceDropDelegate(
+                section: section,
                 widgets: $widgets,
                 currentIndex: index,
                 dropIndex: $dropIndex,
-                onWidgetsChanged: onWidgetsChanged
+                onWidgetsChanged: onWidgetsChanged,
+                findWidget: findWidget,
+                removeWidget: removeWidget
               )
             )
           }
@@ -948,10 +991,13 @@ struct WidgetInstanceRowView: View {
 }
 
 struct WidgetInstanceDropDelegate: DropDelegate {
+  let section: WidgetSection
   @Binding var widgets: [WidgetInstance]
   let currentIndex: Int
   @Binding var dropIndex: Int?
   var onWidgetsChanged: (() -> Void)?
+  var findWidget: ((UUID) -> (widget: WidgetInstance, section: WidgetSection)?)? = nil
+  var removeWidget: ((UUID, WidgetSection?) -> Void)? = nil
 
   func performDrop(info: DropInfo) -> Bool {
     let insertAt = currentIndex
@@ -974,22 +1020,34 @@ struct WidgetInstanceDropDelegate: DropDelegate {
   }
 
   private func handlePayload(_ payload: String, insertAt: Int) {
-    // Check if it's a reorder
-    if payload.hasPrefix("reorder:") {
-      let indexStr = payload.replacingOccurrences(of: "reorder:", with: "")
-      if let fromIndex = Int(indexStr), widgets.indices.contains(fromIndex) {
-        withAnimation {
-          let moved = widgets.remove(at: fromIndex)
-          let toIndex = insertAt > fromIndex ? insertAt - 1 : insertAt
-          let safeIndex = min(max(0, toIndex), widgets.count)
-          widgets.insert(moved, at: safeIndex)
+    // Check if it's a widget move (from within same section or another section)
+    if payload.hasPrefix("widget:") {
+      let idStr = payload.replacingOccurrences(of: "widget:", with: "")
+      if let id = UUID(uuidString: idStr) {
+        // Check if widget is in current section
+        if let currentIndex = widgets.firstIndex(where: { $0.id == id }) {
+          // Reorder within same section
+          withAnimation {
+            let moved = widgets.remove(at: currentIndex)
+            let toIndex = insertAt > currentIndex ? insertAt - 1 : insertAt
+            let safeIndex = min(max(0, toIndex), widgets.count)
+            widgets.insert(moved, at: safeIndex)
+          }
+        } else if let findWidget = findWidget,
+                  let (widget, sourceSection) = findWidget(id),
+                  let removeWidget = removeWidget {
+          // Move from another section
+          withAnimation {
+            removeWidget(id, sourceSection)
+            widgets.insert(widget, at: min(max(0, insertAt), widgets.count))
+          }
         }
         onWidgetsChanged?()
         return
       }
     }
 
-    // Check if it's a user widget
+    // Check if it's a user widget from the available widgets list
     if payload.hasPrefix("userWidget:") {
       let indexStr = payload.replacingOccurrences(of: "userWidget:", with: "")
       if let userWidgetIndex = Int(indexStr) {
@@ -1003,7 +1061,7 @@ struct WidgetInstanceDropDelegate: DropDelegate {
       }
     }
 
-    // Standard widget
+    // Standard widget from the available widgets list
     if let identifier = WidgetIdentifier(rawValue: payload) {
       let instance = WidgetInstance(identifier: identifier)
       widgets.insert(instance, at: min(max(0, insertAt), widgets.count))
