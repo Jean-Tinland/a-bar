@@ -134,9 +134,9 @@ struct WidgetContainer: View {
       case .wifi:
         WifiWidget()
       case .sound:
-        SoundWidget()
+        SoundWidget(position: position)
       case .mic:
-        MicWidget()
+        MicWidget(position: position)
       case .keyboard:
         KeyboardWidget()
       case .github:

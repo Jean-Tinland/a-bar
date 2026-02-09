@@ -3,6 +3,8 @@ import SwiftUI
 
 /// Microphone status widget
 struct MicWidget: View {
+  let position: BarPosition
+  
   @EnvironmentObject var settings: SettingsManager
   @EnvironmentObject var systemInfo: SystemInfoService
 
@@ -70,7 +72,7 @@ struct MicWidget: View {
     .background(
       AnchorView(
         onMake: { view in
-          popoverManager.attach(anchorView: view)
+          popoverManager.attach(anchorView: view, position: position)
 
           // Set popover content using a dedicated SwiftUI view so it keeps its own state
           let commit: (Double) -> Void = { v in
@@ -228,9 +230,11 @@ struct MicWidget: View {
     private var host: NSHostingController<AnyView>?
     private var contentProvider: (() -> AnyView)?
     private var closeWorkItem: DispatchWorkItem?
+    private var barPosition: BarPosition = .top
 
-    func attach(anchorView: NSView) {
+    func attach(anchorView: NSView, position: BarPosition) {
       self.anchorView = anchorView
+      self.barPosition = position
     }
 
     private func makePanelIfNeeded() {
@@ -276,13 +280,23 @@ struct MicWidget: View {
         let desiredSize = hostView.fittingSize
         let size = NSSize(width: max(180, desiredSize.width), height: desiredSize.height)
 
-        // compute screen position below anchor
+        // compute screen position below/above anchor based on bar position
         guard let win = anchor.window else { return }
         let rectInWindow = anchor.convert(anchor.bounds, to: win.contentView)
         let screenRect = win.convertToScreen(rectInWindow)
+        
+        // Get screen bounds to prevent drawing outside
+        guard let screen = win.screen else { return }
+        let screenFrame = screen.visibleFrame
 
-        let x = screenRect.midX - (size.width / 2)
-        let y = screenRect.minY - size.height - 6
+        // Calculate horizontal position, centered on widget but clamped to screen
+        var x = screenRect.midX - (size.width / 2)
+        x = max(screenFrame.minX + 6, min(x, screenFrame.maxX - size.width - 6))
+        
+        // Position popover below widget for top bar, above for bottom bar
+        let y = self.barPosition == .top
+          ? screenRect.minY - size.height - 6
+          : screenRect.maxY + 6
         let origin = NSPoint(x: x, y: y)
 
         panel.setFrame(NSRect(origin: origin, size: size), display: true)

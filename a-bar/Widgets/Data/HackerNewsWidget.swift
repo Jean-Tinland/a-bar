@@ -425,7 +425,14 @@ struct HackerNewsWidget: View {
                 let rectInWindow = anchor.convert(anchor.bounds, to: win.contentView)
                 let screenRect = win.convertToScreen(rectInWindow)
                 
-                let x = screenRect.maxX - size.width
+                // Get screen bounds to prevent drawing outside
+                guard let screen = win.screen else { return }
+                let screenFrame = screen.visibleFrame
+                
+                // Calculate horizontal position, right-aligned with widget but clamped to screen
+                var x = screenRect.maxX - size.width
+                x = max(screenFrame.minX + 6, min(x, screenFrame.maxX - size.width - 6))
+                
                 // Position popover below widget for top bar, above for bottom bar
                 let y = self.barPosition == .top 
                     ? screenRect.minY - size.height - 6 
