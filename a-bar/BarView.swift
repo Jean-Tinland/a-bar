@@ -33,7 +33,7 @@ struct BarView: View {
         // Left section
         HStack(spacing: globalSettings.barElementGap) {
           ForEach(leftWidgets) { widget in
-            WidgetContainer(widget: widget, displayIndex: displayIndex)
+            WidgetContainer(widget: widget, displayIndex: displayIndex, position: position)
           }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -41,14 +41,14 @@ struct BarView: View {
         // Center section
         HStack(spacing: globalSettings.barElementGap) {
           ForEach(centerWidgets) { widget in
-            WidgetContainer(widget: widget, displayIndex: displayIndex)
+            WidgetContainer(widget: widget, displayIndex: displayIndex, position: position)
           }
         }
 
         // Right section
         HStack(spacing: globalSettings.barElementGap) {
           ForEach(rightWidgets) { widget in
-            WidgetContainer(widget: widget, displayIndex: displayIndex)
+            WidgetContainer(widget: widget, displayIndex: displayIndex, position: position)
           }
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -108,6 +108,7 @@ struct BarView: View {
 struct WidgetContainer: View {
   let widget: WidgetInstance
   let displayIndex: Int
+  let position: BarPosition
 
   @EnvironmentObject var settings: SettingsManager
   @EnvironmentObject var yabaiService: YabaiService
@@ -140,6 +141,8 @@ struct WidgetContainer: View {
         KeyboardWidget()
       case .github:
         GitHubWidget()
+      case .hackerNews:
+        HackerNewsWidget(position: position)
       case .cpu:
         CPUWidget()
       case .memory:

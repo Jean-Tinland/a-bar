@@ -17,6 +17,7 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
   case mic = "mic"
   case keyboard = "keyboard"
   case github = "github"
+  case hackerNews = "hacker-news"
 
   // Graph widgets
   case cpu = "cpu"
@@ -45,6 +46,7 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
     case .mic: return "Microphone"
     case .keyboard: return "Keyboard"
     case .github: return "GitHub"
+    case .hackerNews: return "Hacker News"
     case .cpu: return "CPU"
     case .memory: return "Memory"
     case .gpu: return "GPU"
@@ -68,7 +70,8 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
     case .sound: return "speaker.wave.2"
     case .mic: return "mic"
     case .keyboard: return "keyboard"
-    case .github: return "bell"
+    case .github: return "bell"    
+    case .hackerNews: return "newspaper"
     case .cpu: return "cpu"
     case .memory: return "memorychip"
     case .gpu: return "cpu"
@@ -99,6 +102,7 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
     case .spaces: return .left(0)
     case .process: return .left(2)
     case .userWidget: return .center(0)
+    case .hackerNews: return .center(1)
     case .weather: return .right(0)
     case .netstats: return .right(1)
     case .diskActivity: return .right(2)

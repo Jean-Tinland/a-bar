@@ -471,6 +471,38 @@ struct WidgetSettings: Codable, Equatable {
   var netstats: NetstatsWidgetSettings = NetstatsWidgetSettings()
   var diskActivity: DiskActivityWidgetSettings = DiskActivityWidgetSettings()
   var storage: StorageWidgetSettings = StorageWidgetSettings()
+  var hackerNews: HackerNewsWidgetSettings = HackerNewsWidgetSettings()
+  
+  // Custom decoder to handle missing keys gracefully (for backwards compatibility)
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    
+    spaces = (try? container.decode(SpacesWidgetSettings.self, forKey: .spaces)) ?? SpacesWidgetSettings()
+    process = (try? container.decode(ProcessWidgetSettings.self, forKey: .process)) ?? ProcessWidgetSettings()
+    battery = (try? container.decode(BatteryWidgetSettings.self, forKey: .battery)) ?? BatteryWidgetSettings()
+    weather = (try? container.decode(WeatherWidgetSettings.self, forKey: .weather)) ?? WeatherWidgetSettings()
+    time = (try? container.decode(TimeWidgetSettings.self, forKey: .time)) ?? TimeWidgetSettings()
+    date = (try? container.decode(DateWidgetSettings.self, forKey: .date)) ?? DateWidgetSettings()
+    wifi = (try? container.decode(WifiWidgetSettings.self, forKey: .wifi)) ?? WifiWidgetSettings()
+    sound = (try? container.decode(SoundWidgetSettings.self, forKey: .sound)) ?? SoundWidgetSettings()
+    mic = (try? container.decode(MicWidgetSettings.self, forKey: .mic)) ?? MicWidgetSettings()
+    keyboard = (try? container.decode(KeyboardWidgetSettings.self, forKey: .keyboard)) ?? KeyboardWidgetSettings()
+    github = (try? container.decode(GitHubWidgetSettings.self, forKey: .github)) ?? GitHubWidgetSettings()
+    cpu = (try? container.decode(CPUWidgetSettings.self, forKey: .cpu)) ?? CPUWidgetSettings()
+    memory = (try? container.decode(MemoryWidgetSettings.self, forKey: .memory)) ?? MemoryWidgetSettings()
+    gpu = (try? container.decode(GPUWidgetSettings.self, forKey: .gpu)) ?? GPUWidgetSettings()
+    netstats = (try? container.decode(NetstatsWidgetSettings.self, forKey: .netstats)) ?? NetstatsWidgetSettings()
+    diskActivity = (try? container.decode(DiskActivityWidgetSettings.self, forKey: .diskActivity)) ?? DiskActivityWidgetSettings()
+    storage = (try? container.decode(StorageWidgetSettings.self, forKey: .storage)) ?? StorageWidgetSettings()
+    hackerNews = (try? container.decode(HackerNewsWidgetSettings.self, forKey: .hackerNews)) ?? HackerNewsWidgetSettings()
+  }
+  
+  init() {}
+  
+  private enum CodingKeys: String, CodingKey {
+    case spaces, process, battery, weather, time, date, wifi, sound, mic, keyboard, github
+    case cpu, memory, gpu, netstats, diskActivity, storage, hackerNews
+  }
 }
 
 struct SpacesWidgetSettings: Codable, Equatable {

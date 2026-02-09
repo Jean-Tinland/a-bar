@@ -29,6 +29,7 @@ struct SettingsView: View {
           Label("System Stats", systemImage: "chart.bar").tag(SettingsTab.systemStats)
           Label("GitHub", systemImage: "chevron.left.forwardslash.chevron.right").tag(
             SettingsTab.github)
+          Label("Hacker News", systemImage: "newspaper").tag(SettingsTab.hackerNews)
           Label("Custom", systemImage: "star").tag(SettingsTab.custom)
         }
         Section {
@@ -73,6 +74,8 @@ struct SettingsView: View {
               SystemStatsSettingsView()
             case .github:
               GitHubSettingsView()
+            case .hackerNews:
+              HackerNewsSettingsView()
             case .custom:
               CustomWidgetSettingsView()
             case .about:
@@ -123,6 +126,7 @@ enum SettingsTab: String, CaseIterable {
   case audio
   case systemStats
   case github
+  case hackerNews
   case custom
   case about
 }

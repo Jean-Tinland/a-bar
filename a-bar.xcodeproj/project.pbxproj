@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0F3AA90F2F392ED300554810 /* HackerNewsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F3AA90E2F392ED300554810 /* HackerNewsWidget.swift */; };
 		0F5602482F33707500BBEA53 /* DiskActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F5602472F33707500BBEA53 /* DiskActivityWidget.swift */; };
 		0F56024A2F338BF200BBEA53 /* Profile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F5602492F338BF200BBEA53 /* Profile.swift */; };
 		0FEC2C322F2E59FE00CDA90B /* StorageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */; };
@@ -54,19 +55,8 @@
 		E1000014 /* a-bar.sdef in Resources */ = {isa = PBXBuildFile; fileRef = E1000013 /* a-bar.sdef */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		E1000001 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 1;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
+		0F3AA90E2F392ED300554810 /* HackerNewsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HackerNewsWidget.swift; sourceTree = "<group>"; };
 		0F5602472F33707500BBEA53 /* DiskActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskActivityWidget.swift; sourceTree = "<group>"; };
 		0F5602492F338BF200BBEA53 /* Profile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Profile.swift; sourceTree = "<group>"; };
 		0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageWidget.swift; sourceTree = "<group>"; };
@@ -119,13 +109,6 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		F1000001 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		F2000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -211,6 +194,7 @@
 		G1000005B /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				0F3AA90E2F392ED300554810 /* HackerNewsWidget.swift */,
 				0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */,
 				B1000040 /* BatteryWidget.swift */,
 				B1000041 /* WeatherWidget.swift */,
@@ -326,9 +310,6 @@
 					T1000001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
-					T2000001 = {
-						CreatedOnToolsVersion = 15.0;
-					};
 				};
 			};
 			buildConfigurationList = X0000001 /* Build configuration list for PBXProject "a-bar" */;
@@ -373,6 +354,7 @@
 				A1000004 /* BarView.swift in Sources */,
 				A1000010 /* YabaiTypes.swift in Sources */,
 				A1000011 /* WidgetTypes.swift in Sources */,
+				0F3AA90F2F392ED300554810 /* HackerNewsWidget.swift in Sources */,
 				A1000012 /* Settings.swift in Sources */,
 				0FEC2C322F2E59FE00CDA90B /* StorageWidget.swift in Sources */,
 				A1000020 /* YabaiService.swift in Sources */,
@@ -409,13 +391,6 @@
 				A1000081 /* AppIconProvider.swift in Sources */,
 				A1000082 /* Theme.swift in Sources */,
 				A1000083 /* Extensions.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		S2000001 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -600,30 +575,6 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "com.jeantinland.a-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
-		Y2000001 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_HARDENED_RUNTIME = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		Y2000002 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_HARDENED_RUNTIME = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

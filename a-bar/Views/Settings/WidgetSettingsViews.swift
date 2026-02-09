@@ -707,6 +707,68 @@ struct GitHubSettingsView: View {
   }
 }
 
+struct HackerNewsSettingsView: View {
+  @EnvironmentObject var settings: SettingsManager
+
+  var body: some View {
+    Form {
+      VStack(alignment: .leading, spacing: 16) {
+        Section {
+          Toggle("Show icon", isOn: binding(\.widgets.hackerNews.showIcon))
+
+          Toggle("Show points", isOn: binding(\.widgets.hackerNews.showPoints))
+
+          HStack(spacing: 4) {
+            Text("Max title length")
+            TextField(
+              "", value: binding(\.widgets.hackerNews.maxTitleLength),
+              formatter: NumberFormatter()
+            )
+            .frame(width: 60)
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            Text("characters")
+          }
+
+          HStack(spacing: 4) {
+            Text("Refresh interval")
+            TextField(
+              "", value: binding(\.widgets.hackerNews.refreshInterval),
+              formatter: NumberFormatter()
+            )
+            .frame(width: 60)
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            Text("seconds")
+          }
+
+          HStack(spacing: 4) {
+            Text("Rotation interval")
+            TextField(
+              "", value: binding(\.widgets.hackerNews.rotationInterval),
+              formatter: NumberFormatter()
+            )
+            .frame(width: 60)
+            .textFieldStyle(RoundedBorderTextFieldStyle())
+            Text("seconds")
+          }
+
+          Text("Stories rotate automatically and clicking opens them in your browser")
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+      }
+      .padding()
+    }
+    .navigationTitle("Hacker News")
+  }
+
+  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
+    Binding(
+      get: { settings.draftSettings[keyPath: keyPath] },
+      set: { settings.draftSettings[keyPath: keyPath] = $0 }
+    )
+  }
+}
+
 struct CustomWidgetSettingsView: View {
   @EnvironmentObject var settings: SettingsManager
 
