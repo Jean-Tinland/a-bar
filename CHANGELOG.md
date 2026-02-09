@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-<!-- _No changes yet._ -->
+_No changes yet._
+
+## v1.1.2 - 2026-02-09
 
 - fix: enhance YabaiService with JSON cleanup and filtering for spaces, windows, and displays
 - feat: add Hacker News widget with customizable settings and integration
