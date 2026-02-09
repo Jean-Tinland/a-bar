@@ -43,7 +43,7 @@ struct LayoutBuilderView: View {
         editingProfileId: editingProfileId,
         onProfileSelected: { profile in
           // Load the selected profile's layout into draft for editing
-          settings.draftLayout = profile.multiDisplayLayout
+          settings.loadLayoutForEditing(profile.multiDisplayLayout)
         },
         showingNewProfileSheet: $showingNewProfileSheet,
         showingRenameProfileSheet: $showingRenameProfileSheet,
@@ -144,7 +144,7 @@ struct LayoutBuilderView: View {
       // Load the editing profile's layout into draft
       if let id = settings.editingProfileId,
          let profile = profileManager.profile(withId: id) {
-        settings.draftLayout = profile.multiDisplayLayout
+        settings.loadLayoutForEditing(profile.multiDisplayLayout)
       }
     }
     .sheet(isPresented: $showingAddDisplaySheet) {
@@ -170,7 +170,7 @@ struct LayoutBuilderView: View {
         onCreated: { profile in
           // Start editing the new profile
           settings.editingProfileId = profile.id
-          settings.draftLayout = profile.multiDisplayLayout
+          settings.loadLayoutForEditing(profile.multiDisplayLayout)
         }
       )
     }
@@ -188,7 +188,7 @@ struct LayoutBuilderView: View {
           // Switch to editing the active profile
           settings.editingProfileId = profileManager.activeProfileId
           if let profile = profileManager.activeProfile {
-            settings.draftLayout = profile.multiDisplayLayout
+            settings.loadLayoutForEditing(profile.multiDisplayLayout)
           }
         }
       }

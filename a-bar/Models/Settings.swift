@@ -63,6 +63,9 @@ class SettingsManager: ObservableObject {
   
   /// Draft layout being edited (separate from profiles)
   @Published var draftLayout: MultiDisplayLayout = .defaultLayout
+  
+  /// Track whether the layout has been modified during this session
+  private var layoutModified: Bool = false
 
   private let settingsKey = "abar-settings"
   private let userDefaults = UserDefaults.standard
@@ -124,9 +127,21 @@ class SettingsManager: ObservableObject {
       .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
       .sink { [weak self] _ in
         guard let self = self else { return }
+        self.layoutModified = true
         self.hasUnsavedChanges = true
       }
       .store(in: &cancellables)
+    
+    // Initialize draftLayout with the active profile's layout after a delay
+    // to avoid circular dependency (ProfileManager -> SettingsManager -> ProfileManager)
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self else { return }
+      if let activeProfile = ProfileManager.shared.activeProfile {
+        self.draftLayout = activeProfile.multiDisplayLayout
+        // Reset the modified flag since this is just initialization
+        self.layoutModified = false
+      }
+    }
   }
 
   func saveSettingsNow(_ settings: ABarSettings) {
@@ -137,12 +152,16 @@ class SettingsManager: ObservableObject {
   }
 
   func saveSettings() {
-    // Save the layout to the profile being edited (not necessarily the active one)
-    if let editId = editingProfileId {
-      ProfileManager.shared.updateProfileLayout(id: editId, layout: draftLayout)
-    } else if let activeId = ProfileManager.shared.activeProfile?.id {
-      // Fallback: save to active profile if no editing profile is set
-      ProfileManager.shared.updateProfileLayout(id: activeId, layout: draftLayout)
+    // Only save the layout if it was actually modified during this session
+    if layoutModified {
+      // Save the layout to the profile being edited (not necessarily the active one)
+      if let editId = editingProfileId {
+        ProfileManager.shared.updateProfileLayout(id: editId, layout: draftLayout)
+      } else if let activeId = ProfileManager.shared.activeProfile?.id {
+        // Fallback: save to active profile if no editing profile is set
+        ProfileManager.shared.updateProfileLayout(id: activeId, layout: draftLayout)
+      }
+      layoutModified = false
     }
     
     // Sync profiles from ProfileManager before saving
@@ -160,7 +179,21 @@ class SettingsManager: ObservableObject {
 
   func discardChanges() {
     draftSettings = settings
+    // Restore the layout from the active profile
+    if let activeProfile = ProfileManager.shared.activeProfile {
+      draftLayout = activeProfile.multiDisplayLayout
+    }
+    layoutModified = false
     hasUnsavedChanges = false
+  }
+  
+  /// Load a layout for editing without marking it as modified
+  func loadLayoutForEditing(_ layout: MultiDisplayLayout) {
+    draftLayout = layout
+    // Reset the modified flag since we're just loading, not editing
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { [weak self] in
+      self?.layoutModified = false
+    }
   }
 
   /// Save settings to the config file (~/.a-barrc)
@@ -646,6 +679,14 @@ struct DiskActivityWidgetSettings: Codable, Equatable {
 
 struct StorageWidgetSettings: Codable, Equatable {
   var refreshInterval: TimeInterval = 60  // 1 minute
+}
+
+struct HackerNewsWidgetSettings: Codable, Equatable {
+  var refreshInterval: TimeInterval = 600  // 10 minutes
+  var rotationInterval: TimeInterval = 20  // Rotate story every 20 seconds
+  var maxTitleLength: Int = 50
+  var showIcon: Bool = true
+  var showPoints: Bool = true
 }
 
 /// Manages the multi-display layout configuration

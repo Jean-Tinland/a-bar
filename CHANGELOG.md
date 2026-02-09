@@ -7,9 +7,11 @@ All notable changes to this project will be documented in this file.
 <!-- _No changes yet._ -->
 
 - fix: enhance YabaiService with JSON cleanup and filtering for spaces, windows, and displays
+- feat: add Hacker News widget with customizable settings and integration
 - refactor: enhance signal handling in YabaiService
 - feat: add microphone control functionality in SystemInfoService
 - feat: enhance MicWidget with popover functionality for microphone control
+- fix: prevent layout vanishing when saving other settings
 
 ## v1.1.1 - 2026-02-06
 
