@@ -148,8 +148,10 @@ class AerospaceService: ObservableObject {
                     }
             }
 
-            await MainActor.run {
-                self.state = AerospaceState(workspaces: workspaces, monitors: monitors)
+            let finalWorkspaces = workspaces
+            let finalMonitors = monitors
+            await MainActor.run { [finalWorkspaces, finalMonitors] in
+                self.state = AerospaceState(workspaces: finalWorkspaces, monitors: finalMonitors)
                 self.isConnected = true
                 self.lastError = nil
             }
@@ -186,3 +188,4 @@ class AerospaceService: ObservableObject {
         }
     }
 }
+

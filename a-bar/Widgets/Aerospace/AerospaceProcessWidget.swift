@@ -20,9 +20,6 @@ struct AerospaceProcessWidget: View {
         let userFont: Font = globalSettings.fontName.isEmpty
             ? .system(size: CGFloat(globalSettings.fontSize))
             : .custom(globalSettings.fontName, size: CGFloat(globalSettings.fontSize))
-        let userFontSmall: Font = globalSettings.fontName.isEmpty
-            ? .system(size: CGFloat(Double(globalSettings.fontSize) * 0.9))
-            : .custom(globalSettings.fontName, size: CGFloat(Double(globalSettings.fontSize) * 0.9))
 
         let state = aerospaceService.state
         let focusedWin = state.focusedWindow
