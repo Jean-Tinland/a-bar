@@ -2,38 +2,42 @@
 <!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
 <dictionary title="a-bar Terminology">
     <suite name="a-bar Suite" code="ABrS" description="Commands for controlling a-bar">
-        <command name="refresh" code="ABrSRfrW" description="Refresh a specific widget by name (custom widget name or 'yabai' for yabai widgets)">
-            <cocoa class="RefreshWidgetCommand"/>
-            <direct-parameter type="text" description="The name of the widget to refresh ('yabai' or a custom widget name)"/>
-            <result type="text" description="Success or error message"/>
+        <command name="refresh" code="ABrSRfrW"
+            description="Refresh a specific widget by name (custom widget name, 'yabai' for yabai widgets or 'aerospace' for aerospace widgets)">
+            <cocoa class="RefreshWidgetCommand" />
+            <direct-parameter type="text"
+                description="The name of the widget to refresh ('yabai', 'aerospace' or a custom widget name)" />
+            <result type="text" description="Success or error message" />
         </command>
-        <command name="toggle" code="ABrSTggl" description="Toggle visibility of a custom widget by name">
-            <cocoa class="ToggleWidgetCommand"/>
-            <direct-parameter type="text" description="The name of the custom widget to toggle"/>
-            <result type="text" description="Success or error message"/>
+        <command name="toggle" code="ABrSTggl"
+            description="Toggle visibility of a custom widget by name">
+            <cocoa class="ToggleWidgetCommand" />
+            <direct-parameter type="text" description="The name of the custom widget to toggle" />
+            <result type="text" description="Success or error message" />
         </command>
         <command name="hide" code="ABrSHide" description="Hide a custom widget by name">
-            <cocoa class="HideWidgetCommand"/>
-            <direct-parameter type="text" description="The name of the custom widget to hide"/>
-            <result type="text" description="Success or error message"/>
+            <cocoa class="HideWidgetCommand" />
+            <direct-parameter type="text" description="The name of the custom widget to hide" />
+            <result type="text" description="Success or error message" />
         </command>
         <command name="show" code="ABrSShow" description="Show a custom widget by name">
-            <cocoa class="ShowWidgetCommand"/>
-            <direct-parameter type="text" description="The name of the custom widget to show"/>
-            <result type="text" description="Success or error message"/>
+            <cocoa class="ShowWidgetCommand" />
+            <direct-parameter type="text" description="The name of the custom widget to show" />
+            <result type="text" description="Success or error message" />
         </command>
         <command name="set profile" code="ABrSSetP" description="Switch to a profile by name">
-            <cocoa class="SetProfileCommand"/>
-            <direct-parameter type="text" description="The name of the profile to switch to"/>
-            <result type="text" description="Success or error message"/>
+            <cocoa class="SetProfileCommand" />
+            <direct-parameter type="text" description="The name of the profile to switch to" />
+            <result type="text" description="Success or error message" />
         </command>
-        <command name="get profile" code="ABrSGetP" description="Get the name of the current active profile">
-            <cocoa class="GetProfileCommand"/>
-            <result type="text" description="The name of the active profile"/>
+        <command name="get profile" code="ABrSGetP"
+            description="Get the name of the current active profile">
+            <cocoa class="GetProfileCommand" />
+            <result type="text" description="The name of the active profile" />
         </command>
         <command name="list profiles" code="ABrSLstP" description="List all available profile names">
-            <cocoa class="ListProfilesCommand"/>
-            <result type="text" description="Comma-separated list of profile names"/>
+            <cocoa class="ListProfilesCommand" />
+            <result type="text" description="Comma-separated list of profile names" />
         </command>
     </suite>
 </dictionary>

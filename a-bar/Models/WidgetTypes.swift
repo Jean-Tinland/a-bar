@@ -3,9 +3,13 @@ import SwiftUI
 
 /// Unique identifier for each widget type
 enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
-  // Yabai widgets
+  // Window manager widgets (yabai)
   case spaces = "spaces"
   case process = "process"
+
+  // Window manager widgets (AeroSpace)
+  case aerospaceSpaces = "aerospace-spaces"
+  case aerospaceProcess = "aerospace-process"
 
   // Data widgets
   case battery = "battery"
@@ -35,8 +39,10 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
   /// Human-readable display name
   var displayName: String {
     switch self {
-    case .spaces: return "Spaces"
-    case .process: return "Process"
+    case .spaces: return "Spaces (yabai)"
+    case .process: return "Process (yabai)"
+    case .aerospaceSpaces: return "Spaces (AeroSpace)"
+    case .aerospaceProcess: return "Process (AeroSpace)"
     case .battery: return "Battery"
     case .weather: return "Weather"
     case .time: return "Time"
@@ -62,6 +68,8 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
     switch self {
     case .spaces: return "square.grid.2x2"
     case .process: return "app.fill"
+    case .aerospaceSpaces: return "square.grid.2x2"
+    case .aerospaceProcess: return "app.fill"
     case .battery: return "battery.100"
     case .weather: return "cloud.sun"
     case .time: return "clock"
@@ -87,6 +95,8 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
     switch self {
     case .spaces, .process:
       return .yabai
+    case .aerospaceSpaces, .aerospaceProcess:
+      return .aerospace
     case .cpu, .memory, .gpu, .netstats, .diskActivity, .storage:
       return .graph
     case .userWidget:
@@ -101,6 +111,8 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
     switch self {
     case .spaces: return .left(0)
     case .process: return .left(2)
+    case .aerospaceSpaces: return .left(0)
+    case .aerospaceProcess: return .left(2)
     case .userWidget: return .center(0)
     case .hackerNews: return .center(1)
     case .weather: return .right(0)
@@ -125,6 +137,7 @@ enum WidgetIdentifier: String, Codable, CaseIterable, Identifiable {
 /// Categories for grouping widgets
 enum WidgetCategory: String, Codable, CaseIterable {
   case yabai = "Yabai"
+  case aerospace = "AeroSpace"
   case data = "Data"
   case graph = "Graphs"
   case custom = "Custom"

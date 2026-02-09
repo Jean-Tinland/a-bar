@@ -12,6 +12,7 @@ struct ABarApp: App {
             SettingsView()
                 .environmentObject(appDelegate.settingsManager)
                 .environmentObject(appDelegate.yabaiService)
+                .environmentObject(appDelegate.aerospaceService)
                 .environmentObject(appDelegate.layoutManager)
         }
     }

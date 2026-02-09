@@ -27,6 +27,10 @@ class YabaiService: ObservableObject {
     private var screenObserver: NSObjectProtocol?
 
     private init() {
+        // Service initialized but observers not set up until start() is called
+    }
+
+    private func setupObservers() {
         // Observe macOS Space changes
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification,
@@ -75,6 +79,7 @@ class YabaiService: ObservableObject {
 
     /// Start the yabai service
     func start() {
+        setupObservers()
         refresh()
         setupYabaiSignals()
         startSignalTimer()
@@ -136,8 +141,6 @@ class YabaiService: ObservableObject {
                 let hasDestroyedSignal = yabaiSignals.contains { $0.label == "abar-window-destroyed" }
                 let hasTitleSignal = yabaiSignals.contains { $0.label == "abar-window-title-changed" }
                 let hasFocusSignal = yabaiSignals.contains { $0.label == "abar-window-focused" }
-
-                print("Yabai signals: \(yabaiSignals.map { $0.label })")
 
                 if hasDestroyedSignal && hasTitleSignal && hasFocusSignal {
                     await MainActor.run {

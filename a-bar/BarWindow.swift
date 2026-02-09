@@ -86,6 +86,7 @@ class BarWindow: NSPanel {
     )
     .environmentObject(SettingsManager.shared)
     .environmentObject(YabaiService.shared)
+    .environmentObject(AerospaceService.shared)
     .environmentObject(SystemInfoService.shared)
     .environmentObject(LayoutManager.shared)
 

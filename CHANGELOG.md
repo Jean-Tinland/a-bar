@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 <!-- _No changes yet._ -->
 
+- feat: Integrate Aerospace window manager support
 - feat: update Sound, Mic & HackerNews widgets positioning to support dynamic bar position adjustments
 - refactor: improve widget reordering widgets in the bar editor
 

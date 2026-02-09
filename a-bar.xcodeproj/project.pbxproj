@@ -11,6 +11,12 @@
 		0F5602482F33707500BBEA53 /* DiskActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F5602472F33707500BBEA53 /* DiskActivityWidget.swift */; };
 		0F56024A2F338BF200BBEA53 /* Profile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F5602492F338BF200BBEA53 /* Profile.swift */; };
 		0FEC2C322F2E59FE00CDA90B /* StorageWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */; };
+		C1000001 /* AerospaceTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000001 /* AerospaceTypes.swift */; };
+		C1000002 /* AerospaceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000002 /* AerospaceService.swift */; };
+		C1000003 /* AerospaceSpacesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000003 /* AerospaceSpacesWidget.swift */; };
+		C1000004 /* AerospaceSpaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000004 /* AerospaceSpaceView.swift */; };
+		C1000005 /* AerospaceOpenedAppsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000005 /* AerospaceOpenedAppsView.swift */; };
+		C1000006 /* AerospaceProcessWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000006 /* AerospaceProcessWidget.swift */; };
 		A1000001 /* ABarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000001 /* ABarApp.swift */; };
 		A1000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000002 /* AppDelegate.swift */; };
 		A1000003 /* BarWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000003 /* BarWindow.swift */; };
@@ -60,6 +66,12 @@
 		0F5602472F33707500BBEA53 /* DiskActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiskActivityWidget.swift; sourceTree = "<group>"; };
 		0F5602492F338BF200BBEA53 /* Profile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Profile.swift; sourceTree = "<group>"; };
 		0FEC2C312F2E59FE00CDA90B /* StorageWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageWidget.swift; sourceTree = "<group>"; };
+		C2000001 /* AerospaceTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AerospaceTypes.swift; sourceTree = "<group>"; };
+		C2000002 /* AerospaceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AerospaceService.swift; sourceTree = "<group>"; };
+		C2000003 /* AerospaceSpacesWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AerospaceSpacesWidget.swift; sourceTree = "<group>"; };
+		C2000004 /* AerospaceSpaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AerospaceSpaceView.swift; sourceTree = "<group>"; };
+		C2000005 /* AerospaceOpenedAppsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AerospaceOpenedAppsView.swift; sourceTree = "<group>"; };
+		C2000006 /* AerospaceProcessWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AerospaceProcessWidget.swift; sourceTree = "<group>"; };
 		B1000001 /* ABarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ABarApp.swift; sourceTree = "<group>"; };
 		B1000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B1000003 /* BarWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarWindow.swift; sourceTree = "<group>"; };
@@ -151,6 +163,7 @@
 			isa = PBXGroup;
 			children = (
 				0F5602492F338BF200BBEA53 /* Profile.swift */,
+				C2000001 /* AerospaceTypes.swift */,
 				B1000010 /* YabaiTypes.swift */,
 				B1000011 /* WidgetTypes.swift */,
 				B1000012 /* Settings.swift */,
@@ -162,6 +175,7 @@
 			isa = PBXGroup;
 			children = (
 				B1000020 /* YabaiService.swift */,
+				C2000002 /* AerospaceService.swift */,
 				B1000022 /* SystemInfoService.swift */,
 				B1000084 /* RefreshWidgetCommand.swift */,
 			);
@@ -173,11 +187,23 @@
 			children = (
 				B1000062 /* BaseWidgetView.swift */,
 				G1000005A /* Yabai */,
+				G1000005E /* Aerospace */,
 				G1000005B /* Data */,
 				G1000005C /* Graphs */,
 				G1000005D /* Custom */,
 			);
 			path = Widgets;
+			sourceTree = "<group>";
+		};
+		G1000005E /* Aerospace */ = {
+			isa = PBXGroup;
+			children = (
+				C2000003 /* AerospaceSpacesWidget.swift */,
+				C2000004 /* AerospaceSpaceView.swift */,
+				C2000005 /* AerospaceOpenedAppsView.swift */,
+				C2000006 /* AerospaceProcessWidget.swift */,
+			);
+			path = Aerospace;
 			sourceTree = "<group>";
 		};
 		G1000005A /* Yabai */ = {
@@ -391,6 +417,12 @@
 				A1000081 /* AppIconProvider.swift in Sources */,
 				A1000082 /* Theme.swift in Sources */,
 				A1000083 /* Extensions.swift in Sources */,
+				C1000001 /* AerospaceTypes.swift in Sources */,
+				C1000002 /* AerospaceService.swift in Sources */,
+				C1000003 /* AerospaceSpacesWidget.swift in Sources */,
+				C1000004 /* AerospaceSpaceView.swift in Sources */,
+				C1000005 /* AerospaceOpenedAppsView.swift in Sources */,
+				C1000006 /* AerospaceProcessWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

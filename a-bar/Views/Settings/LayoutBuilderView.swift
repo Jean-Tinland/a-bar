@@ -1170,8 +1170,6 @@ struct DropIndicatorView: View {
   }
 }
 
-// MARK: - Profile Views
-
 /// Profile selector view displayed at the top of LayoutBuilderView
 /// This selects which profile to EDIT, not which profile is globally active
 struct ProfileSelectorView: View {

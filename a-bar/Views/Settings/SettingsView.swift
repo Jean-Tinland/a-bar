@@ -18,6 +18,7 @@ struct SettingsView: View {
         }
         Section("Window Manager") {
           Label("Yabai", systemImage: "squares.below.rectangle").tag(SettingsTab.yabai)
+          Label("AeroSpace", systemImage: "rectangle.3.group.fill").tag(SettingsTab.aerospace)
           Label("Process", systemImage: "app.dashed").tag(SettingsTab.process)
         }
         Section("Widgets") {
@@ -58,6 +59,8 @@ struct SettingsView: View {
               LayoutBuilderView()
             case .yabai:
               YabaiSettingsView()
+            case .aerospace:
+              AerospaceSettingsView()
             case .process:
               ProcessSettingsView()
             case .battery:
@@ -118,6 +121,7 @@ enum SettingsTab: String, CaseIterable {
   case appearance
   case layout
   case yabai
+  case aerospace
   case process
   case battery
   case weather

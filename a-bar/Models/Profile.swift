@@ -105,8 +105,6 @@ class ProfileManager: ObservableObject {
     }
   }
 
-  // MARK: - Profile Switching (Menu Bar)
-
   /// Switch to a profile by ID - applies immediately to the bar
   func switchToProfile(id: UUID) -> Bool {
     guard let profile = profiles.first(where: { $0.id == id }) else {
@@ -142,8 +140,6 @@ class ProfileManager: ObservableObject {
     // Update the layout manager to refresh the bar
     LayoutManager.shared.updateLayout(profile.multiDisplayLayout)
   }
-
-  // MARK: - Profile CRUD Operations
 
   /// Create a new profile
   func createProfile(name: String, layout: MultiDisplayLayout? = nil) -> LayoutProfile {
@@ -211,8 +207,6 @@ class ProfileManager: ObservableObject {
     profiles.first { $0.id == id }
   }
 
-  // MARK: - Persistence
-
   /// Persist profiles and active profile ID to settings file
   private func persistState() {
     SettingsManager.shared.settings.profiles = profiles
@@ -231,8 +225,6 @@ class ProfileManager: ObservableObject {
     profiles.map { $0.name }
   }
 }
-
-// MARK: - Notifications
 
 extension Notification.Name {
   static let profileDidChange = Notification.Name("profileDidChange")

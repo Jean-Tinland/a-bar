@@ -25,6 +25,22 @@ struct GeneralSettingsView: View {
               launchAtLogin = getLaunchAtLogin()
             }
 
+          // Window Manager
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Window manager")
+              .font(.headline)
+            Picker("", selection: binding(\.global.windowManager)) {
+              ForEach(WindowManager.allCases) { wm in
+                Text(wm.displayName).tag(wm)
+              }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .labelsHidden()
+            Text("Select which window manager to use. yabai is the default.")
+              .font(.caption)
+              .foregroundColor(.secondary)
+          }
+
           // Yabai Path
           VStack(alignment: .leading, spacing: 4) {
             Text("Yabai binary path")
@@ -32,6 +48,17 @@ struct GeneralSettingsView: View {
             TextField("Path to yabai", text: binding(\.global.yabaiPath))
               .textFieldStyle(RoundedBorderTextFieldStyle())
             Text("Default: /opt/homebrew/bin/yabai")
+              .font(.caption)
+              .foregroundColor(.secondary)
+          }
+
+          // AeroSpace Path
+          VStack(alignment: .leading, spacing: 4) {
+            Text("AeroSpace binary path")
+              .font(.headline)
+            TextField("Path to aerospace", text: binding(\.global.aerospacePath))
+              .textFieldStyle(RoundedBorderTextFieldStyle())
+            Text("Default: /opt/homebrew/bin/aerospace")
               .font(.caption)
               .foregroundColor(.secondary)
           }

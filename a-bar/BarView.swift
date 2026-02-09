@@ -112,6 +112,7 @@ struct WidgetContainer: View {
 
   @EnvironmentObject var settings: SettingsManager
   @EnvironmentObject var yabaiService: YabaiService
+  @EnvironmentObject var aerospaceService: AerospaceService
   @EnvironmentObject var systemInfoService: SystemInfoService
 
   // The body of the WidgetContainer uses a switch statement to determine which specific widget view to render based on the widget's identifier. Each case corresponds to a different type of widget
@@ -123,6 +124,10 @@ struct WidgetContainer: View {
         SpacesWidget(displayIndex: displayIndex)
       case .process:
         ProcessWidget(displayIndex: displayIndex)
+      case .aerospaceSpaces:
+        AerospaceSpacesWidget(displayIndex: displayIndex)
+      case .aerospaceProcess:
+        AerospaceProcessWidget(displayIndex: displayIndex)
       case .battery:
         BatteryWidget()
       case .weather:

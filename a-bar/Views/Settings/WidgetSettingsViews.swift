@@ -93,6 +93,37 @@ struct YabaiSettingsView: View {
   }
 }
 
+struct AerospaceSettingsView: View {
+  @EnvironmentObject var settings: SettingsManager
+
+  var body: some View {
+    Form {
+      VStack(alignment: .leading, spacing: 16) {
+        Section {
+          Text("AeroSpace spaces & process widgets share the same settings as yabai ones (exclusions, hide empty spaces, etc.). Configure them in the \"Yabai\" and \"Process\" tabs.")
+            .font(.subheadline)
+            .foregroundColor(.secondary)
+            .padding(.bottom, 8)
+
+          Text("AeroSpace uses named workspaces (e.g., \"1\", \"2\", \"web\") instead of indexed spaces. The spaces widget will display workspace names and the apps running on each.")
+            .font(.subheadline)
+            .foregroundColor(.secondary)
+            .padding(.bottom, 8)
+
+          VStack(alignment: .leading, spacing: 8) {
+            Text("Tip").font(.headline)
+            Text("To use AeroSpace, add the \"Spaces (AeroSpace)\" and \"Process (AeroSpace)\" widgets to your layout using the Layout Builder. Make sure to set the window manager to \"AeroSpace\" in the General tab.")
+              .font(.subheadline)
+              .foregroundColor(.secondary)
+          }
+        }
+      }
+      .padding()
+    }
+    .navigationTitle("AeroSpace")
+  }
+}
+
 struct ProcessSettingsView: View {
   @EnvironmentObject var settings: SettingsManager
 

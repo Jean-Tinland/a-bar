@@ -432,8 +432,14 @@ struct GlobalSettings: Codable, Equatable {
   var showBorder: Bool = false
   var noColorInDataWidgets: Bool = false
 
+  // Window manager configuration
+  var windowManager: WindowManager = .yabai
+
   // Yabai configuration
   var yabaiPath: String = "/opt/homebrew/bin/yabai"
+
+  // AeroSpace configuration
+  var aerospacePath: String = "/opt/homebrew/bin/aerospace"
 
   // Icon appearance
   var grayscaleAppIcons: Bool = false
@@ -442,6 +448,34 @@ struct GlobalSettings: Codable, Equatable {
   var enableNotifications: Bool = true
 
   var barElementGap: CGFloat = 4  // Gap between bar elements (widgets)
+
+  // Custom decoder to handle missing windowManager key for backward compatibility
+  init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    barEnabled = try container.decodeIfPresent(Bool.self, forKey: .barEnabled) ?? true
+    launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
+    barHeight = try container.decodeIfPresent(CGFloat.self, forKey: .barHeight) ?? 34
+    fontSize = try container.decodeIfPresent(CGFloat.self, forKey: .fontSize) ?? 11
+    fontName = try container.decodeIfPresent(String.self, forKey: .fontName) ?? ""
+    barPadding = try container.decodeIfPresent(CGFloat.self, forKey: .barPadding) ?? 4
+    barCornerRadius = try container.decodeIfPresent(CGFloat.self, forKey: .barCornerRadius) ?? 6
+    showBorder = try container.decodeIfPresent(Bool.self, forKey: .showBorder) ?? false
+    noColorInDataWidgets = try container.decodeIfPresent(Bool.self, forKey: .noColorInDataWidgets) ?? false
+    windowManager = try container.decodeIfPresent(WindowManager.self, forKey: .windowManager) ?? .yabai
+    yabaiPath = try container.decodeIfPresent(String.self, forKey: .yabaiPath) ?? "/opt/homebrew/bin/yabai"
+    aerospacePath = try container.decodeIfPresent(String.self, forKey: .aerospacePath) ?? "/opt/homebrew/bin/aerospace"
+    grayscaleAppIcons = try container.decodeIfPresent(Bool.self, forKey: .grayscaleAppIcons) ?? false
+    enableNotifications = try container.decodeIfPresent(Bool.self, forKey: .enableNotifications) ?? true
+    barElementGap = try container.decodeIfPresent(CGFloat.self, forKey: .barElementGap) ?? 4
+  }
+
+  init() {}
+
+  private enum CodingKeys: String, CodingKey {
+    case barEnabled, launchAtLogin, barHeight, fontSize, fontName, barPadding, barCornerRadius
+    case showBorder, noColorInDataWidgets, windowManager, yabaiPath, aerospacePath
+    case grayscaleAppIcons, enableNotifications, barElementGap
+  }
 }
 
 /// Theme and appearance settings

@@ -27,6 +27,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   /// Yabai service for window management
   let yabaiService = YabaiService.shared
 
+  /// AeroSpace service for window management
+  let aerospaceService = AerospaceService.shared
+
   /// System info service for system metrics
   let systemInfoService = SystemInfoService.shared
 
@@ -61,6 +64,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   func applicationWillTerminate(_ notification: Notification) {
     barWindows.values.forEach { $0.close() }
+    yabaiService.stop()
+    aerospaceService.stop()
   }
 
   private func setupStatusItem() {
@@ -208,8 +213,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   private func startServices() {
-    // Start Yabai service
-    yabaiService.start()
+    // Start the appropriate window manager service based on settings
+    let windowManager = settingsManager.settings.global.windowManager
+    switch windowManager {
+    case .yabai:
+      yabaiService.start()
+    case .aerospace:
+      aerospaceService.start()
+    }
 
     // Start system info service
     systemInfoService.start()
@@ -246,8 +257,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       barWindows.removeAll()
     }
 
+    // Restart window manager services if the WM changed
+    restartWindowManagerServices(settings.global.windowManager)
+
     // Update launch at login
     updateLaunchAtLogin(settings.global.launchAtLogin)
+  }
+
+  /// Restart window manager services based on the selected WM
+  private func restartWindowManagerServices(_ windowManager: WindowManager) {
+    switch windowManager {
+    case .yabai:
+      aerospaceService.stop()
+      yabaiService.start()
+    case .aerospace:
+      yabaiService.stop()
+      aerospaceService.start()
+    }
   }
 
   // Update launch at login status using ServiceManagement framework (macOS 13+)
@@ -272,6 +298,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       let settingsView = SettingsView()
         .environmentObject(settingsManager)
         .environmentObject(yabaiService)
+        .environmentObject(aerospaceService)
         .environmentObject(layoutManager)
 
       // Create a new window for the settings and set its content to the hosting controller
@@ -292,7 +319,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   // Refresh all bar windows and services (called from menu)
   @objc private func refreshAll() {
-    yabaiService.refresh()
+    let windowManager = settingsManager.settings.global.windowManager
+    switch windowManager {
+    case .yabai:
+      yabaiService.refresh()
+    case .aerospace:
+      aerospaceService.refresh()
+    }
     systemInfoService.refresh()
     barWindows.values.forEach { $0.refresh() }
   }

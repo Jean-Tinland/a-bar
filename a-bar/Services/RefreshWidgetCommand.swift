@@ -16,6 +16,12 @@ class RefreshWidgetCommand: NSScriptCommand {
       return "ok: refreshed yabai widgets"
     }
 
+    // Check if refreshing aerospace widgets
+    if widgetName.lowercased() == "aerospace" {
+      AerospaceService.shared.refresh()
+      return "ok: refreshed aerospace widgets"
+    }
+
     // Otherwise, refresh a custom user widget
     let userWidgetManager = UserWidgetManager.shared
     let success = userWidgetManager.refreshWidget(named: widgetName)
