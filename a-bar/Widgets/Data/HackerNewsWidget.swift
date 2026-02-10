@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// Hacker News widget showing frontpage stories
 struct HackerNewsWidget: View {
@@ -10,6 +11,7 @@ struct HackerNewsWidget: View {
     @State private var currentIndex: Int = 0
     @State private var isLoading = true
     @State private var showPopover = false
+    @State private var isChevronHovered = false
     @StateObject private var popoverManager = HNPopoverManager()
     
     private var hnSettings: HackerNewsWidgetSettings {
@@ -60,6 +62,7 @@ struct HackerNewsWidget: View {
                             .font(settingsFont())
                     }
                     .buttonStyle(PlainButtonStyle())
+                  
                     .help(stories[currentIndex].title ?? "")
                     
                     if hnSettings.showPoints {
@@ -75,8 +78,24 @@ struct HackerNewsWidget: View {
                         Image(systemName: position == .top ? "chevron.down" : "chevron.up")
                             .font(.system(size: 9, weight: .semibold))
                             .foregroundColor(theme.foreground.opacity(0.6))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 4)
+                            .frame(width: 16, height: 16)
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .background(isChevronHovered ? theme.foreground.opacity(0.1) : Color.clear)
+                    .cornerRadius(4)
+                    .onHover { hovering in
+                        withAnimation(.abarFast) {
+                            isChevronHovered = hovering
+                        }
+                        if hovering {
+                            NSCursor.pointingHand.push()
+                        } else {
+                            NSCursor.pop()
+                        }
+                    }
+                  
                 }
             } else {
                 HStack(spacing: 4) {
@@ -434,8 +453,8 @@ struct HackerNewsWidget: View {
                 x = max(screenFrame.minX + 6, min(x, screenFrame.maxX - size.width - 6))
                 
                 // Position popover below widget for top bar, above for bottom bar
-                let y = self.barPosition == .top 
-                    ? screenRect.minY - size.height - 6 
+                let y = self.barPosition == .top
+                    ? screenRect.minY - size.height - 6
                     : screenRect.maxY + 6
                 let origin = NSPoint(x: x, y: y)
                 

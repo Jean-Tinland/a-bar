@@ -6,9 +6,15 @@ All notable changes to this project will be documented in this file.
 
 <!-- _No changes yet._ -->
 
-- feat: Integrate Aerospace window manager support
+- feat: integrate Aerospace window manager support
 - feat: update Sound, Mic & HackerNews widgets positioning to support dynamic bar position adjustments
+- fix: show layout mode indicator even if space is empty
 - refactor: improve widget reordering widgets in the bar editor
+- refactor: update bar separator color to use foreground opacity for improved visibility
+- refactor: update dayShift theme colors for improved contrast and consistency
+- refactor: add extra light borders to BaseWidgetView, ProcessWidget and SpaceView
+- refactor: adjust space background opacity for improved visibility
+- refactor: enhance chevron button with hover effects and tooltip in HackerNewWidget
 
 ## v1.2.0 - 2026-02-09
 
