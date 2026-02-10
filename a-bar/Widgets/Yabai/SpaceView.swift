@@ -111,13 +111,13 @@ struct SpaceView: View {
     private var spaceBackground: some View {
         if isFocused {
             RoundedRectangle(cornerRadius: 4)
-                .fill(theme.mainAlt.opacity(0.9))
+              .fill(theme.mainAlt.opacity(0.6))
         } else if isVisible {
             RoundedRectangle(cornerRadius: 4)
-                .fill(theme.mainAlt)
+                .fill(theme.mainAlt.opacity(0.45))
         } else if isHovered {
             RoundedRectangle(cornerRadius: 4)
-                .fill(theme.minor.opacity(1))
+              .fill(theme.mainAlt.opacity(0.3))
         } else {
             theme.minor
         }
