@@ -52,117 +52,121 @@ struct ProcessWidget: View {
 
         let layoutMode = currentSpace?.type.rawValue
 
+      HStack(spacing: globalSettings.barElementGap) {
+        if let layoutMode = layoutMode, processSettings.showLayoutMode {
+          Text(layoutMode)
+            .font(userFont.weight(.medium))
+            .foregroundColor(theme.foreground.opacity(0.9))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(
+              RoundedRectangle(cornerRadius: 4)
+                .fill(theme.mainAlt.opacity(0.5))
+            )
+            .overlay(
+              RoundedRectangle(cornerRadius: 4)
+                .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+            )
+        }
         if orderedWindows.isEmpty {
             // No windows: show desktop
-            HStack(spacing: 4) {
-                Image(systemName: "app.dashed")
-                    .font(userFont)
-                    .foregroundColor(theme.foreground.opacity(0.6))
-                if !processSettings.displayOnlyIcon {
-                    Text("Desktop")
-                        .font(userFont)
-                        .foregroundColor(theme.foreground.opacity(0.6))
-                }
+          HStack(spacing: globalSettings.barElementGap) {
+            Image(systemName: "app.dashed")
+              .font(userFont)
+              .foregroundColor(theme.foreground.opacity(0.6))
+            if !processSettings.displayOnlyIcon {
+              Text("Desktop")
+                .font(userFont)
+                .foregroundColor(theme.foreground.opacity(0.6))
             }
-            .padding(.horizontal, 6)
-            .padding(.leading, 4)
-            .padding(.vertical, 3)
+          }
+          .padding(.horizontal, 6)
+          .padding(.vertical, 3)
         } else {
-            HStack(spacing: globalSettings.barElementGap) {
-                if let layoutMode = layoutMode, processSettings.showLayoutMode {
-                    Text(layoutMode)
-                        .font(userFont.weight(.medium))
-                        .foregroundColor(theme.foreground.opacity(0.9))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(theme.mainAlt.opacity(0.5))
-                        )
+          ForEach(orderedWindows, id: \.id) { window in
+            if window.id == focusedWin?.id {
+                // Focused window: show icon, app name, title, and optional stack index badge on the right
+              HStack(spacing: globalSettings.barElementGap) {
+                AppIconView(appName: window.app, size: 16)
+                if !processSettings.displayOnlyIcon {
+                  VStack(alignment: .leading, spacing: -1) {
+                    Text(window.app)
+                      .font(userFont.weight(.medium))
+                      .foregroundColor(theme.foreground)
+                    if !processSettings.hideWindowTitle && !window.title.isEmpty {
+                      Text(window.title.truncated(to: 20))
+                        .font(userFont)
+                        .foregroundColor(theme.foreground.opacity(0.7))
+                    }
+                  }
                 }
-                ForEach(orderedWindows, id: \.id) { window in
-                    if window.id == focusedWin?.id {
-                        // Focused window: show icon, app name, title, and optional stack index badge on the right
-                        HStack(spacing: globalSettings.barElementGap) {
-                            AppIconView(appName: window.app, size: 16)
-                            if !processSettings.displayOnlyIcon {
-                                VStack(alignment: .leading, spacing: -1) {
-                                    Text(window.app)
-                                        .font(userFont.weight(.medium))
-                                        .foregroundColor(theme.foreground)
-                                    if !processSettings.hideWindowTitle && !window.title.isEmpty {
-                                        Text(window.title.truncated(to: 20))
-                                            .font(userFont)
-                                            .foregroundColor(theme.foreground.opacity(0.7))
-                                    }
-                                }
-                            }
-                            if let idx = window.stackIndex, idx != 0 {
-                                Text("\(idx)")
-                                    .font(userFontSmall.weight(.medium))
-                                    .foregroundColor(theme.foreground.opacity(0.9))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 4)
-                                            .fill(theme.minor.opacity(0.5))
-                                    )
-                            }
-                        }
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, processSettings.hideWindowTitle || processSettings.displayOnlyIcon ? 3 : 0)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(theme.mainAlt.opacity(0.5))
-                        )
+                if let idx = window.stackIndex, idx != 0 {
+                  Text("\(idx)")
+                    .font(userFontSmall.weight(.medium))
+                    .foregroundColor(theme.foreground.opacity(0.9))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                      RoundedRectangle(cornerRadius: 4)
+                        .fill(theme.minor.opacity(0.5))
+                    )
+                }
+              }
+              .padding(.horizontal, 4)
+              .padding(.vertical, processSettings.hideWindowTitle || processSettings.displayOnlyIcon ? 3 : 0)
+              .background(
+                RoundedRectangle(cornerRadius: 4)
+                  .fill(theme.mainAlt.opacity(0.5))
+              )
               .overlay(
                 RoundedRectangle(cornerRadius: 4)
                   .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
               )
-                        .onTapGesture {
-                            focusWindow(window)
-                        }
-                        .onHover { hovering in
-                            if hovering {
-                                NSCursor.pointingHand.push()
-                            } else {
-                                NSCursor.pop()
-                            }
-                        }
-                    } else {
-                        // Non-focused window: show only icon, optionally with small stack index badge
-                        HStack(spacing: 4) {
-                            AppIconView(appName: window.app, size: 16)
-                            if let idx = window.stackIndex, idx != 0 {
-                                Text("\(idx)")
-                                    .font(userFontSmall.weight(.medium))
-                                    .foregroundColor(theme.foreground.opacity(0.85))
-                                    .padding(.horizontal, 4)
-                                    .padding(.vertical, 1)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 3)
-                                            .fill(theme.minor.opacity(0.5))
-                                    )
-                            }
-                        }
-                        .opacity(0.8)
-                        .onTapGesture {
-                            focusWindow(window)
-                        }
-                        .onHover { hovering in
-                            if hovering {
-                                NSCursor.pointingHand.push()
-                            } else {
-                                NSCursor.pop()
-                            }
-                        }
-                    }
+              .onTapGesture {
+                focusWindow(window)
+              }
+              .onHover { hovering in
+                if hovering {
+                  NSCursor.pointingHand.push()
+                } else {
+                  NSCursor.pop()
                 }
+              }
+            } else {
+                // Non-focused window: show only icon, optionally with small stack index badge
+              HStack(spacing: 4) {
+                AppIconView(appName: window.app, size: 16)
+                if let idx = window.stackIndex, idx != 0 {
+                  Text("\(idx)")
+                    .font(userFontSmall.weight(.medium))
+                    .foregroundColor(theme.foreground.opacity(0.85))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(
+                      RoundedRectangle(cornerRadius: 3)
+                        .fill(theme.minor.opacity(0.5))
+                    )
+                }
+              }
+              .opacity(0.8)
+              .onTapGesture {
+                focusWindow(window)
+              }
+              .onHover { hovering in
+                if hovering {
+                  NSCursor.pointingHand.push()
+                } else {
+                  NSCursor.pop()
+                }
+              }
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
+          }
         }
+      }
+      .padding(.horizontal, 6)
+      .padding(.vertical, 3)
     }
+    
     
     private var focusedWindow: YabaiWindow? {
         let state = yabaiService.state
