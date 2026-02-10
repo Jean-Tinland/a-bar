@@ -66,13 +66,13 @@ struct BarView: View {
               VStack(spacing: 0) {
                 Spacer(minLength: 0)
                 Rectangle()
-                  .fill(theme.minor)
+                  .fill(theme.foreground.opacity(0.1))
                   .frame(height: 1)
               }
             } else {
               VStack(spacing: 0) {
                 Rectangle()
-                  .fill(theme.minor)
+                  .fill(theme.foreground.opacity(0.1))
                   .frame(height: 1)
                 Spacer(minLength: 0)
               }
