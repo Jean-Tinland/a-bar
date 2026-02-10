@@ -58,6 +58,10 @@ struct BaseWidgetView<Content: View>: View {
             .padding(.vertical, noPadding ? 0 : 4)
             .frame(maxHeight: .infinity)
             .frame(width: width)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                  .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+            )
             .background(backgroundView)
             .contentShape(Rectangle())
             .onTapGesture {

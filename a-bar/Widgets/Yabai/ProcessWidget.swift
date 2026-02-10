@@ -115,6 +115,10 @@ struct ProcessWidget: View {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(theme.mainAlt.opacity(0.5))
                         )
+              .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                  .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+              )
                         .onTapGesture {
                             focusWindow(window)
                         }

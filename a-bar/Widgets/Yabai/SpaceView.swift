@@ -71,6 +71,10 @@ struct SpaceView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(spaceBackground)
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+              .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+        )
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .onHover { hovering in
             withAnimation(.abarFast) {
