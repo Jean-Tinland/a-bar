@@ -24,7 +24,7 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
   - Display workspaces and windows with app icons
   - Click to switch workspaces or focus windows
   - Show/hide empty workspaces -->
-- **A handful selection of widgets**: 14+ widgets for system information and performance monitoring
+- **A handful selection of widgets**: 17+ widgets for system information and performance monitoring
 - **Custom widgets**: Create your own widgets that reads data from `shell` commands or scripts
 - **Theming, customization, and profiles**
 
