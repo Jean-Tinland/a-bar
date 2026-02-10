@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-<!-- _No changes yet._ -->
+_No changes yet._
+
+## v1.3.0 - 2026-02-10
 
 - feat: integrate Aerospace window manager support
 - feat: update Sound, Mic & HackerNews widgets positioning to support dynamic bar position adjustments
