@@ -77,9 +77,9 @@ enum ThemePreset: String, Codable, CaseIterable, Identifiable {
     case .dayShift:
       return ABarTheme(
         name: displayName, kind: .light,
-        main: Color(hex: "#ffffff"),
+        main: Color(hex: "#f5f5f5"),
         mainAlt: Color(hex: "#98a8c5"),
-        minor: Color(hex: "#f5f5f5"),
+        minor: Color(hex: "#ffffff"),
         accent: Color(hex: "#d1ab66"),
         red: Color(hex: "#e78482"),
         green: Color(hex: "#8fc8bb"),
@@ -89,7 +89,7 @@ enum ThemePreset: String, Codable, CaseIterable, Identifiable {
         magenta: Color(hex: "#ad82cb"),
         cyan: Color(hex: "#2fc2c3"),
         foreground: Color(hex: "#1b222d"),
-        background: Color(hex: "#f5f5f5"),
+        background: Color(hex: "#f7f7f7"),
         highlight: Color(hex: "#e0e0e0")
       )
     }
