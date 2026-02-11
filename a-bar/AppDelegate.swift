@@ -46,6 +46,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   private var screenObserver: Any?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    // Terminate any existing a-bar instances to prevent multiple processes
+    terminateExistingInstances()
+    
     // Setup menu bar status item
     setupStatusItem()
 
@@ -60,6 +63,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Subscribe to settings changes
     subscribeToSettingsChanges()
+  }
+  
+  /// Terminate any existing a-bar instances before launching this one.
+  /// This prevents multiple a-bar processes from running simultaneously.
+  private func terminateExistingInstances() {
+    let currentPID = ProcessInfo.processInfo.processIdentifier
+    let bundleID = Bundle.main.bundleIdentifier
+    
+    let existingInstances = NSWorkspace.shared.runningApplications.filter { app in
+      app.bundleIdentifier == bundleID && 
+      app.processIdentifier != currentPID
+    }
+    
+    for app in existingInstances {
+      app.terminate()
+      
+      // Wait up to 2 seconds for graceful termination
+      let deadline = Date().addingTimeInterval(2.0)
+      while !app.isTerminated && Date() < deadline {
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.1))
+      }
+      
+      // Force terminate if still running
+      if !app.isTerminated {
+        app.forceTerminate()
+      }
+    }
   }
 
   func applicationWillTerminate(_ notification: Notification) {
