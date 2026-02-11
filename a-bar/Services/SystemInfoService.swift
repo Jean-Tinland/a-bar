@@ -209,10 +209,10 @@ class SystemInfoService: ObservableObject {
     func refreshMemory() {
         DispatchQueue.global(qos: .userInitiated).async {
             let usage = self.getMemoryUsage()
-        DispatchQueue.main.async {
-            self.memoryPressure = usage
+            DispatchQueue.main.async {
+                self.memoryPressure = usage
+            }
         }
-    }
     }
 
     private func getMemoryUsage() -> Double {
@@ -1169,10 +1169,16 @@ class SystemInfoService: ObservableObject {
         let process = Process()
         process.launchPath = "/usr/bin/pkill"
         process.arguments = ["caffeinate"]
-        try? process.run()
-        process.waitUntilExit()
+        process.standardOutput = nil
+        process.standardError = nil
+        do {
+            try process.run()
+            // Fire-and-forget – don't block the calling thread.
+        } catch {
+            // pkill may fail if no caffeinate is running; that's fine.
+        }
     }
-  
+
     private func isAnyCaffeinateRunning() -> Bool {
         let process = Process()
         process.launchPath = "/usr/bin/pgrep"
@@ -1185,7 +1191,6 @@ class SystemInfoService: ObservableObject {
         do {
             try process.run()
             process.waitUntilExit()
-            // pgrep exits with 0 when it finds a matching process
             return process.terminationStatus == 0
         } catch {
             return false
@@ -1261,32 +1266,32 @@ class SystemInfoService: ObservableObject {
 
     private func refreshVolumes() {
         DispatchQueue.global(qos: .utility).async {
-        let keys: Set<URLResourceKey> = [
-            .volumeNameKey,
-            .volumeTotalCapacityKey,
-            .volumeAvailableCapacityKey,
-            .volumeIsRemovableKey,
-            .volumeIsInternalKey
-        ]
-        let urls = FileManager.default.mountedVolumeURLs(
-            includingResourceValuesForKeys: Array(keys),
-            options: [.skipHiddenVolumes]
-        ) ?? []
-        let volumes = urls.compactMap { url -> StorageVolume? in
-            guard let values = try? url.resourceValues(forKeys: keys),
-                  let name = values.volumeName,
-                  let total = values.volumeTotalCapacity,
-                  let available = values.volumeAvailableCapacity
-            else { return nil }
-            return StorageVolume(
-                name: name,
-                url: url,
-                totalBytes: total,
-                usedBytes: total - available
-            )
-        }
-        DispatchQueue.main.async {
-            self.volumes = volumes
+            let keys: Set<URLResourceKey> = [
+                .volumeNameKey,
+                .volumeTotalCapacityKey,
+                .volumeAvailableCapacityKey,
+                .volumeIsRemovableKey,
+                .volumeIsInternalKey
+            ]
+            let urls = FileManager.default.mountedVolumeURLs(
+                includingResourceValuesForKeys: Array(keys),
+                options: [.skipHiddenVolumes]
+            ) ?? []
+            let volumes = urls.compactMap { url -> StorageVolume? in
+                guard let values = try? url.resourceValues(forKeys: keys),
+                      let name = values.volumeName,
+                      let total = values.volumeTotalCapacity,
+                      let available = values.volumeAvailableCapacity
+                else { return nil }
+                return StorageVolume(
+                    name: name,
+                    url: url,
+                    totalBytes: total,
+                    usedBytes: total - available
+                )
+            }
+            DispatchQueue.main.async {
+                self.volumes = volumes
             }
         }
     }
