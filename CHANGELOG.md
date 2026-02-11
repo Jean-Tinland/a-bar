@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - refactor: improve timer management in TimeWidget for better resource handling
 - refactor: enhance WifiWidget to refresh SSID asynchronously for improved performance
 - refactor: update menu bar icon size and replace SVG with new design
+- refactor: enhance BatteryIconView with background color and shadow effects
 
 ## v1.3.0 - 2026-02-10
 

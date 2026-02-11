@@ -39,6 +39,7 @@ struct BatteryWidget: View {
             BatteryIconView(
               percentage: battery.percentage,
               isCharging: battery.isCharging,
+              bgColor: bgColor,
               fgColor: fgColor
             )
           }
@@ -64,6 +65,7 @@ struct BatteryWidget: View {
 struct BatteryIconView: View {
   let percentage: Int
   let isCharging: Bool
+  let bgColor: Color
   let fgColor: Color
 
   @EnvironmentObject var settings: SettingsManager
@@ -103,6 +105,10 @@ struct BatteryIconView: View {
         Image(systemName: "bolt.fill")
           .font(.system(size: 6))
           .foregroundColor(fgColor)
+          .shadow(color: globalSettings.noColorInDataWidgets ? theme.minor.opacity(0.95) : bgColor.opacity(0.95), radius: 0, x: 1, y: 0)
+          .shadow(color: globalSettings.noColorInDataWidgets ? theme.minor.opacity(0.95) : bgColor.opacity(0.95), radius: 0, x: -1, y: 0)
+          .shadow(color: globalSettings.noColorInDataWidgets ? theme.minor.opacity(0.95) : bgColor.opacity(0.95), radius: 0, x: 0, y: 1)
+          .shadow(color: globalSettings.noColorInDataWidgets ? theme.minor.opacity(0.95) : bgColor.opacity(0.95), radius: 0, x: 0, y: 0)
       }
     }
     .frame(width: 22, height: 11)
