@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-<!-- _No changes yet._ -->
+_No changes yet._
+
+## v1.3.1 - 2026-02-11
 
 - feat: implement termination of existing a-bar instances to prevent multiple processes
 - refactor: optimize refresh method to improve layout handling and reduce memory pressure
