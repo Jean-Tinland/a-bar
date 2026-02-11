@@ -1258,6 +1258,7 @@ class SystemInfoService: ObservableObject {
     }
 
     private func refreshVolumes() {
+        DispatchQueue.global(qos: .utility).async {
         let keys: Set<URLResourceKey> = [
             .volumeNameKey,
             .volumeTotalCapacityKey,
@@ -1275,8 +1276,6 @@ class SystemInfoService: ObservableObject {
                   let total = values.volumeTotalCapacity,
                   let available = values.volumeAvailableCapacity
             else { return nil }
-            // Optionally filter out unwanted volumes (e.g., disk images)
-            // if let isRemovable = values.volumeIsRemovable, isRemovable { return nil }
             return StorageVolume(
                 name: name,
                 url: url,
@@ -1286,6 +1285,7 @@ class SystemInfoService: ObservableObject {
         }
         DispatchQueue.main.async {
             self.volumes = volumes
+            }
         }
     }
 
