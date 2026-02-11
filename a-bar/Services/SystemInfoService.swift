@@ -17,8 +17,10 @@ class SystemInfoService: ObservableObject {
     @Published private(set) var wifiInfo = WifiInfo()
     @Published private(set) var volumeLevel: Float = 0
     @Published private(set) var isMuted: Bool = false
+    @Published private(set) var audioOutputDeviceName: String = ""
     @Published private(set) var micLevel: Float = 0
     @Published private(set) var isMicMuted: Bool = false
+    @Published private(set) var audioInputDeviceName: String = ""
     @Published private(set) var keyboardLayout: String = ""
     @Published private(set) var isCaffeinateActive: Bool = false
     private var caffeinateProcess: Process?
@@ -632,10 +634,12 @@ class SystemInfoService: ObservableObject {
     func refreshVolume() {
         let volume = getSystemVolume()
         let muted = isSystemMuted()
+        let deviceName = getAudioOutputDeviceName()
 
         DispatchQueue.main.async {
             self.volumeLevel = volume
             self.isMuted = muted
+            self.audioOutputDeviceName = deviceName
         }
     }
 
@@ -856,12 +860,63 @@ class SystemInfoService: ObservableObject {
 
         return muted != 0
     }
+    
+    private func getAudioOutputDeviceName() -> String {
+        var defaultOutputDeviceID = AudioObjectID(kAudioObjectUnknown)
+        var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
+
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        let status = AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &propertyAddress,
+            0,
+            nil,
+            &propertySize,
+            &defaultOutputDeviceID
+        )
+
+        guard status == noErr else { return "Unknown" }
+
+        // Get device name
+        propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioObjectPropertyName,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        
+        var deviceName: CFString? = nil
+        propertySize = UInt32(MemoryLayout<CFString?>.size)
+        
+        let nameStatus = withUnsafeMutablePointer(to: &deviceName) { pointer in
+            AudioObjectGetPropertyData(
+                defaultOutputDeviceID,
+                &propertyAddress,
+                0,
+                nil,
+                &propertySize,
+                pointer
+            )
+        }
+        
+        guard nameStatus == noErr, let name = deviceName as String? else {
+            return "Unknown"
+        }
+        
+        return name
+    }
 
     func refreshMic() {
         let level = getMicLevel()
         let muted = checkIfMicMuted()
+        let deviceName = getAudioInputDeviceName()
 
         DispatchQueue.main.async {
+            self.audioInputDeviceName = deviceName
             self.micLevel = level
             self.isMicMuted = muted
         }
@@ -949,6 +1004,55 @@ class SystemInfoService: ObservableObject {
         )
 
         return muted != 0
+    }
+    
+    private func getAudioInputDeviceName() -> String {
+        var defaultInputDeviceID = AudioObjectID(kAudioObjectUnknown)
+        var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
+
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        let status = AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &propertyAddress,
+            0,
+            nil,
+            &propertySize,
+            &defaultInputDeviceID
+        )
+
+        guard status == noErr else { return "Unknown" }
+
+        // Get device name
+        propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioObjectPropertyName,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        
+        var deviceName: CFString? = nil
+        propertySize = UInt32(MemoryLayout<CFString?>.size)
+        
+        let nameStatus = withUnsafeMutablePointer(to: &deviceName) { pointer in
+            AudioObjectGetPropertyData(
+                defaultInputDeviceID,
+                &propertyAddress,
+                0,
+                nil,
+                &propertySize,
+                pointer
+            )
+        }
+        
+        guard nameStatus == noErr, let name = deviceName as String? else {
+            return "Unknown"
+        }
+        
+        return name
     }
 
     /// Set microphone input level (0.0 - 1.0) using CoreAudio and update published state.

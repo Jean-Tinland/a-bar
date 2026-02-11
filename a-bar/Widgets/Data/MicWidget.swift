@@ -178,6 +178,14 @@ struct MicWidget: View {
 
     var body: some View {
       VStack(spacing: 6) {
+        // Audio input device name
+        if !systemInfo.audioInputDeviceName.isEmpty {
+          Text(systemInfo.audioInputDeviceName)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(theme.foreground.opacity(0.8))
+            .padding(.top, 4)
+        }
+        
         HStack(spacing: 8) {
           Button(action: onToggleMute) {
             Image(
@@ -205,13 +213,14 @@ struct MicWidget: View {
           }
         }
         .padding(8)
-        .background(
-          RoundedRectangle(cornerRadius: 8)
-            .fill(globalSettings.noColorInDataWidgets ? theme.minor : theme.background)
-            .shadow(color: Color.black.opacity(0.12), radius: 4, x: 0, y: 2)
-        )
+        .padding(.top, 2)
       }
-      .padding(.bottom, 6)
+      .padding(6)
+      .background(
+        RoundedRectangle(cornerRadius: 8)
+          .fill(globalSettings.noColorInDataWidgets ? theme.minor : theme.background)
+          .shadow(color: Color.black.opacity(0.12), radius: 4, x: 0, y: 2)
+      )
       .frame(maxWidth: .infinity)
       .padding(.horizontal, 6)
       .onAppear {
