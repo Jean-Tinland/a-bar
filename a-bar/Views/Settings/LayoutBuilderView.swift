@@ -708,6 +708,7 @@ struct BarEditorSheet: View {
 
       Divider()
 
+      // Scrollable widget sections
       ScrollView {
         VStack(spacing: 20) {
           Text("Drag widgets to sections below. Widgets can appear multiple times.")
@@ -743,14 +744,18 @@ struct BarEditorSheet: View {
               removeWidget: removeWidget
             )
           }
-
-          Divider()
-
-          // Available widgets
-          AvailableWidgetsView()
         }
         .padding()
       }
+
+      Divider()
+
+      // Fixed available widgets section
+      ScrollView {
+        AvailableWidgetsView()
+          .padding()
+      }
+      .frame(height: 220)
     }
     .frame(width: 650, height: 750)
     .onAppear {
@@ -1089,7 +1094,7 @@ struct AvailableWidgetsView: View {
 
         Spacer()
 
-        Text("Drag to add (can add multiple times)")
+        Text("Drag to add")
           .font(.caption)
           .foregroundColor(.secondary)
       }

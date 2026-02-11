@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 <!-- _No changes yet._ -->
 
 - feat: add audio device names to MicWidget and SoundWidget
+- refactor: improve BarEditorSheet layout with scrollable sections and fixed available widgets area
 - refactor: remove redundant background color from GraphView
 
 ## v1.3.1 - 2026-02-11
