@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-_No changes yet._
+<!-- _No changes yet._ -->
+
+- refactor: remove redundant background color from GraphView
 
 ## v1.3.1 - 2026-02-11
 

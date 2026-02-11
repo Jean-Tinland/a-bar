@@ -52,10 +52,6 @@ struct GraphView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .leading) {
-                // Background
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(theme.minor.opacity(0.2))
-
                 // Graph fill
                 Path { path in
                     guard !values.isEmpty else { return }
