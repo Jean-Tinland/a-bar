@@ -41,6 +41,9 @@ struct WifiWidget: View {
   @EnvironmentObject var settings: SettingsManager
   @EnvironmentObject var systemInfo: SystemInfoService
 
+  /// Cached SSID refreshed asynchronously so the view body never spawns a shell process.
+  @State private var cachedSSID: String? = nil
+
   private var wifiSettings: WifiWidgetSettings {
     settings.settings.widgets.wifi
   }
@@ -86,14 +89,33 @@ struct WifiWidget: View {
           }
         }
       }
+      .task(id: wifiInfo.isActive) {
+        // Refresh SSID asynchronously when WiFi state changes
+        await refreshSSID()
+      }
+      .onChange(of: wifiInfo.ssid) { _ in
+        Task { await refreshSSID() }
+      }
     }
+  }
+
+  /// Refresh SSID off the main thread.
+  private func refreshSSID() async {
+    guard wifiInfo.isActive else {
+      await MainActor.run { cachedSSID = nil }
+      return
+    }
+    let ssid = await Task.detached(priority: .userInitiated) {
+      getSSIDFromShell()
+    }.value
+    await MainActor.run { cachedSSID = ssid }
   }
 
   private var displayName: String {
     if !wifiInfo.isActive {
       return "Disabled"
     }
-    if let ssid = getSSIDFromShell(), !ssid.isEmpty {
+    if let ssid = cachedSSID, !ssid.isEmpty {
       return ssid.truncated(to: 15)
     }
     if wifiInfo.ssid.isEmpty {
