@@ -5,6 +5,7 @@ struct DateWidget: View {
   @EnvironmentObject var settings: SettingsManager
 
   @State private var currentDate = Date()
+  @State private var refreshTimer: Timer?
 
   private var globalSettings: GlobalSettings {
     settings.settings.global
@@ -43,6 +44,10 @@ struct DateWidget: View {
     .onAppear {
       startTimer()
     }
+    .onDisappear {
+      refreshTimer?.invalidate()
+      refreshTimer = nil
+    }
   }
 
   private var formattedDate: String {
@@ -65,7 +70,8 @@ struct DateWidget: View {
   }
 
   private func startTimer() {
-    Timer.scheduledTimer(withTimeInterval: dateSettings.refreshInterval, repeats: true) { _ in
+    refreshTimer?.invalidate()
+    refreshTimer = Timer.scheduledTimer(withTimeInterval: dateSettings.refreshInterval, repeats: true) { _ in
       currentDate = Date()
     }
   }
