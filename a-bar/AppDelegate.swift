@@ -106,7 +106,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     if let button = statusItem?.button {
       let image = NSImage(named: "MenuBarIcon")
       image?.isTemplate = true
-      image?.size = NSSize(width: 14, height: 14)
+      image?.size = NSSize(width: 28, height: 22)
       button.image = image
     }
 
