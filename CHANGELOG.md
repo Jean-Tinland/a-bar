@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-_No changes yet._
+<!-- _No changes yet._ -->
+
+- feat: implement termination of existing a-bar instances to prevent multiple processes
+- refactor: optimize refresh method to improve layout handling and reduce memory pressure
+- refactor: enhance volume refresh method to run asynchronously for improved performance
+- refactor: update refreshMemory method to run asynchronously for improved responsiveness
+- refactor: improve caffeinate killing function for better performance
+- refactor: enhance icon lookup method for improved performance and responsiveness
+- refactor: enhance shell command execution with timeout handling for improved reliability
+- refactor: improve DateWidget timer management for better resource handling
+- refactor: improve timer management in TimeWidget for better resource handling
+- refactor: enhance WifiWidget to refresh SSID asynchronously for improved performance
 
 ## v1.3.0 - 2026-02-10
 
