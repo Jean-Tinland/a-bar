@@ -99,9 +99,15 @@ class BarWindow: NSPanel {
     contentView = hostingView
   }
 
-  // Refresh the content of the bar, which can be triggered when settings change or when a manual refresh is needed. This method calls setupContent to recreate the SwiftUI view hierarchy with the latest data and settings.
+  // Refresh the content of the bar.  The SwiftUI views already observe
+  // their @EnvironmentObject services and will re-render automatically
+  // when data changes, so we no longer tear down and recreate the entire
+  // NSHostingView hierarchy.  This avoids expensive view-tree rebuilds
+  // that used to cause visible hitches and accumulated memory pressure.
   func refresh() {
-    setupContent()
+    // Force a layout pass so the hosting view picks up any frame changes
+    // (e.g., after a screen reconfiguration).
+    hostingView?.needsLayout = true
   }
 
   func refreshWidget(_ identifier: WidgetIdentifier) {
