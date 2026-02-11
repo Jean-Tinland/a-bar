@@ -207,10 +207,12 @@ class SystemInfoService: ObservableObject {
     }
 
     func refreshMemory() {
-        let usage = getMemoryUsage()
+        DispatchQueue.global(qos: .userInitiated).async {
+            let usage = self.getMemoryUsage()
         DispatchQueue.main.async {
             self.memoryPressure = usage
         }
+    }
     }
 
     private func getMemoryUsage() -> Double {
