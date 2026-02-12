@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-<!-- _No changes yet._ -->
+_No changes yet._
+
+## v1.3.2 - 2026-02-12
 
 - feat: add audio device names to MicWidget and SoundWidget
 - feat: enhance bar layout and settings with global configurations for padding, corner radius, and background options
