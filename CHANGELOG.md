@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - refactor: improve BarEditorSheet layout with scrollable sections and fixed available widgets area
 - refactor: remove redundant background color from GraphView
 - refactor: adjust padding and add divider in CustomWidgetEditorView header
+- refactor: update CreateSpaceButton styling for improved visibility
 
 ## v1.3.1 - 2026-02-11
 

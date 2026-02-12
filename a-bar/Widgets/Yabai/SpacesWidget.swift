@@ -144,8 +144,8 @@ struct CreateSpaceButton: View {
         Button(action: createSpace) {
             Image(systemName: "plus")
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(theme.minor)
-                .padding(.horizontal, 6)
+                .foregroundColor(theme.foreground.opacity(0.8))
+                .padding(.leading, 6)
                 .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
