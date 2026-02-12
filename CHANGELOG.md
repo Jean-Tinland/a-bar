@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - refactor: remove redundant background color from GraphView
 - refactor: adjust padding and add divider in CustomWidgetEditorView header
 - refactor: update CreateSpaceButton styling for improved visibility
+- fix: add horizontal padding to window elements in ProcessWidget for better spacing
 
 ## v1.3.1 - 2026-02-11
 

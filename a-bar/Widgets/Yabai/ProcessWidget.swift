@@ -152,6 +152,7 @@ struct ProcessWidget: View {
                     )
                 }
               }
+              .padding(.horizontal, 4)
               .opacity(0.8)
               .onTapGesture {
                 focusWindow(window)
