@@ -19,8 +19,8 @@ class BarWindow: NSPanel {
     // Calculate frame for the bar
     let settings = SettingsManager.shared.settings.global
     let barHeight = settings.barHeight
+    let distanceFromEdges = settings.barDistanceFromEdges
     // Padding is hardcoded for now, but can be made user-configurable if needed. It provides spacing from the screen edges.
-    let padding: CGFloat = 0
 
     let screenFrame = screen.frame
 
@@ -28,17 +28,17 @@ class BarWindow: NSPanel {
     switch position {
     case .top:
       // Position the bar at the top of the screen, accounting for the menu bar height and padding
-      barY = screenFrame.maxY - barHeight - padding
+      barY = screenFrame.maxY - barHeight - distanceFromEdges
     case .bottom:
       // Position the bar at the bottom of the screen, accounting for padding
-      barY = screenFrame.minY + padding
+      barY = screenFrame.minY + distanceFromEdges
     }
 
     // The bar spans the full width of the screen, minus any horizontal padding
     let barFrame = NSRect(
-      x: screenFrame.minX + padding,
+      x: screenFrame.minX + distanceFromEdges,
       y: barY,
-      width: screenFrame.width - (padding * 2),
+      width: screenFrame.width - (distanceFromEdges * 2),
       height: barHeight
     )
     

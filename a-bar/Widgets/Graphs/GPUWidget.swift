@@ -3,6 +3,10 @@ import SwiftUI
 struct GPUWidget: View {
   @EnvironmentObject var settings: SettingsManager
   @EnvironmentObject var systemInfo: SystemInfoService
+  
+  private var globalSettings: GlobalSettings {
+    settings.settings.global
+  }
 
   private var gpuSettings: GPUWidgetSettings {
     settings.settings.widgets.gpu
@@ -36,7 +40,7 @@ struct GPUWidget: View {
                 width: geometry.size.width,
                 height: geometry.size.height
               )
-              .cornerRadius(4)
+              .cornerRadius(globalSettings.barElementsCornerRadius)
               .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

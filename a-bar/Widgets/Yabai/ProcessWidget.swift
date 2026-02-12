@@ -54,19 +54,22 @@ struct ProcessWidget: View {
 
       HStack(spacing: globalSettings.barElementGap) {
         if let layoutMode = layoutMode, processSettings.showLayoutMode {
-          Text(layoutMode)
-            .font(userFont.weight(.medium))
-            .foregroundColor(theme.foreground.opacity(0.9))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(
-              RoundedRectangle(cornerRadius: 4)
-                .fill(theme.mainAlt.opacity(0.5))
-            )
-            .overlay(
-              RoundedRectangle(cornerRadius: 4)
-                .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
-            )
+          HStack {
+            Text(layoutMode)
+              .font(userFont.weight(.medium))
+              .foregroundColor(theme.foreground.opacity(0.9))
+          }
+          .frame(maxHeight: .infinity)
+          .padding(.horizontal, 6)
+          .padding(.vertical, 3)
+          .background(
+            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
+              .fill(theme.mainAlt.opacity(0.5))
+          )
+          .overlay(
+            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
+              .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+          )
         }
         if orderedWindows.isEmpty {
             // No windows: show desktop
@@ -89,7 +92,7 @@ struct ProcessWidget: View {
               HStack(spacing: globalSettings.barElementGap) {
                 AppIconView(appName: window.app, size: 16)
                 if !processSettings.displayOnlyIcon {
-                  VStack(alignment: .leading, spacing: -1) {
+                  VStack(alignment: .leading, spacing: -3) {
                     Text(window.app)
                       .font(userFont.weight(.medium))
                       .foregroundColor(theme.foreground)
@@ -107,19 +110,20 @@ struct ProcessWidget: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(
-                      RoundedRectangle(cornerRadius: 4)
+                      RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
                         .fill(theme.minor.opacity(0.5))
                     )
                 }
               }
               .padding(.horizontal, 4)
-              .padding(.vertical, processSettings.hideWindowTitle || processSettings.displayOnlyIcon ? 3 : 0)
+              .padding(.vertical, processSettings.hideWindowTitle || processSettings.displayOnlyIcon ? 2 : 0)
+              .frame(maxHeight: .infinity)
               .background(
-                RoundedRectangle(cornerRadius: 4)
+                RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
                   .fill(theme.mainAlt.opacity(0.5))
               )
               .overlay(
-                RoundedRectangle(cornerRadius: 4)
+                RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
                   .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
               )
               .onTapGesture {
@@ -143,7 +147,7 @@ struct ProcessWidget: View {
                     .padding(.horizontal, 4)
                     .padding(.vertical, 1)
                     .background(
-                      RoundedRectangle(cornerRadius: 3)
+                      RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
                         .fill(theme.minor.opacity(0.5))
                     )
                 }
@@ -163,8 +167,6 @@ struct ProcessWidget: View {
           }
         }
       }
-      .padding(.horizontal, 6)
-      .padding(.vertical, 3)
     }
     
     
@@ -188,3 +190,4 @@ struct ProcessWidget: View {
         }
     }
 }
+

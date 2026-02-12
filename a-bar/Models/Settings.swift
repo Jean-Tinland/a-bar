@@ -281,15 +281,35 @@ class SettingsManager: ObservableObject {
       print("⚠️ Invalid fontSize (\(validated.global.fontSize)), using default")
       validated.global.fontSize = 11
     }
-
-    if validated.global.barPadding < 0 || validated.global.barPadding > 50 {
-      print("⚠️ Invalid barPadding (\(validated.global.barPadding)), using default")
-      validated.global.barPadding = 4
+    
+    if validated.global.barHorizontalPadding < 0 || validated.global.barHorizontalPadding > 50 {
+      print("⚠️ Invalid barHorizontalPadding (\(validated.global.barHorizontalPadding)), using default")
+      validated.global.barHorizontalPadding = 8
     }
-
+    
+    if validated.global.barVerticalPadding < 0 || validated.global.barVerticalPadding > 50 {
+      print("⚠️ Invalid barVerticalPadding (\(validated.global.barVerticalPadding)), using default")
+      validated.global.barVerticalPadding = 4
+    }
+    
+    if validated.global.barDistanceFromEdges < 0 || validated.global.barDistanceFromEdges > 50 {
+      print("⚠️ Invalid barDistanceFromEdges (\(validated.global.barDistanceFromEdges)), using default")
+      validated.global.barDistanceFromEdges = 4
+    }
+    
     if validated.global.barCornerRadius < 0 || validated.global.barCornerRadius > 50 {
       print("⚠️ Invalid barCornerRadius (\(validated.global.barCornerRadius)), using default")
       validated.global.barCornerRadius = 6
+    }
+    
+    if validated.global.barOpacity < 0 || validated.global.barOpacity > 100 {
+      print("⚠️ Invalid barOpacity (\(validated.global.barOpacity)), using default")
+      validated.global.barOpacity = 90
+    }
+    
+    if validated.global.barElementsCornerRadius < 0 || validated.global.barElementsCornerRadius > 50 {
+      print("⚠️ Invalid barElementsCornerRadius (\(validated.global.barElementsCornerRadius)), using default")
+      validated.global.barElementsCornerRadius = 4
     }
 
     if validated.global.barElementGap < 0 || validated.global.barElementGap > 50 {
@@ -427,10 +447,15 @@ struct GlobalSettings: Codable, Equatable {
   var barHeight: CGFloat = 34
   var fontSize: CGFloat = 11
   var fontName: String = ""
-  var barPadding: CGFloat = 4
+  var barHorizontalPadding: CGFloat = 8
+  var barVerticalPadding: CGFloat = 4
+  var barDistanceFromEdges: CGFloat = 0
   var barCornerRadius: CGFloat = 6
+  var barOpacity: CGFloat = 90
+  var barElementsCornerRadius: CGFloat = 4
   var showBorder: Bool = false
   var noColorInDataWidgets: Bool = false
+  var barBackgroundBlur: Bool = false
 
   // Window manager configuration
   var windowManager: WindowManager = .yabai
@@ -457,10 +482,15 @@ struct GlobalSettings: Codable, Equatable {
     barHeight = try container.decodeIfPresent(CGFloat.self, forKey: .barHeight) ?? 34
     fontSize = try container.decodeIfPresent(CGFloat.self, forKey: .fontSize) ?? 11
     fontName = try container.decodeIfPresent(String.self, forKey: .fontName) ?? ""
-    barPadding = try container.decodeIfPresent(CGFloat.self, forKey: .barPadding) ?? 4
+    barHorizontalPadding = try container.decodeIfPresent(CGFloat.self, forKey: .barHorizontalPadding) ?? 4
+    barVerticalPadding = try container.decodeIfPresent(CGFloat.self, forKey: .barVerticalPadding) ?? 4
+    barDistanceFromEdges = try container.decodeIfPresent(CGFloat.self, forKey: .barDistanceFromEdges) ?? 0
     barCornerRadius = try container.decodeIfPresent(CGFloat.self, forKey: .barCornerRadius) ?? 6
+    barOpacity = try container.decodeIfPresent(CGFloat.self, forKey: .barOpacity) ?? 90
+    barElementsCornerRadius = try container.decodeIfPresent(CGFloat.self, forKey: .barElementsCornerRadius) ?? 4
     showBorder = try container.decodeIfPresent(Bool.self, forKey: .showBorder) ?? false
     noColorInDataWidgets = try container.decodeIfPresent(Bool.self, forKey: .noColorInDataWidgets) ?? false
+    barBackgroundBlur = try container.decodeIfPresent(Bool.self, forKey: .barBackgroundBlur) ?? false
     windowManager = try container.decodeIfPresent(WindowManager.self, forKey: .windowManager) ?? .yabai
     yabaiPath = try container.decodeIfPresent(String.self, forKey: .yabaiPath) ?? "/opt/homebrew/bin/yabai"
     aerospacePath = try container.decodeIfPresent(String.self, forKey: .aerospacePath) ?? "/opt/homebrew/bin/aerospace"
@@ -472,8 +502,10 @@ struct GlobalSettings: Codable, Equatable {
   init() {}
 
   private enum CodingKeys: String, CodingKey {
-    case barEnabled, launchAtLogin, barHeight, fontSize, fontName, barPadding, barCornerRadius
-    case showBorder, noColorInDataWidgets, windowManager, yabaiPath, aerospacePath
+    case barEnabled, launchAtLogin, barHeight, fontSize, fontName, barHorizontalPadding
+    case barVerticalPadding, barDistanceFromEdges, barCornerRadius, barElementsCornerRadius
+    case barOpacity
+    case showBorder, noColorInDataWidgets, barBackgroundBlur, windowManager, yabaiPath, aerospacePath
     case grayscaleAppIcons, enableNotifications, barElementGap
   }
 }
@@ -779,3 +811,4 @@ class LayoutManager: ObservableObject {
     multiDisplayLayout = .defaultLayout
   }
 }
+

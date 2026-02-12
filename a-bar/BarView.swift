@@ -55,26 +55,33 @@ struct BarView: View {
       }
       // A minimal padding is necessary on the built-in screen as it has rounded corners
       // Without it, the content might be clipped or appear too close to the edges
-      .padding(.horizontal, 8)
+      .padding(.horizontal, globalSettings.barHorizontalPadding)
+      .padding(.vertical, globalSettings.barVerticalPadding)
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(barBackground)
+       .background(barBackground)
       .overlay(
         Group {
           if borderEnabled {
-            // Border at top for bottom bar, at bottom for top bar
-            if position == .top {
-              VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                Rectangle()
-                  .fill(theme.foreground.opacity(0.1))
-                  .frame(height: 1)
-              }
+            if (globalSettings.barDistanceFromEdges > 0) {
+              // Display a border that go around all the bar
+              RoundedRectangle(cornerRadius: globalSettings.barCornerRadius)
+                .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
             } else {
-              VStack(spacing: 0) {
-                Rectangle()
-                  .fill(theme.foreground.opacity(0.1))
-                  .frame(height: 1)
-                Spacer(minLength: 0)
+                // Border at top for bottom bar, at bottom for top bar
+              if position == .top {
+                VStack(spacing: 0) {
+                  Spacer(minLength: 0)
+                  Rectangle()
+                    .fill(theme.foreground.opacity(0.1))
+                    .frame(height: 1)
+                }
+              } else {
+                VStack(spacing: 0) {
+                  Rectangle()
+                    .fill(theme.foreground.opacity(0.1))
+                    .frame(height: 1)
+                  Spacer(minLength: 0)
+                }
               }
             }
           }
@@ -96,12 +103,23 @@ struct BarView: View {
   }
 
   @ViewBuilder
-  private var barBackground: some View {
-    // The background of the bar is a slightly transparent rectangle filled with the theme's background color.
-    // Opacity is hardcoded for now, but can be made user-configurable if needed. This allows the bar to blend with the desktop while still providing enough contrast for the widgets to be visible.
-    Rectangle()
-      .fill(theme.background.opacity(0.95))
+  var barBackground: some View {
+    let cornerRadius = globalSettings.barCornerRadius
+
+    if globalSettings.barBackgroundBlur {
+      ZStack {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+          .fill(.ultraThinMaterial)
+
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+          .fill(theme.background.opacity(globalSettings.barOpacity / 100))
+      }
+    } else {
+      RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        .fill(theme.background.opacity(globalSettings.barOpacity / 100))
+    }
   }
+
 }
 
 /// Container view that renders the appropriate widget based on configuration

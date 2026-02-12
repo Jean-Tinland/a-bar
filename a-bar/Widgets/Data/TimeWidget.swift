@@ -33,7 +33,6 @@ struct TimeWidget: View {
       ZStack {
         if timeSettings.showDayProgress {
           DayProgressView(progress: currentTime.dayProgress, backgroundColor: fgColor)
-            .ignoresSafeArea()
         }
         HStack(spacing: 4) {
           if timeSettings.showIcon {
@@ -45,6 +44,7 @@ struct TimeWidget: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
       }
+      .clipped()
     }
     .onAppear {
       startTimer()
@@ -123,6 +123,10 @@ struct DayProgressView: View {
   let backgroundColor: Color
 
   @EnvironmentObject var settings: SettingsManager
+  
+  private var globalSettings: GlobalSettings {
+    settings.settings.global
+  }
 
   private var theme: ABarTheme {
     ThemeManager.currentTheme(for: settings.settings.theme)
@@ -131,9 +135,9 @@ struct DayProgressView: View {
   var body: some View {
     GeometryReader { geometry in
       ZStack(alignment: .leading) {
-        RoundedRectangle(cornerRadius: 4)
+        Rectangle()
           .fill(theme.minor.opacity(0.05))
-        RoundedRectangle(cornerRadius: 4)
+        Rectangle()
           .fill(backgroundColor.opacity(0.15))
           .frame(width: geometry.size.width * progress)
       }
@@ -141,5 +145,8 @@ struct DayProgressView: View {
     }
     .ignoresSafeArea()
     .allowsHitTesting(false)
+    .clipShape(
+      RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
+    )
   }
 }

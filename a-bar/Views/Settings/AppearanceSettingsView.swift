@@ -11,7 +11,7 @@ struct AppearanceSettingsView: View {
         // Bar settings
         Section {
           VStack(alignment: .leading, spacing: 8) {
-            Text("Bar Settings")
+            Text("Bar settings")
               .font(.headline)
 
             HStack {
@@ -22,16 +22,78 @@ struct AppearanceSettingsView: View {
                 .textFieldStyle(RoundedBorderTextFieldStyle())
               Text("px")
             }
-
+            
             HStack {
-              Text("Bar padding")
+              Text("Bar horizontal padding")
               Spacer()
-              TextField("", value: binding(\.global.barPadding), formatter: NumberFormatter())
+              TextField("", value: binding(\.global.barHorizontalPadding), formatter: NumberFormatter())
                 .frame(width: 60)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
               Text("px")
             }
-
+            
+            HStack {
+              Text("Bar vertical padding")
+              Spacer()
+              TextField("", value: binding(\.global.barVerticalPadding), formatter: NumberFormatter())
+                .frame(width: 60)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+              Text("px")
+            }
+            
+            HStack {
+              Text("Bar distance from edges")
+              Spacer()
+              TextField("", value: binding(\.global.barDistanceFromEdges), formatter: NumberFormatter())
+                .frame(width: 60)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+              Text("px")
+            }
+            
+            
+            HStack {
+              Text("Bar radius")
+              Spacer()
+              TextField(
+                "",
+                value: binding(\.global.barCornerRadius),
+                formatter: NumberFormatter()
+              )
+                .frame(width: 60)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+              Text("px")
+            }
+            
+            Text("Bar radius will only take effect if 'Bar distance from edges' is higher than 0.")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            
+            HStack {
+              Text("Bar background opacity")
+              Spacer()
+              TextField(
+                "",
+                value: binding(\.global.barOpacity),
+                formatter: NumberFormatter()
+              )
+                .frame(width: 60)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+              Text("%")
+            }
+            
+            Toggle("Blur bar background", isOn: binding(\.global.barBackgroundBlur))
+            
+            Text("This setting will show a plain background color if you enable 'Reduce transparency' in macOS system settings.")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            
+            Toggle("Show border", isOn: binding(\.global.showBorder))
+            
+            Divider()
+            
+            Text("Bar elements settings")
+              .font(.headline)
+            
             HStack {
               Text("Gap between elements")
               Spacer()
@@ -41,9 +103,28 @@ struct AppearanceSettingsView: View {
               Text("px")
             }
 
-            Toggle("Show border", isOn: binding(\.global.showBorder))
+            HStack {
+              Text("Elements border radius")
+              Spacer()
+              TextField("", value: binding(\.global.barElementsCornerRadius), formatter: NumberFormatter())
+                .frame(width: 60)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+              Text("px")
+            }
+            
+            Divider()
 
+            Text("Data widgets settings")
+              .font(.headline)
+            
+            
             Toggle("No color in data widgets", isOn: binding(\.global.noColorInDataWidgets))
+            
+            
+            Divider()
+
+            Text("Font settings")
+              .font(.headline)
 
             HStack {
               Text("Font size")
@@ -62,10 +143,14 @@ struct AppearanceSettingsView: View {
 
             Divider()
 
-            Text("Icons")
+            Text("Icons settings")
               .font(.headline)
 
             Toggle("Grayscale app icons", isOn: binding(\.global.grayscaleAppIcons))
+            
+            Text("Icons are automatically following your system preferences regarding their style but you can enforce them to always be in grayscale")
+              .font(.caption)
+              .foregroundColor(.secondary)
           }
         }
 

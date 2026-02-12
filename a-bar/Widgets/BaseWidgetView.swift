@@ -59,8 +59,10 @@ struct BaseWidgetView<Content: View>: View {
             .frame(maxHeight: .infinity)
             .frame(width: width)
             .overlay(
-                RoundedRectangle(cornerRadius: 4)
-                  .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+              RoundedRectangle(
+                cornerRadius: globalSettings.barElementsCornerRadius
+              )
+              .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
             )
             .background(backgroundView)
             .contentShape(Rectangle())
@@ -84,19 +86,18 @@ struct BaseWidgetView<Content: View>: View {
                     }
                 }
             }
-            .padding(.vertical, 4)
     }
 
     @ViewBuilder
     private var backgroundView: some View {
         if isHighlighted {
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
                 .fill(highlightColor)
         } else if let bg = backgroundColor {
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
                 .fill(bg)
         } else if isHovered && onClick != nil {
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
                 .fill(theme.highlight.opacity(0.3))
         } else {
             Color.clear

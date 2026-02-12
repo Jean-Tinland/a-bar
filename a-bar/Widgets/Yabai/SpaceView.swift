@@ -70,12 +70,14 @@ struct SpaceView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
+        .fixedSize(horizontal: true, vertical: false)
+        .frame(maxHeight: .infinity)
         .background(spaceBackground)
         .overlay(
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
               .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .clipShape(RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius))
         .onHover { hovering in
             withAnimation(.abarFast) {
                 isHovered = hovering
@@ -110,13 +112,13 @@ struct SpaceView: View {
     @ViewBuilder
     private var spaceBackground: some View {
         if isFocused {
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
               .fill(theme.mainAlt.opacity(0.6))
         } else if isVisible {
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
                 .fill(theme.mainAlt.opacity(0.45))
         } else if isHovered {
-            RoundedRectangle(cornerRadius: 4)
+            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
               .fill(theme.mainAlt.opacity(0.3))
         } else {
             theme.minor

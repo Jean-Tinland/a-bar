@@ -66,7 +66,7 @@ struct NetstatsWidget: View {
             )
           }
           .frame(width: geometry.size.width, height: geometry.size.height)
-          .cornerRadius(4)
+          .cornerRadius(globalSettings.barElementsCornerRadius)
           .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

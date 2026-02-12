@@ -104,17 +104,18 @@ struct StickyWindowsView: View {
         HStack(spacing: globalSettings.barElementGap) {
             Image(systemName: "pin.fill")
                 .font(.system(size: 8))
-                .foregroundColor(theme.minor)
+                .foregroundColor(theme.foreground.opacity(0.8))
             
             ForEach(uniqueApps, id: \.id) { window in
                 AppIconView(appName: window.app, size: 14)
             }
         }
+        .frame(maxHeight: .infinity)
         .padding(.horizontal, 4)
         .padding(.vertical, 2)
         .background(
-            RoundedRectangle(cornerRadius: 4)
-                .fill(theme.mainAlt)
+          RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
+            .fill(theme.mainAlt.opacity(0.45))
         )
     }
     
@@ -145,7 +146,7 @@ struct CreateSpaceButton: View {
             Image(systemName: "plus")
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(theme.foreground.opacity(0.8))
-                .padding(.leading, 6)
+                .padding(.horizontal, 6)
                 .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
