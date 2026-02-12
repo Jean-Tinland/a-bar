@@ -1083,7 +1083,9 @@ struct CustomWidgetEditorView: View {
       // Header
       Text(widget == nil ? "Add Widget" : "Edit Widget")
         .font(.headline)
-        .padding(.bottom, 20)
+        .padding(10)
+      
+      Divider()
 
       // Form content
       ScrollView {
