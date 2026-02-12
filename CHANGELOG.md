@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 <!-- _No changes yet._ -->
 
 - feat: add audio device names to MicWidget and SoundWidget
+- feat: enhance bar layout and settings with global configurations for padding, corner radius, and background options
 - refactor: improve BarEditorSheet layout with scrollable sections and fixed available widgets area
 - refactor: remove redundant background color from GraphView
 - refactor: adjust padding and add divider in CustomWidgetEditorView header
