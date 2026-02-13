@@ -459,7 +459,7 @@ struct GlobalSettings: Codable, Equatable {
   var barOpacity: CGFloat = 90
   var barElementsCornerRadius: CGFloat = 4
   var barElementBackgroundOpacity: CGFloat = 100
-  var showBorder: Bool = false
+  var showBorder: Bool = true
   var noColorInDataWidgets: Bool = false
   var barBackgroundBlur: Bool = false
 
@@ -495,7 +495,7 @@ struct GlobalSettings: Codable, Equatable {
     barOpacity = try container.decodeIfPresent(CGFloat.self, forKey: .barOpacity) ?? 90
     barElementsCornerRadius = try container.decodeIfPresent(CGFloat.self, forKey: .barElementsCornerRadius) ?? 4
     barElementBackgroundOpacity = try container.decodeIfPresent(CGFloat.self, forKey: .barElementBackgroundOpacity) ?? 100
-    showBorder = try container.decodeIfPresent(Bool.self, forKey: .showBorder) ?? false
+    showBorder = try container.decodeIfPresent(Bool.self, forKey: .showBorder) ?? true
     noColorInDataWidgets = try container.decodeIfPresent(Bool.self, forKey: .noColorInDataWidgets) ?? false
     barBackgroundBlur = try container.decodeIfPresent(Bool.self, forKey: .barBackgroundBlur) ?? false
     windowManager = try container.decodeIfPresent(WindowManager.self, forKey: .windowManager) ?? .yabai
