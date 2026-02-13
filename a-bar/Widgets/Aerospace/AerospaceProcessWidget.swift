@@ -6,6 +6,9 @@ struct AerospaceProcessWidget: View {
 
     @EnvironmentObject var settings: SettingsManager
     @EnvironmentObject var aerospaceService: AerospaceService
+    
+    @State private var focusedWindowPressed = false
+    @State private var unfocusedWindowPressed: Set<Int> = []
 
     private var processSettings: ProcessWidgetSettings {
         settings.settings.widgets.process
@@ -79,6 +82,11 @@ struct AerospaceProcessWidget: View {
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(theme.mainAlt.opacity(0.5))
                         )
+                        .scaleEffect(focusedWindowPressed ? 0.94 : 1.0)
+                        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: focusedWindowPressed)
+                        .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+                            focusedWindowPressed = pressing
+                        }) {}
                         .onTapGesture {
                             focusWindow(window)
                         }
@@ -95,6 +103,15 @@ struct AerospaceProcessWidget: View {
                             AppIconView(appName: window.appName, size: 16)
                         }
                         .opacity(0.8)
+                        .scaleEffect(unfocusedWindowPressed.contains(window.windowId) ? 0.94 : 1.0)
+                        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: unfocusedWindowPressed.contains(window.windowId))
+                        .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+                            if pressing {
+                                unfocusedWindowPressed.insert(window.windowId)
+                            } else {
+                                unfocusedWindowPressed.remove(window.windowId)
+                            }
+                        }) {}
                         .onTapGesture {
                             focusWindow(window)
                         }

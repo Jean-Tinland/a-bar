@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-_No changes yet._
+<!-- _No changes yet._ -->
+
+- feat: add a scale effect while clicking on interactive widgets
 
 ## v1.3.3 - 2026-02-13
 

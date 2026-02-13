@@ -14,6 +14,7 @@ struct BaseWidgetView<Content: View>: View {
     @EnvironmentObject var settings: SettingsManager
 
     @State private var isHovered = false
+    @State private var isPressed = false
 
     init(
         isHighlighted: Bool = false,
@@ -66,6 +67,13 @@ struct BaseWidgetView<Content: View>: View {
             )
             .background(backgroundView)
             .contentShape(Rectangle())
+            .scaleEffect(isPressed ? 0.94 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
+            .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+                if onClick != nil {
+                    isPressed = pressing
+                }
+            }) {}
             .onTapGesture {
                 onClick?()
             }

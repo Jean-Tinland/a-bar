@@ -9,6 +9,7 @@ struct AerospaceSpaceView: View {
     @EnvironmentObject var aerospaceService: AerospaceService
 
     @State private var isHovered = false
+    @State private var isPressed = false
 
     private var spacesSettings: SpacesWidgetSettings {
         settings.settings.widgets.spaces
@@ -60,6 +61,11 @@ struct AerospaceSpaceView: View {
         .padding(.vertical, 4)
         .background(spaceBackground)
         .clipShape(RoundedRectangle(cornerRadius: 4))
+        .scaleEffect(isPressed ? 0.94 : 1.0)
+        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
+        .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+            isPressed = pressing
+        }) {}
         .onHover { hovering in
             withAnimation(.abarFast) {
                 isHovered = hovering

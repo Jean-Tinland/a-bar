@@ -12,6 +12,7 @@ struct SpaceView: View {
     @State private var isHovered = false
     @State private var isEditing = false
     @State private var editedLabel: String = ""
+    @State private var isPressed = false
     
     private var spacesSettings: SpacesWidgetSettings {
         settings.settings.widgets.spaces
@@ -47,58 +48,59 @@ struct SpaceView: View {
         space.isVisible
     }
     
-    var body: some View {
-        HStack(spacing: 4) {
-            // Space label
-            if isEditing {
-                TextField("", text: $editedLabel, onCommit: saveLabel)
-                    .textFieldStyle(.plain)
-                    .font(settingsFont(scaledBy: 1.0, weight: .medium))
-                    .foregroundColor(theme.foreground)
-                    .frame(width: CGFloat(max(1, editedLabel.count)) * 12)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            } else {
-                Text(space.displayLabel)
-                    .font(settingsFont(scaledBy: 1.0, weight: .medium))
-                    .foregroundColor(labelColor)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
-            // Opened apps icons
-            OpenedAppsView(space: space, displayIndex: displayIndex)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .fixedSize(horizontal: true, vertical: false)
-        .frame(maxHeight: .infinity)
-        .background(spaceBackground)
-        .overlay(
-            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
+  var body: some View {
+      HStack(spacing: 4) {
+              // Space label
+          if isEditing {
+              TextField("", text: $editedLabel, onCommit: saveLabel)
+                  .textFieldStyle(.plain)
+                  .font(settingsFont(scaledBy: 1.0, weight: .medium))
+                  .foregroundColor(theme.foreground)
+                  .frame(width: CGFloat(max(1, editedLabel.count)) * 12)
+                  .lineLimit(1)
+                  .truncationMode(.tail)
+          } else {
+              Text(space.displayLabel)
+                  .font(settingsFont(scaledBy: 1.0, weight: .medium))
+                  .foregroundColor(labelColor)
+                  .lineLimit(1)
+                  .truncationMode(.tail)
+          }
+              // Opened apps icons
+          OpenedAppsView(space: space, displayIndex: displayIndex)
+      }
+      .padding(.horizontal, 8)
+      .padding(.vertical, 4)
+      .fixedSize(horizontal: true, vertical: false)
+      .frame(maxHeight: .infinity)
+      .background(spaceBackground)
+      .overlay(
+          RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
               .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius))
-        .onHover { hovering in
-            withAnimation(.abarFast) {
-                isHovered = hovering
-            }
-            if hovering {
-                NSCursor.pointingHand.push()
-            } else {
-                NSCursor.pop()
-            }
-        }
-        .onTapGesture {
-            goToSpace()
-        }
-        .onLongPressGesture(minimumDuration: 0.5) {
-            startEditing()
-        }
-        .contextMenu {
-            spaceContextMenu
-        }
+      )
+      .clipShape(RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius))
+      .scaleEffect(isPressed ? 0.94 : 1.0)
+      .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
+      .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+          isPressed = pressing
+      }) {}
+      .onTapGesture {
+          goToSpace()
+      }
+      .onHover { hovering in
+          withAnimation(.abarFast) {
+              isHovered = hovering
+          }
+          if hovering {
+              NSCursor.pointingHand.push()
+          } else {
+              NSCursor.pop()
+          }
+      }
+      .contextMenu {
+          spaceContextMenu
+      }
     }
-    
     private var labelColor: Color {
         if isFocused {
             return theme.foreground

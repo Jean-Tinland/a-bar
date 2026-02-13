@@ -7,6 +7,9 @@ struct ProcessWidget: View {
     @EnvironmentObject var settings: SettingsManager
     @EnvironmentObject var yabaiService: YabaiService
     
+    @State private var focusedWindowPressed = false
+    @State private var unfocusedWindowPressed: Set<Int> = []
+    
     private var processSettings: ProcessWidgetSettings {
         settings.settings.widgets.process
     }
@@ -126,6 +129,11 @@ struct ProcessWidget: View {
                 RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
                   .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
               )
+              .scaleEffect(focusedWindowPressed && window.id == focusedWin?.id ? 0.94 : 1.0)
+              .animation(.spring(response: 0.25, dampingFraction: 0.7), value: focusedWindowPressed)
+              .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+                  focusedWindowPressed = pressing
+              }) {}
               .onTapGesture {
                 focusWindow(window)
               }
@@ -154,6 +162,15 @@ struct ProcessWidget: View {
               }
               .padding(.horizontal, 4)
               .opacity(0.8)
+              .scaleEffect(unfocusedWindowPressed.contains(window.id) ? 0.94 : 1.0)
+              .animation(.spring(response: 0.25, dampingFraction: 0.7), value: unfocusedWindowPressed.contains(window.id))
+              .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+                  if pressing {
+                      unfocusedWindowPressed.insert(window.id)
+                  } else {
+                      unfocusedWindowPressed.remove(window.id)
+                  }
+              }) {}
               .onTapGesture {
                 focusWindow(window)
               }

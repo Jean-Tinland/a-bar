@@ -12,6 +12,8 @@ struct HackerNewsWidget: View {
     @State private var isLoading = true
     @State private var showPopover = false
     @State private var isChevronHovered = false
+    @State private var isChevronPressed = false
+    @State private var isTitlePressed = false
     @StateObject private var popoverManager = HNPopoverManager()
     
     private var hnSettings: HackerNewsWidgetSettings {
@@ -62,7 +64,11 @@ struct HackerNewsWidget: View {
                             .font(settingsFont())
                     }
                     .buttonStyle(PlainButtonStyle())
-                  
+                    .scaleEffect(isTitlePressed ? 0.97 : 1.0)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isTitlePressed)
+                    .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+                        isTitlePressed = pressing
+                    }) {}
                     .help(stories[currentIndex].title ?? "")
                     
                     if hnSettings.showPoints {
@@ -85,6 +91,11 @@ struct HackerNewsWidget: View {
                     .buttonStyle(PlainButtonStyle())
                     .background(isChevronHovered ? theme.foreground.opacity(0.1) : Color.clear)
                     .cornerRadius(4)
+                    .scaleEffect(isChevronPressed ? 0.94 : 1.0)
+                    .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isChevronPressed)
+                    .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
+                        isChevronPressed = pressing
+                    }) {}
                     .onHover { hovering in
                         withAnimation(.abarFast) {
                             isChevronHovered = hovering
