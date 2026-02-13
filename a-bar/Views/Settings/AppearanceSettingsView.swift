@@ -102,7 +102,7 @@ struct AppearanceSettingsView: View {
                 .textFieldStyle(RoundedBorderTextFieldStyle())
               Text("px")
             }
-
+            
             HStack {
               Text("Elements border radius")
               Spacer()
@@ -111,6 +111,19 @@ struct AppearanceSettingsView: View {
                 .textFieldStyle(RoundedBorderTextFieldStyle())
               Text("px")
             }
+            
+            HStack {
+              Text("Elements background opacity")
+              Spacer()
+              TextField("", value: binding(\.global.barElementBackgroundOpacity), formatter: NumberFormatter())
+                .frame(width: 60)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+              Text("%")
+            }
+
+            Text("A value closer to 0 will make difficult to distinguish focused/active elements in the spaces & processes widgets.")
+              .font(.caption)
+              .foregroundColor(.secondary)
             
             Divider()
 
@@ -148,7 +161,7 @@ struct AppearanceSettingsView: View {
 
             Toggle("Grayscale app icons", isOn: binding(\.global.grayscaleAppIcons))
             
-            Text("Icons are automatically following your system preferences regarding their style but you can enforce them to always be in grayscale")
+            Text("Icons are automatically following your system preferences regarding their style but you can enforce them to always be in grayscale.")
               .font(.caption)
               .foregroundColor(.secondary)
           }

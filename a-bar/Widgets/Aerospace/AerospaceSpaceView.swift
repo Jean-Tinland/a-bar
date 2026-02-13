@@ -94,16 +94,17 @@ struct AerospaceSpaceView: View {
     @ViewBuilder
     private var spaceBackground: some View {
         if isFocused {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(theme.mainAlt.opacity(0.9))
+          RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
+            .fill(theme.mainAlt.opacity((globalSettings.barElementBackgroundOpacity / 100) * 0.6))
         } else if isVisible {
             RoundedRectangle(cornerRadius: 4)
-                .fill(theme.mainAlt)
+          RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
+            .fill(theme.mainAlt.opacity((globalSettings.barElementBackgroundOpacity / 100) * 0.45))
         } else if isHovered {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(theme.minor.opacity(1))
+            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
+              .fill(theme.mainAlt.opacity((globalSettings.barElementBackgroundOpacity / 100) * 0.3))
         } else {
-            theme.minor
+            theme.minor.opacity(globalSettings.barElementBackgroundOpacity / 100)
         }
     }
 

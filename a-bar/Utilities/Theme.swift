@@ -202,10 +202,68 @@ extension Color {
     return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
   }
 
+  /// Blend this color with a bar background color based on element opacity
+  /// When opacity is low, the bar background shows through more
+  /// - Parameters:
+  ///   - opacity: The bar element background opacity (0-100)
+  ///   - barBackground: The bar's background color to blend with
+  /// - Returns: The effective visible color after blending
+  func blendedWithBarBackground(_ barBackground: Color, opacity: CGFloat) -> Color {
+    let normalizedOpacity = max(0, min(100, opacity)) / 100.0
+    
+    // Get RGBA components for both colors
+    guard let selfComponents = NSColor(self).cgColor.components,
+          let barComponents = NSColor(barBackground).cgColor.components,
+          selfComponents.count >= 3,
+          barComponents.count >= 3 else {
+      return self
+    }
+    
+    // Blend: final = (element * opacity) + (bar * (1 - opacity))
+    let r = selfComponents[0] * normalizedOpacity + barComponents[0] * (1 - normalizedOpacity)
+    let g = selfComponents[1] * normalizedOpacity + barComponents[1] * (1 - normalizedOpacity)
+    let b = selfComponents[2] * normalizedOpacity + barComponents[2] * (1 - normalizedOpacity)
+    
+    return Color(
+      red: Double(r),
+      green: Double(g),
+      blue: Double(b)
+    )
+  }
+
+  /// Convenience method to blend with theme's bar background
+  func withBarElementOpacity(_ opacity: CGFloat, barBackground: Color? = nil) -> Color {
+    // If no bar background provided, just return self (for backward compatibility)
+    guard let barBg = barBackground else { return self }
+    
+    // For high opacity (>= 70%), the widget background dominates, use it directly
+    if opacity >= 70 {
+      return self
+    }
+    
+    // For lower opacity, blend to get the effective visible color
+    return blendedWithBarBackground(barBg, opacity: opacity)
+  }
+
   /// Get a contrasting foreground color based on luminance
-  func contrastingForeground(from theme: ABarTheme) -> Color {
+  /// - Parameters:
+  ///   - theme: The current theme
+  ///   - opacity: Optional bar element opacity (0-100). When provided and low, uses bar background instead
+  ///   - barBackground: Optional bar background color override
+  /// - Returns: A contrasting foreground color
+  func contrastingForeground(from theme: ABarTheme, opacity: CGFloat? = nil, barBackground: Color? = nil) -> Color {
+    let effectiveBackground: Color
+    
+    if let opacity = opacity, opacity < 70 {
+      // For low opacity, blend with bar background to get effective color
+      let barBg = barBackground ?? theme.background
+      effectiveBackground = blendedWithBarBackground(barBg, opacity: opacity)
+    } else {
+      effectiveBackground = self
+    }
+    
     // If background is light (high luminance), use dark foreground
     // If background is dark (low luminance), use light foreground
-    return luminance > 0.5 ? Color.black.opacity(0.85) : Color.white.opacity(0.95)
+    return effectiveBackground.luminance > 0.5 ? Color.black.opacity(0.85) : Color.white.opacity(0.95)
   }
 }

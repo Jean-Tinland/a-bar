@@ -20,12 +20,12 @@ struct KeyboardWidget: View {
   var body: some View {
     let bgColor = keyboardSettings.backgroundColor.color(from: theme)
     let fgColor =
-      globalSettings.noColorInDataWidgets
-      ? theme.foreground : bgColor.contrastingForeground(from: theme)
+      globalSettings.noColorInDataWidgets ? 
+        theme.foreground : 
+        bgColor.contrastingForeground(from: theme, opacity: globalSettings.barElementBackgroundOpacity, barBackground: theme.background)
 
     BaseWidgetView(
-      backgroundColor: globalSettings.noColorInDataWidgets
-        ? theme.minor.opacity(0.95) : bgColor.opacity(0.95),
+      backgroundColor: globalSettings.noColorInDataWidgets ? theme.minor : bgColor,
       onRightClick: openKeyboardPreferences
     ) {
       HStack(spacing: 4) {

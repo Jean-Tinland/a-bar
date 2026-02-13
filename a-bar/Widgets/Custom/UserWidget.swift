@@ -23,6 +23,11 @@ struct UserWidget: View {
 
   @State private var output: String = ""
   @State private var isLoading = true
+  
+  
+  private var globalSettings: GlobalSettings {
+      settings.settings.global
+  }
 
   private var theme: ABarTheme {
     ThemeManager.currentTheme(for: settings.settings.theme)
@@ -53,7 +58,11 @@ struct UserWidget: View {
   /// Get contrasted foreground color based on background
   private var foregroundColor: Color {
     if let bgColor = customBackgroundColor {
-      return bgColor.contrastingForeground(from: theme)
+      return bgColor.contrastingForeground(
+        from: theme,
+        opacity: globalSettings.barElementBackgroundOpacity,
+        barBackground: theme.background
+      )
     }
     return theme.foreground
   }

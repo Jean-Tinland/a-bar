@@ -115,15 +115,15 @@ struct SpaceView: View {
     private var spaceBackground: some View {
         if isFocused {
             RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-              .fill(theme.mainAlt.opacity(0.6))
+            .fill(theme.mainAlt.opacity((globalSettings.barElementBackgroundOpacity / 100) * 0.6))
         } else if isVisible {
             RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-                .fill(theme.mainAlt.opacity(0.45))
+            .fill(theme.mainAlt.opacity((globalSettings.barElementBackgroundOpacity / 100) * 0.45))
         } else if isHovered {
             RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-              .fill(theme.mainAlt.opacity(0.3))
+              .fill(theme.mainAlt.opacity((globalSettings.barElementBackgroundOpacity / 100) * 0.3))
         } else {
-            theme.minor
+            theme.minor.opacity(globalSettings.barElementBackgroundOpacity / 100)
         }
     }
     

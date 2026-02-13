@@ -22,12 +22,12 @@ struct DateWidget: View {
   var body: some View {
     let bgColor = dateSettings.backgroundColor.color(from: theme)
     let fgColor =
-      globalSettings.noColorInDataWidgets
-      ? theme.foreground : bgColor.contrastingForeground(from: theme)
+      globalSettings.noColorInDataWidgets ? 
+        theme.foreground : 
+        bgColor.contrastingForeground(from: theme, opacity: globalSettings.barElementBackgroundOpacity, barBackground: theme.background)
 
     BaseWidgetView(
-      backgroundColor: globalSettings.noColorInDataWidgets
-        ? theme.minor.opacity(0.95) : bgColor.opacity(0.95),
+      backgroundColor: globalSettings.noColorInDataWidgets ? theme.minor : bgColor,
       onClick: openCalendar
     ) {
       HStack(spacing: 4) {

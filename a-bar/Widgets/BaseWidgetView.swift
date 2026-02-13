@@ -2,8 +2,6 @@ import SwiftUI
 
 /// Base widget view providing consistent styling and interaction
 struct BaseWidgetView<Content: View>: View {
-    let isHighlighted: Bool
-    let highlightColor: Color
     let backgroundColor: Color?
     let width: CGFloat?
     let noPadding: Bool
@@ -13,12 +11,9 @@ struct BaseWidgetView<Content: View>: View {
 
     @EnvironmentObject var settings: SettingsManager
 
-    @State private var isHovered = false
     @State private var isPressed = false
 
     init(
-        isHighlighted: Bool = false,
-        highlightColor: Color = Color.clear,
         backgroundColor: Color? = nil,
         width: CGFloat? = nil,
         noPadding: Bool = false,
@@ -27,8 +22,6 @@ struct BaseWidgetView<Content: View>: View {
         @ViewBuilder content: @escaping () -> Content
     ) {
         let theme = ThemeManager.currentTheme(for: SettingsManager.shared.settings.theme)
-        self.isHighlighted = isHighlighted
-        self.highlightColor = highlightColor
         self.backgroundColor = backgroundColor ?? theme.minor
         self.width = width
         self.noPadding = noPadding
@@ -85,7 +78,6 @@ struct BaseWidgetView<Content: View>: View {
                 }
             }
             .onHover { hovering in
-                isHovered = hovering
                 if onClick != nil {
                     if hovering {
                         NSCursor.pointingHand.push()
@@ -98,15 +90,9 @@ struct BaseWidgetView<Content: View>: View {
 
     @ViewBuilder
     private var backgroundView: some View {
-        if isHighlighted {
+        if let bg = backgroundColor {
             RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-                .fill(highlightColor)
-        } else if let bg = backgroundColor {
-            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-                .fill(bg)
-        } else if isHovered && onClick != nil {
-            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-                .fill(theme.highlight.opacity(0.3))
+            .fill(bg.opacity(globalSettings.barElementBackgroundOpacity / 100))
         } else {
             Color.clear
         }

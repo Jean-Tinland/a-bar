@@ -80,7 +80,7 @@ struct AerospaceProcessWidget: View {
                         .padding(.vertical, processSettings.hideWindowTitle || processSettings.displayOnlyIcon ? 3 : 0)
                         .background(
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(theme.mainAlt.opacity(0.5))
+                              .fill(theme.mainAlt.opacity((globalSettings.barElementBackgroundOpacity / 100) * 0.5))
                         )
                         .scaleEffect(focusedWindowPressed ? 0.94 : 1.0)
                         .animation(.spring(response: 0.25, dampingFraction: 0.7), value: focusedWindowPressed)

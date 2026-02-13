@@ -23,14 +23,12 @@ struct BatteryWidget: View {
   var body: some View {
     let bgColor = batterySettings.backgroundColor.color(from: theme)
     let fgColor =
-      globalSettings.noColorInDataWidgets
-      ? theme.foreground : bgColor.contrastingForeground(from: theme)
+      globalSettings.noColorInDataWidgets ? 
+        theme.foreground : 
+        bgColor.contrastingForeground(from: theme, opacity: globalSettings.barElementBackgroundOpacity, barBackground: theme.background)
 
     BaseWidgetView(
-      isHighlighted: systemInfo.isCaffeinateActive,
-      highlightColor: globalSettings.noColorInDataWidgets ? theme.minor : bgColor,
-      backgroundColor: globalSettings.noColorInDataWidgets
-        ? theme.minor.opacity(0.95) : bgColor.opacity(0.95),
+      backgroundColor: globalSettings.noColorInDataWidgets ? theme.minor : bgColor,
       onClick: batterySettings.toggleCaffeinateOnClick ? toggleCaffeinate : nil
     ) {
       ZStack(alignment: .leading) {

@@ -21,8 +21,6 @@ struct GitHubWidget: View {
             EmptyView()
         } else {
             BaseWidgetView(
-                isHighlighted: notificationCount > 0,
-                highlightColor: theme.blue.opacity(0.2),
                 onClick: openNotifications,
                 onRightClick: refreshNotifications
             ) {

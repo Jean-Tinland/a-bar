@@ -115,7 +115,10 @@ struct StickyWindowsView: View {
         .padding(.vertical, 2)
         .background(
           RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-            .fill(theme.mainAlt.opacity(0.45))
+            .fill(
+              theme.mainAlt
+                .opacity((globalSettings.barElementBackgroundOpacity / 100.0) * 0.45)
+            )
         )
     }
     
