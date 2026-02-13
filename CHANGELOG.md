@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.3.3 - 2026-02-13
+
+- fix: add missing onSave method when creating a new custom widget
+
 ## v1.3.2 - 2026-02-12
 
 - feat: add audio device names to MicWidget and SoundWidget
