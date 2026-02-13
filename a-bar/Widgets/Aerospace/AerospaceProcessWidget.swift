@@ -82,6 +82,17 @@ struct AerospaceProcessWidget: View {
                             RoundedRectangle(cornerRadius: 4)
                               .fill(theme.mainAlt.opacity((globalSettings.barElementsBackgroundOpacity / 100) * 0.5))
                         )
+                        .overlay(
+                          Group {
+                            if (globalSettings.showElementsBorder) {
+                              
+                              RoundedRectangle(
+                                cornerRadius: globalSettings.barElementsCornerRadius
+                              )
+                              .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+                            }
+                          }
+                        )
                         .scaleEffect(focusedWindowPressed ? 0.94 : 1.0)
                         .animation(.spring(response: 0.25, dampingFraction: 0.7), value: focusedWindowPressed)
                         .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in

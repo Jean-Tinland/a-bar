@@ -75,8 +75,15 @@ struct SpaceView: View {
       .frame(maxHeight: .infinity)
       .background(spaceBackground)
       .overlay(
-          RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-              .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+        Group {
+          if (globalSettings.showElementsBorder) {
+            
+            RoundedRectangle(
+              cornerRadius: globalSettings.barElementsCornerRadius
+            )
+            .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+          }
+        }
       )
       .clipShape(RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius))
       .scaleEffect(isPressed ? 0.94 : 1.0)

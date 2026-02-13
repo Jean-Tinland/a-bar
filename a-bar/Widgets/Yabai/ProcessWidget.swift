@@ -70,8 +70,15 @@ struct ProcessWidget: View {
               .fill(theme.mainAlt.opacity((globalSettings.barElementsBackgroundOpacity / 100) * 0.5))
           )
           .overlay(
-            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-              .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+            Group {
+              if (globalSettings.showElementsBorder) {
+                
+                RoundedRectangle(
+                  cornerRadius: globalSettings.barElementsCornerRadius
+                )
+                .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+              }
+            }
           )
         }
         if orderedWindows.isEmpty {
@@ -126,8 +133,15 @@ struct ProcessWidget: View {
                   .fill(theme.mainAlt.opacity((globalSettings.barElementsBackgroundOpacity / 100) * 0.5))
               )
               .overlay(
-                RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-                  .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+                Group {
+                  if (globalSettings.showElementsBorder) {
+                    
+                    RoundedRectangle(
+                      cornerRadius: globalSettings.barElementsCornerRadius
+                    )
+                    .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+                  }
+                }
               )
               .scaleEffect(focusedWindowPressed && window.id == focusedWin?.id ? 0.94 : 1.0)
               .animation(.spring(response: 0.25, dampingFraction: 0.7), value: focusedWindowPressed)

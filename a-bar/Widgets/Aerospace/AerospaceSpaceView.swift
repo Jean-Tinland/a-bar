@@ -60,6 +60,17 @@ struct AerospaceSpaceView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(spaceBackground)
+        .overlay(
+          Group {
+            if (globalSettings.showElementsBorder) {
+              
+              RoundedRectangle(
+                cornerRadius: globalSettings.barElementsCornerRadius
+              )
+              .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+            }
+          }
+        )
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .scaleEffect(isPressed ? 0.94 : 1.0)
         .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)

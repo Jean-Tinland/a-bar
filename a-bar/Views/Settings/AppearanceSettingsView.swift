@@ -125,6 +125,8 @@ struct AppearanceSettingsView: View {
               .font(.caption)
               .foregroundColor(.secondary)
             
+            Toggle("Show elements border", isOn: binding(\.global.showElementsBorder))
+            
             Divider()
 
             Text("Data widgets settings")

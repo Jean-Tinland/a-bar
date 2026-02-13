@@ -53,10 +53,15 @@ struct BaseWidgetView<Content: View>: View {
             .frame(maxHeight: .infinity)
             .frame(width: width)
             .overlay(
-              RoundedRectangle(
-                cornerRadius: globalSettings.barElementsCornerRadius
-              )
-              .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+              Group {
+                if (globalSettings.showElementsBorder) {
+                  
+                  RoundedRectangle(
+                    cornerRadius: globalSettings.barElementsCornerRadius
+                  )
+                  .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
+                }
+              }
             )
             .background(backgroundView)
             .contentShape(Rectangle())
