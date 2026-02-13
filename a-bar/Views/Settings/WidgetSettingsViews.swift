@@ -1264,6 +1264,20 @@ struct CustomWidgetEditorView: View {
             return
           }
 
+          // Construct the UserWidgetDefinition
+          let newWidget = UserWidgetDefinition(
+            id: widget?.id ?? UUID(),
+            name: name,
+            icon: icon,
+            command: command,
+            refreshInterval: refreshInterval,
+            clickCommand: clickCommand.isEmpty ? nil : clickCommand,
+            backgroundColor: backgroundColor.isEmpty ? nil : backgroundColor,
+            isActive: isActive,
+            hideIcon: hideIcon,
+            hideWhenEmpty: hideWhenEmpty
+          )
+          onSave(newWidget)
           presentationMode.wrappedValue.dismiss()
         }
         .disabled(name.isEmpty || icon.isEmpty)
