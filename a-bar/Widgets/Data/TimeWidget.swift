@@ -24,7 +24,7 @@ struct TimeWidget: View {
     let fgColor =
       globalSettings.noColorInDataWidgets ? 
         theme.foreground : 
-        bgColor.contrastingForeground(from: theme, opacity: globalSettings.barElementBackgroundOpacity, barBackground: theme.background)
+        bgColor.contrastingForeground(from: theme, opacity: globalSettings.barElementsBackgroundOpacity, barBackground: theme.background)
 
     BaseWidgetView(
       backgroundColor: globalSettings.noColorInDataWidgets

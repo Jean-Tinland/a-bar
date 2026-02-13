@@ -60,7 +60,7 @@ struct UserWidget: View {
     if let bgColor = customBackgroundColor {
       return bgColor.contrastingForeground(
         from: theme,
-        opacity: globalSettings.barElementBackgroundOpacity,
+        opacity: globalSettings.barElementsBackgroundOpacity,
         barBackground: theme.background
       )
     }

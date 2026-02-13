@@ -92,7 +92,7 @@ struct BaseWidgetView<Content: View>: View {
     private var backgroundView: some View {
         if let bg = backgroundColor {
             RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-            .fill(bg.opacity(globalSettings.barElementBackgroundOpacity / 100))
+            .fill(bg.opacity(globalSettings.barElementsBackgroundOpacity / 100))
         } else {
             Color.clear
         }

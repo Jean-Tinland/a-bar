@@ -67,7 +67,7 @@ struct ProcessWidget: View {
           .padding(.vertical, 3)
           .background(
             RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-              .fill(theme.mainAlt.opacity((globalSettings.barElementBackgroundOpacity / 100) * 0.5))
+              .fill(theme.mainAlt.opacity((globalSettings.barElementsBackgroundOpacity / 100) * 0.5))
           )
           .overlay(
             RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
@@ -114,7 +114,7 @@ struct ProcessWidget: View {
                     .padding(.vertical, 2)
                     .background(
                       RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-                        .fill(theme.minor.opacity((globalSettings.barElementBackgroundOpacity / 100) * 0.5))
+                        .fill(theme.minor.opacity((globalSettings.barElementsBackgroundOpacity / 100) * 0.5))
                     )
                 }
               }
@@ -123,7 +123,7 @@ struct ProcessWidget: View {
               .frame(maxHeight: .infinity)
               .background(
                 RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-                  .fill(theme.mainAlt.opacity((globalSettings.barElementBackgroundOpacity / 100) * 0.5))
+                  .fill(theme.mainAlt.opacity((globalSettings.barElementsBackgroundOpacity / 100) * 0.5))
               )
               .overlay(
                 RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)

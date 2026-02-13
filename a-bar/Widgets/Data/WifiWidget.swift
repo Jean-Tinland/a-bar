@@ -65,7 +65,7 @@ struct WifiWidget: View {
     let fgColor =
       globalSettings.noColorInDataWidgets ? 
         theme.foreground : 
-        bgColor.contrastingForeground(from: theme, opacity: globalSettings.barElementBackgroundOpacity, barBackground: theme.background)
+        bgColor.contrastingForeground(from: theme, opacity: globalSettings.barElementsBackgroundOpacity, barBackground: theme.background)
 
     // Hide if disabled and setting is enabled
     if wifiSettings.hideWhenDisabled && !wifiInfo.isActive {

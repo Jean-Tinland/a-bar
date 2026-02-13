@@ -115,7 +115,7 @@ struct AppearanceSettingsView: View {
             HStack {
               Text("Elements background opacity")
               Spacer()
-              TextField("", value: binding(\.global.barElementBackgroundOpacity), formatter: NumberFormatter())
+              TextField("", value: binding(\.global.barElementsBackgroundOpacity), formatter: NumberFormatter())
                 .frame(width: 60)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
               Text("%")

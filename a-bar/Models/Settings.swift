@@ -458,7 +458,7 @@ struct GlobalSettings: Codable, Equatable {
   var barCornerRadius: CGFloat = 6
   var barOpacity: CGFloat = 90
   var barElementsCornerRadius: CGFloat = 4
-  var barElementBackgroundOpacity: CGFloat = 100
+  var barElementsBackgroundOpacity: CGFloat = 100
   var showBorder: Bool = true
   var noColorInDataWidgets: Bool = false
   var barBackgroundBlur: Bool = false
@@ -494,7 +494,7 @@ struct GlobalSettings: Codable, Equatable {
     barCornerRadius = try container.decodeIfPresent(CGFloat.self, forKey: .barCornerRadius) ?? 6
     barOpacity = try container.decodeIfPresent(CGFloat.self, forKey: .barOpacity) ?? 90
     barElementsCornerRadius = try container.decodeIfPresent(CGFloat.self, forKey: .barElementsCornerRadius) ?? 4
-    barElementBackgroundOpacity = try container.decodeIfPresent(CGFloat.self, forKey: .barElementBackgroundOpacity) ?? 100
+    barElementsBackgroundOpacity = try container.decodeIfPresent(CGFloat.self, forKey: .barElementsBackgroundOpacity) ?? 100
     showBorder = try container.decodeIfPresent(Bool.self, forKey: .showBorder) ?? true
     noColorInDataWidgets = try container.decodeIfPresent(Bool.self, forKey: .noColorInDataWidgets) ?? false
     barBackgroundBlur = try container.decodeIfPresent(Bool.self, forKey: .barBackgroundBlur) ?? false
@@ -511,7 +511,7 @@ struct GlobalSettings: Codable, Equatable {
   private enum CodingKeys: String, CodingKey {
     case barEnabled, launchAtLogin, barHeight, fontSize, fontName, barHorizontalPadding
     case barVerticalPadding, barDistanceFromEdges, barCornerRadius, barElementsCornerRadius
-    case barOpacity, barElementBackgroundOpacity
+    case barOpacity, barElementsBackgroundOpacity
     case showBorder, noColorInDataWidgets, barBackgroundBlur, windowManager, yabaiPath, aerospacePath
     case grayscaleAppIcons, enableNotifications, barElementGap
   }
