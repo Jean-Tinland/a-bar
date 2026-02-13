@@ -4,12 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-<!-- _No changes yet._ -->
+_No changes yet._
+
+## v1.3.4 - 2026-02-13
 
 - feat: add a scale effect while clicking on interactive widgets
 - feat: add bar element background opacity setting and apply it across widgets
 - feat: enable border display in global settings by default
 - feat: add showElementsBorder setting and apply it across widgets
+- feat: add NSCalendarsUsageDescription for calendar access in widgets
 
 ## v1.3.3 - 2026-02-13
 
