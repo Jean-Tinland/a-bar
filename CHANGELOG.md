@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.3.5 - 2026-02-14
+
+- refactor: update AppLogo assets and improve calendar access description
+
 ## v1.3.4 - 2026-02-13
 
 - feat: add a scale effect while clicking on interactive widgets

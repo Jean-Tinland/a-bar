@@ -37,7 +37,8 @@
 		<key>NSAppleEventsUsageDescription</key>
 		<string>a-bar needs access to send Apple Events to control system functions.</string>
 		<key>NSCalendarsUsageDescription</key>
-		<string>a-bar widgets need access to your calendar to display event information.</string>
+		<string>a-bar widgets need access to your calendar only in order to allow custom widgets to
+			retrieve information if necessary.</string>
 		<key>NSAppleScriptEnabled</key>
 		<true />
 		<key>OSAScriptingDefinition</key>
