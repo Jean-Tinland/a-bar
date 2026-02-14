@@ -68,7 +68,7 @@ brew install --cask a-bar
 1. Download the latest release from the [Releases](https://github.com/Jean-Tinland/a-bar/releases) page
 2. Move `a-bar.app` to `/Applications`
 3. As the app is not notarized you will need to do the following:
-   - before launching the app for the first time: run the following command in Terminal: `sudo xattr -rd com.apple.quarantine /Applications/_a-bar_.app` then launch _a-bar_
+   - before launching the app for the first time: run the following command in Terminal: `xattr -rd com.apple.quarantine /Applications/_a-bar_.app` then launch _a-bar_
    - after launching the app for the first time, you will need to: open `System Settings` > `Privacy & Security`, then click `Open Anyway` next to the _a-bar_ warning
 4. Grant necessary permissions when prompted
 
