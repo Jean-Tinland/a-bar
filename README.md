@@ -50,6 +50,18 @@ You'll find the full installation guide in the [documentation](https://www.jeant
 
 Here's a quick summary:
 
+### Homebrew
+
+```bash
+brew tap Jean-Tinland/a-bar
+brew install --cask a-bar
+```
+
+> [!WARNING]
+> **Note:** [Homebrew installation](https://github.com/Jean-Tinland/homebrew-a-bar/blob/main/Casks/a-bar.rb) script automatically removes the `com.apple.quarantine` attribute. That way the app should work out of the box without having to open System Settings to allow it.
+
+### Manual installation
+
 1. Download the latest release from the [Releases](https://github.com/Jean-Tinland/a-bar/releases) page
 2. Move `a-bar.app` to `/Applications`
 3. As the app is not notarized you will need to do the following:
