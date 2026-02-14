@@ -7,10 +7,10 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
 [Website](https://www.jeantinland.com/toolbox/a-bar) • [Documentation](https://www.jeantinland.com/toolbox/a-bar/documentation)
 
 > [!CAUTION]
-> **Note of caution:** Even in v1.x.x, a-bar stays in early development. Expect bugs and missing features. Feedback and contributions are welcome!
+> **Note of caution:** Even in v1.x.x, _a-bar_ stays in early development. Expect bugs and missing features. Feedback and contributions are welcome!
 
 > [!NOTE]
-> **About signing and notarization:** a-bar is not signed or notarized. **This means that you will need to bypass macOS security to run it, and you may see warnings about the app being from an unidentified developer**. I'm not planning to notarize the app: Apple is already collecting enough money from developers.
+> **About signing and notarization:** _a-bar_ is not signed or notarized. **This means that you will need to bypass macOS security to run it, and you may see warnings about the app being from an unidentified developer**. I'm not planning to notarize the app: Apple is already collecting enough money from developers.
 
 ## Features
 
@@ -44,6 +44,9 @@ You'll find all the bugs and list of planned features in the [GitHub backlog](ht
 - [yabai](https://github.com/koekeishiya/yabai) or [AeroSpace](https://github.com/nikitabobko/AeroSpace) (for window management features)
 - [gh CLI](https://cli.github.com/) (optional, for GitHub notifications)
 
+> [!NOTE]
+> _a-bar_ can be used without yabai or AeroSpace, but you won't be able to use the spaces & processes widgets. You can still use _a-bar_ as a system status bar replacement with its included widgets and your custom ones.
+
 ## Installation
 
 You'll find the full installation guide in the [documentation](https://www.jeantinland.com/toolbox/a-bar/documentation/installation/).
@@ -65,8 +68,8 @@ brew install --cask a-bar
 1. Download the latest release from the [Releases](https://github.com/Jean-Tinland/a-bar/releases) page
 2. Move `a-bar.app` to `/Applications`
 3. As the app is not notarized you will need to do the following:
-   - before launching the app for the first time: run the following command in Terminal: `sudo xattr -rd com.apple.quarantine /Applications/a-bar.app` then launch a-bar
-   - after launching the app for the first time, you will need to: open `System Settings` > `Privacy & Security`, then click `Open Anyway` next to the a-bar warning
+   - before launching the app for the first time: run the following command in Terminal: `sudo xattr -rd com.apple.quarantine /Applications/_a-bar_.app` then launch _a-bar_
+   - after launching the app for the first time, you will need to: open `System Settings` > `Privacy & Security`, then click `Open Anyway` next to the _a-bar_ warning
 4. Grant necessary permissions when prompted
 
 > [!NOTE]
@@ -87,4 +90,4 @@ GPL-3.0 license - see [LICENSE](LICENSE) for details.
 ## Credits
 
 - Inspired by [simple-bar](https://github.com/Jean-Tinland/simple-bar)
-- [yabai](https://github.com/koekeishiya/yabai) by koekeishiya
+- [yabai](https://github.com/asmvik/yabai) by asmvik
