@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-_No changes yet._
+<!-- _No changes yet._ -->
+
+- fix: make caffeinate toggle work again
 
 ## v1.3.5 - 2026-02-14
 

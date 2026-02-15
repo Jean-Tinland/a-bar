@@ -1209,27 +1209,36 @@ class SystemInfoService: ObservableObject {
             caffeinateProcess = nil
             caffeinateProcessKeepAlive = nil
             killAllCaffeinateProcesses()
+            DispatchQueue.main.async {
+                self.isCaffeinateActive = false
+            }
         } else {
-            // Kill all existing caffeinate processes before starting a new one
+            // Ensure no other caffeinate instances are running first
             killAllCaffeinateProcesses()
+
             let process = Process()
-            process.launchPath = "/usr/bin/caffeinate"
-            let args = caffeinateArguments(for: option)
-            process.arguments = args
-            process.standardOutput = nil
-            process.standardError = nil
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/caffeinate")
+            process.arguments = caffeinateArguments(for: option)
+            // Attach pipes so the process has valid output targets (avoid unexpected behavior)
+            process.standardOutput = Pipe()
+            process.standardError = Pipe()
             process.qualityOfService = .userInitiated
-            process.terminationHandler = { [weak self] proc in
+
+            process.terminationHandler = { [weak self] _ in
                 DispatchQueue.main.async {
                     self?.isCaffeinateActive = false
                 }
             }
+
+            // Retain the process before running to avoid it being deallocated
             caffeinateProcess = process
             caffeinateProcessKeepAlive = process
+
             do {
                 try process.run()
                 DispatchQueue.main.async {
-                    self.isCaffeinateActive = true
+                    // Reflect actual running state immediately so the UI updates right away
+                    self.isCaffeinateActive = process.isRunning
                 }
             } catch {
                 caffeinateProcess = nil
@@ -1239,6 +1248,8 @@ class SystemInfoService: ObservableObject {
                 }
             }
         }
+
+        // Refresh state asynchronously (keeps external checks in sync)
         refreshCaffeinate()
     }
 
@@ -1271,13 +1282,15 @@ class SystemInfoService: ObservableObject {
 
     private func killAllCaffeinateProcesses() {
         let process = Process()
-        process.launchPath = "/usr/bin/pkill"
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
         process.arguments = ["caffeinate"]
-        process.standardOutput = nil
-        process.standardError = nil
+        // We run synchronously and wait so we don't race with a subsequently
+        // launched `caffeinate` process which could otherwise be killed.
+        process.standardOutput = Pipe()
+        process.standardError = Pipe()
         do {
             try process.run()
-            // Fire-and-forget – don't block the calling thread.
+            process.waitUntilExit()
         } catch {
             // pkill may fail if no caffeinate is running; that's fine.
         }
