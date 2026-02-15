@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 <!-- _No changes yet._ -->
 
 - fix: make caffeinate toggle work again
+- fix: ensure github widget keeps refreshing when hidden in absence of notification
+- fix: ensure custom user widgets keeps polling for notifications even when hidden
 
 ## v1.3.5 - 2026-02-14
 

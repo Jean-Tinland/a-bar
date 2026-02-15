@@ -68,47 +68,47 @@ struct UserWidget: View {
   }
 
   var body: some View {
-    if config.isActive && !(config.hideWhenEmpty && output.isEmpty && !isLoading) {
-      BaseWidgetView(
-        backgroundColor: customBackgroundColor,
-        onClick: config.clickCommand != nil ? executeClick : nil,
-      ) {
-        HStack(spacing: 4) {
-          if !config.hideIcon {
-            Image(systemName: config.icon)
-              .font(.system(size: 10))
-              .foregroundColor(foregroundColor)
-          }
+    Group {
+      if config.isActive && !(config.hideWhenEmpty && output.isEmpty && !isLoading) {
+        BaseWidgetView(
+          backgroundColor: customBackgroundColor,
+          onClick: config.clickCommand != nil ? executeClick : nil,
+        ) {
+          HStack(spacing: 4) {
+            if !config.hideIcon {
+              Image(systemName: config.icon)
+                .font(.system(size: 10))
+                .foregroundColor(foregroundColor)
+            }
 
-          if isLoading {
-            ProgressView()
-              .scaleEffect(0.4)
-              .frame(width: 12, height: 12)
-          } else if !output.isEmpty {
-            Text(output)
-              .foregroundColor(foregroundColor)
-              .lineLimit(1)
+            if isLoading {
+              ProgressView()
+                .scaleEffect(0.4)
+                .frame(width: 12, height: 12)
+            } else if !output.isEmpty {
+              Text(output)
+                .foregroundColor(foregroundColor)
+                .lineLimit(1)
+            }
           }
         }
       }
-      .task(id: config.refreshInterval) {
-        // Initial refresh
+    }
+    .onAppear {
+      if config.isActive {
         refreshOutput()
-        
-        // Continuous refresh loop
-        while !Task.isCancelled {
-          try? await Task.sleep(nanoseconds: UInt64(config.refreshInterval * 1_000_000_000))
-          if !Task.isCancelled {
-            refreshOutput()
-          }
-        }
       }
-      .onReceive(
-        NotificationCenter.default.publisher(for: NSNotification.Name("RefreshUserWidget"))
-      ) { notification in
-        if let widgetId = notification.userInfo?["widgetId"] as? UUID, widgetId == config.id {
-          refreshOutput()
-        }
+    }
+    .onReceive(Timer.publish(every: config.refreshInterval, on: .main, in: .common).autoconnect()) { _ in
+      if config.isActive {
+        refreshOutput()
+      }
+    }
+    .onReceive(
+      NotificationCenter.default.publisher(for: NSNotification.Name("RefreshUserWidget"))
+    ) { notification in
+      if let widgetId = notification.userInfo?["widgetId"] as? UUID, widgetId == config.id {
+        refreshOutput()
       }
     }
   }
