@@ -16,42 +16,42 @@ struct GitHubWidget: View {
     }
     
     var body: some View {
-        // Hide if no notifications and setting is enabled
-        if githubSettings.hideWhenNoNotifications && notificationCount == 0 && !isLoading {
-            EmptyView()
-        } else {
-            BaseWidgetView(
-                onClick: openNotifications,
-                onRightClick: refreshNotifications
-            ) {
-                HStack(spacing: 4) {
-                    if githubSettings.showIcon {
-                        Image("GitHubIcon")
-                            .renderingMode(.template)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 12, height: 12)
-                            .foregroundColor(notificationCount > 0 ? theme.blue : theme.foreground)
-                    }
-                    
-                    if isLoading {
-                        ProgressView()
-                            .scaleEffect(0.4)
-                            .frame(width: 12, height: 12)
-                    } else {
-                        Text(notificationText)
-                            .foregroundColor(notificationCount > 0 ? theme.blue : theme.foreground)
+        // Keep polling even when hidden so the widget can reappear
+        Group {
+            if githubSettings.hideWhenNoNotifications && notificationCount == 0 && !isLoading {
+                EmptyView()
+            } else {
+                BaseWidgetView(
+                    onClick: openNotifications,
+                    onRightClick: refreshNotifications
+                ) {
+                    HStack(spacing: 4) {
+                        if githubSettings.showIcon {
+                            Image("GitHubIcon")
+                                .renderingMode(.template)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 12, height: 12)
+                                .foregroundColor(notificationCount > 0 ? theme.blue : theme.foreground)
+                        }
+                        
+                        if isLoading {
+                            ProgressView()
+                                .scaleEffect(0.4)
+                                .frame(width: 12, height: 12)
+                        } else {
+                            Text(notificationText)
+                                .foregroundColor(notificationCount > 0 ? theme.blue : theme.foreground)
+                        }
                     }
                 }
             }
-            .onAppear {
-                if isLoading {
-                    refreshNotifications()
-                }
-            }
-            .onReceive(Timer.publish(every: githubSettings.refreshInterval, on: .main, in: .common).autoconnect()) { _ in
-                refreshNotifications()
-            }
+        }
+        .onAppear {
+            refreshNotifications()
+        }
+        .onReceive(Timer.publish(every: githubSettings.refreshInterval, on: .main, in: .common).autoconnect()) { _ in
+            refreshNotifications()
         }
     }
     
