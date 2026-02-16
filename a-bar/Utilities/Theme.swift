@@ -23,7 +23,6 @@ struct ABarTheme {
   // Base colors
   let foreground: Color
   let background: Color
-  let highlight: Color
 
   enum ThemeKind {
     case dark
@@ -34,6 +33,20 @@ struct ABarTheme {
 enum ThemePreset: String, Codable, CaseIterable, Identifiable {
   case nightShift = "night-shift"
   case dayShift = "day-shift"
+  case nightOwl = "night-owl"
+  case oneDark = "one-dark"
+  case gruvboxDark = "gruvbox-dark"
+  case draculaPro = "dracula-pro"
+  case tokyoNight = "tokyo-night"
+  case catppuccinMocha = "catppuccin-mocha"
+  case nordDark = "nord-dark"
+  case materialOcean = "material-ocean"
+  case solarizedDark = "solarized-dark"
+  case oneLight = "one-light"
+  case gruvboxLight = "gruvbox-light"
+  case solarizedLight = "solarized-light"
+  case nordLight = "nord-light"
+  case catppuccinLatte = "catppuccin-latte"
 
   var id: String { rawValue }
 
@@ -41,14 +54,28 @@ enum ThemePreset: String, Codable, CaseIterable, Identifiable {
     switch self {
     case .nightShift: return "Night Shift"
     case .dayShift: return "Day Shift"
+    case .nightOwl: return "Night Owl"
+    case .oneDark: return "One Dark"
+    case .gruvboxDark: return "Gruvbox Dark"
+    case .draculaPro: return "Dracula Pro"
+    case .tokyoNight: return "Tokyo Night"
+    case .catppuccinMocha: return "Catppuccin Mocha"
+    case .nordDark: return "Nord Dark"
+    case .materialOcean: return "Material Ocean"
+    case .solarizedDark: return "Solarized Dark"
+    case .oneLight: return "One Light"
+    case .gruvboxLight: return "Gruvbox Light"
+    case .solarizedLight: return "Solarized Light"
+    case .nordLight: return "Nord Light"
+    case .catppuccinLatte: return "Catppuccin Latte"
     }
   }
 
   var kind: ABarTheme.ThemeKind {
     switch self {
-    case .nightShift:
+    case .nightShift, .oneDark, .gruvboxDark, .draculaPro, .tokyoNight, .catppuccinMocha, .nordDark, .materialOcean, .solarizedDark, .nightOwl:
       return .dark
-    case .dayShift:
+    case .dayShift, .oneLight, .gruvboxLight, .solarizedLight, .nordLight, .catppuccinLatte:
       return .light
     }
   }
@@ -71,9 +98,170 @@ enum ThemePreset: String, Codable, CaseIterable, Identifiable {
         cyan: Color(hex: "#7eddde"),
         foreground: Color(hex: "#ffffff"),
         background: Color(hex: "#1b222d"),
-        highlight: Color(hex: "#39465e")
       )
 
+    case .nightOwl:
+      return ABarTheme(
+        name: displayName, kind: .dark,
+        main: Color(hex: "#011627"),
+        mainAlt: Color(hex: "#0b2942"),
+        minor: Color(hex: "#1d3b53"),
+        accent: Color(hex: "#82aaff"),
+        red: Color(hex: "#ef5350"),
+        green: Color(hex: "#22da6e"),
+        yellow: Color(hex: "#ffeb95"),
+        orange: Color(hex: "#f78c6c"),
+        blue: Color(hex: "#82aaff"),
+        magenta: Color(hex: "#c792ea"),
+        cyan: Color(hex: "#7fdbca"),
+        foreground: Color(hex: "#d6deeb"),
+        background: Color(hex: "#011627")
+      )
+          
+    case .oneDark:
+      return ABarTheme(
+        name: displayName, kind: .dark,
+        main: Color(hex: "#282c34"),
+        mainAlt: Color(hex: "#21252b"),
+        minor: Color(hex: "#3e4451"),
+        accent: Color(hex: "#61afef"),
+        red: Color(hex: "#e06c75"),
+        green: Color(hex: "#98c379"),
+        yellow: Color(hex: "#e5c07b"),
+        orange: Color(hex: "#d19a66"),
+        blue: Color(hex: "#61afef"),
+        magenta: Color(hex: "#c678dd"),
+        cyan: Color(hex: "#56b6c2"),
+        foreground: Color(hex: "#abb2bf"),
+        background: Color(hex: "#282c34")
+      )
+        
+    case .gruvboxDark:
+      return ABarTheme(
+        name: displayName, kind: .dark,
+        main: Color(hex: "#282828"),
+        mainAlt: Color(hex: "#1d2021"),
+        minor: Color(hex: "#3c3836"),
+        accent: Color(hex: "#fe8019"),
+        red: Color(hex: "#fb4934"),
+        green: Color(hex: "#b8bb26"),
+        yellow: Color(hex: "#fabd2f"),
+        orange: Color(hex: "#fe8019"),
+        blue: Color(hex: "#83a598"),
+        magenta: Color(hex: "#d3869b"),
+        cyan: Color(hex: "#8ec07c"),
+        foreground: Color(hex: "#ebdbb2"),
+        background: Color(hex: "#282828")
+      )
+        
+    case .draculaPro:
+      return ABarTheme(
+        name: displayName, kind: .dark,
+        main: Color(hex: "#22212c"),
+        mainAlt: Color(hex: "#17161d"),
+        minor: Color(hex: "#454158"),
+        accent: Color(hex: "#ff80bf"),
+        red: Color(hex: "#ff9580"),
+        green: Color(hex: "#8aff80"),
+        yellow: Color(hex: "#ffff80"),
+        orange: Color(hex: "#ffca80"),
+        blue: Color(hex: "#80bfff"),
+        magenta: Color(hex: "#ff80bf"),
+        cyan: Color(hex: "#80ffea"),
+        foreground: Color(hex: "#f8f8f2"),
+        background: Color(hex: "#22212c")
+      )
+        
+    case .tokyoNight:
+      return ABarTheme(
+        name: displayName, kind: .dark,
+        main: Color(hex: "#1a1b26"),
+        mainAlt: Color(hex: "#16161e"),
+        minor: Color(hex: "#292e42"),
+        accent: Color(hex: "#7aa2f7"),
+        red: Color(hex: "#f7768e"),
+        green: Color(hex: "#9ece6a"),
+        yellow: Color(hex: "#e0af68"),
+        orange: Color(hex: "#ff9e64"),
+        blue: Color(hex: "#7aa2f7"),
+        magenta: Color(hex: "#bb9af7"),
+        cyan: Color(hex: "#7dcfff"),
+        foreground: Color(hex: "#c0caf5"),
+        background: Color(hex: "#1a1b26")
+      )
+        
+    case .catppuccinMocha:
+      return ABarTheme(
+        name: displayName, kind: .dark,
+        main: Color(hex: "#1e1e2e"),
+        mainAlt: Color(hex: "#181825"),
+        minor: Color(hex: "#313244"),
+        accent: Color(hex: "#cba6f7"),
+        red: Color(hex: "#f38ba8"),
+        green: Color(hex: "#a6e3a1"),
+        yellow: Color(hex: "#f9e2af"),
+        orange: Color(hex: "#fab387"),
+        blue: Color(hex: "#89b4fa"),
+        magenta: Color(hex: "#cba6f7"),
+        cyan: Color(hex: "#94e2d5"),
+        foreground: Color(hex: "#cdd6f4"),
+        background: Color(hex: "#1e1e2e")
+      )
+        
+    case .nordDark:
+      return ABarTheme(
+        name: displayName, kind: .dark,
+        main: Color(hex: "#2e3440"),
+        mainAlt: Color(hex: "#242933"),
+        minor: Color(hex: "#3b4252"),
+        accent: Color(hex: "#88c0d0"),
+        red: Color(hex: "#bf616a"),
+        green: Color(hex: "#a3be8c"),
+        yellow: Color(hex: "#ebcb8b"),
+        orange: Color(hex: "#d08770"),
+        blue: Color(hex: "#81a1c1"),
+        magenta: Color(hex: "#b48ead"),
+        cyan: Color(hex: "#88c0d0"),
+        foreground: Color(hex: "#eceff4"),
+        background: Color(hex: "#2e3440")
+      )
+        
+    case .materialOcean:
+      return ABarTheme(
+        name: displayName, kind: .dark,
+        main: Color(hex: "#0f111a"),
+        mainAlt: Color(hex: "#090b10"),
+        minor: Color(hex: "#1a1c25"),
+        accent: Color(hex: "#84ffff"),
+        red: Color(hex: "#ff5370"),
+        green: Color(hex: "#c3e88d"),
+        yellow: Color(hex: "#ffcb6b"),
+        orange: Color(hex: "#f78c6c"),
+        blue: Color(hex: "#82aaff"),
+        magenta: Color(hex: "#c792ea"),
+        cyan: Color(hex: "#84ffff"),
+        foreground: Color(hex: "#8f93a2"),
+        background: Color(hex: "#0f111a")
+      )
+        
+    case .solarizedDark:
+      return ABarTheme(
+        name: displayName, kind: .dark,
+        main: Color(hex: "#002b36"),
+        mainAlt: Color(hex: "#001e26"),
+        minor: Color(hex: "#073642"),
+        accent: Color(hex: "#268bd2"),
+        red: Color(hex: "#dc322f"),
+        green: Color(hex: "#859900"),
+        yellow: Color(hex: "#b58900"),
+        orange: Color(hex: "#cb4b16"),
+        blue: Color(hex: "#268bd2"),
+        magenta: Color(hex: "#d33682"),
+        cyan: Color(hex: "#2aa198"),
+        foreground: Color(hex: "#839496"),
+        background: Color(hex: "#002b36")
+      )
+      
     case .dayShift:
       return ABarTheme(
         name: displayName, kind: .light,
@@ -90,8 +278,98 @@ enum ThemePreset: String, Codable, CaseIterable, Identifiable {
         cyan: Color(hex: "#2fc2c3"),
         foreground: Color(hex: "#1b222d"),
         background: Color(hex: "#f7f7f7"),
-        highlight: Color(hex: "#e0e0e0")
       )
+        
+    case .oneLight:
+      return ABarTheme(
+        name: displayName, kind: .light,
+        main: Color(hex: "#fafafa"),
+        mainAlt: Color(hex: "#f0f0f0"),
+        minor: Color(hex: "#d4d4d4"),
+        accent: Color(hex: "#4078f2"),
+        red: Color(hex: "#e45649"),
+        green: Color(hex: "#50a14f"),
+        yellow: Color(hex: "#c18401"),
+        orange: Color(hex: "#986801"),
+        blue: Color(hex: "#4078f2"),
+        magenta: Color(hex: "#a626a4"),
+        cyan: Color(hex: "#0184bc"),
+        foreground: Color(hex: "#383a42"),
+        background: Color(hex: "#fafafa")
+      )
+        
+    case .gruvboxLight:
+      return ABarTheme(
+        name: displayName, kind: .light,
+        main: Color(hex: "#fbf1c7"),
+        mainAlt: Color(hex: "#f2e5bc"),
+        minor: Color(hex: "#d5c4a1"),
+        accent: Color(hex: "#af3a03"),
+        red: Color(hex: "#cc241d"),
+        green: Color(hex: "#98971a"),
+        yellow: Color(hex: "#d79921"),
+        orange: Color(hex: "#af3a03"),
+        blue: Color(hex: "#458588"),
+        magenta: Color(hex: "#b16286"),
+        cyan: Color(hex: "#689d6a"),
+        foreground: Color(hex: "#3c3836"),
+        background: Color(hex: "#fbf1c7")
+      )
+        
+    case .solarizedLight:
+      return ABarTheme(
+        name: displayName, kind: .light,
+        main: Color(hex: "#fdf6e3"),
+        mainAlt: Color(hex: "#eee8d5"),
+        minor: Color(hex: "#93a1a1"),
+        accent: Color(hex: "#268bd2"),
+        red: Color(hex: "#dc322f"),
+        green: Color(hex: "#859900"),
+        yellow: Color(hex: "#b58900"),
+        orange: Color(hex: "#cb4b16"),
+        blue: Color(hex: "#268bd2"),
+        magenta: Color(hex: "#d33682"),
+        cyan: Color(hex: "#2aa198"),
+        foreground: Color(hex: "#657b83"),
+        background: Color(hex: "#fdf6e3")
+      )
+        
+    case .nordLight:
+      return ABarTheme(
+        name: displayName, kind: .light,
+        main: Color(hex: "#eceff4"),
+        mainAlt: Color(hex: "#e5e9f0"),
+        minor: Color(hex: "#d8dee9"),
+        accent: Color(hex: "#5e81ac"),
+        red: Color(hex: "#bf616a"),
+        green: Color(hex: "#a3be8c"),
+        yellow: Color(hex: "#ebcb8b"),
+        orange: Color(hex: "#d08770"),
+        blue: Color(hex: "#5e81ac"),
+        magenta: Color(hex: "#b48ead"),
+        cyan: Color(hex: "#88c0d0"),
+        foreground: Color(hex: "#2e3440"),
+        background: Color(hex: "#eceff4")
+      )
+        
+    case .catppuccinLatte:
+      return ABarTheme(
+        name: displayName, kind: .light,
+        main: Color(hex: "#eff1f5"),
+        mainAlt: Color(hex: "#e6e9ef"),
+        minor: Color(hex: "#ccd0da"),
+        accent: Color(hex: "#8839ef"),
+        red: Color(hex: "#d20f39"),
+        green: Color(hex: "#40a02b"),
+        yellow: Color(hex: "#df8e1d"),
+        orange: Color(hex: "#fe640b"),
+        blue: Color(hex: "#1e66f5"),
+        magenta: Color(hex: "#8839ef"),
+        cyan: Color(hex: "#179299"),
+        foreground: Color(hex: "#4c4f69"),
+        background: Color(hex: "#eff1f5")
+      )
+      
     }
   }
 
@@ -140,7 +418,6 @@ enum ThemeManager {
       cyan: overrides.cyan.flatMap { Color(hex: $0) } ?? theme.cyan,
       foreground: overrides.foreground.flatMap { Color(hex: $0) } ?? theme.foreground,
       background: overrides.background.flatMap { Color(hex: $0) } ?? theme.background,
-      highlight: theme.highlight
     )
   }
 }
