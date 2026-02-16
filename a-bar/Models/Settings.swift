@@ -17,7 +17,6 @@ enum ThemeColor: String, Codable, CaseIterable, Identifiable {
   case cyan
   case foreground
   case background
-  case highlight
 
   var id: String { rawValue }
 
@@ -44,7 +43,6 @@ enum ThemeColor: String, Codable, CaseIterable, Identifiable {
     case .cyan: return theme.cyan
     case .foreground: return theme.foreground
     case .background: return theme.background
-    case .highlight: return theme.highlight
     }
   }
 }
