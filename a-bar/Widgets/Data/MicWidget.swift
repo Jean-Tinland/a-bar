@@ -181,7 +181,11 @@ struct MicWidget: View {
         // Audio input device name
         if !systemInfo.audioInputDeviceName.isEmpty {
           Text(systemInfo.audioInputDeviceName)
-            .font(.system(size: 11, weight: .medium))
+            .font(
+                globalSettings.fontName.isEmpty
+                    ? .system(size: CGFloat(globalSettings.fontSize))
+                    : .custom(globalSettings.fontName, size: CGFloat(globalSettings.fontSize))
+            )
             .foregroundColor(theme.foreground.opacity(0.8))
             .padding(.top, 4)
         }

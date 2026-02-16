@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - feat: add several new color themes
 - refactor: remove unused highlight color from theme
+- fix: update font settings in MicWidget and SoundWidget to use global settings
 
 ## v1.3.6 - 2026-02-16
 
