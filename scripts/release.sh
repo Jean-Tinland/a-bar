@@ -51,6 +51,10 @@ cd "$EXPORT_PATH"
 ditto -c -k --sequesterRsrc --keepParent "$APP_NAME.app" "../$APP_NAME.zip"
 cd -
 
+echo "Sha256 checksum:"
+shasum -a 256 "$ZIP_PATH"
+echo ""
+
 echo "Build complete!"
 echo "   Archive: $ARCHIVE_PATH"
 echo "   App: $EXPORT_PATH/$APP_NAME.app"
