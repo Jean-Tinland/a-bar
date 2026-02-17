@@ -27,6 +27,7 @@ If applicable, add screenshots to help explain your problem.
 - a-bar version [e.g. 1.0.0]
 - OS version [e.g. Sonoma 14.1.1]
 - yabai version [e.g. yabai-v6.0.1]
+- hardware information [e.g. MacBook Air M2 2022 16GB RAM]
 
 **Additional context**
 Add any other context about the problem here.
