@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-<!-- _No changes yet._ -->
+_No changes yet._
+
+## v1.3.7 - 2026-02-17
 
 - feat: add several new color themes
 - refactor: remove unused highlight color from theme
