@@ -837,7 +837,7 @@ struct CustomWidgetSettingsView: View {
           List {
             ForEach(widgets) { widget in
               HStack {
-                Image(systemName: widget.icon)
+                Image(systemName: "terminal")
                   .foregroundColor(widget.isActive ? .primary : .secondary)
                 Text(widget.name)
                   .foregroundColor(widget.isActive ? .primary : .secondary)
@@ -1043,15 +1043,12 @@ struct CustomWidgetEditorView: View {
   @EnvironmentObject var settings: SettingsManager
 
   @State private var name: String = ""
-  @State private var icon: String = "gear"
   @State private var command: String = ""
-  @State private var clickCommand: String = ""
   @State private var refreshInterval: Double = 60.0
+  @State private var cycleDuration: Double = 4.0
   @State private var backgroundColor: String = ""
   @State private var isActive: Bool = true
-  @State private var hideIcon: Bool = false
   @State private var hideWhenEmpty: Bool = false
-  @State private var showIconPicker = false
   @State private var selectedColorPreset: String = "none"
   @State private var showErrorAlert = false
   @State private var errorMessage = ""
@@ -1080,62 +1077,30 @@ struct CustomWidgetEditorView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      // Header
       Text(widget == nil ? "Add Widget" : "Edit Widget")
         .font(.headline)
         .padding(10)
-      
+
       Divider()
 
-      // Form content
       ScrollView {
         VStack(alignment: .leading, spacing: 20) {
-          // Status Section
+          // Status
           GroupBox {
             Toggle("Active", isOn: $isActive)
               .toggleStyle(SwitchToggleStyle())
           }
 
-          // Basic Info Section
+          // Basic Info
           GroupBox(label: Text("Basic Information").font(.subheadline).fontWeight(.medium)) {
             VStack(alignment: .leading, spacing: 14) {
               VStack(alignment: .leading, spacing: 6) {
                 Text("Name")
                   .font(.caption)
                   .foregroundColor(.secondary)
-                TextField("Message", text: $name)
+                TextField("My Widget", text: $name)
                   .textFieldStyle(RoundedBorderTextFieldStyle())
               }
-
-              VStack(alignment: .leading, spacing: 6) {
-                Text("Icon")
-                  .font(.caption)
-                  .foregroundColor(.secondary)
-                HStack(spacing: 12) {
-                  Image(systemName: icon)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 24)
-                    .padding(8)
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .cornerRadius(6)
-
-                  Text(icon)
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-
-                  Spacer()
-
-                  Button("Choose...") {
-                    showIconPicker = true
-                  }
-                }
-              }
-
-              Toggle("Hide icon", isOn: $hideIcon)
-                .toggleStyle(SwitchToggleStyle())
 
               Toggle("Hide when script output is empty", isOn: $hideWhenEmpty)
                 .toggleStyle(SwitchToggleStyle())
@@ -1143,7 +1108,7 @@ struct CustomWidgetEditorView: View {
             .padding(.vertical, 8)
           }
 
-          // Appearance Section
+          // Appearance
           GroupBox(label: Text("Appearance").font(.subheadline).fontWeight(.medium)) {
             VStack(alignment: .leading, spacing: 6) {
               Text("Background color")
@@ -1181,11 +1146,11 @@ struct CustomWidgetEditorView: View {
             .padding(.vertical, 8)
           }
 
-          // Command Section
+          // Command
           GroupBox(label: Text("Command Configuration").font(.subheadline).fontWeight(.medium)) {
             VStack(alignment: .leading, spacing: 14) {
               VStack(alignment: .leading, spacing: 6) {
-                Text("Command/script path")
+                Text("Command / script path")
                   .font(.caption)
                   .foregroundColor(.secondary)
                 TextEditor(text: $command)
@@ -1197,13 +1162,15 @@ struct CustomWidgetEditorView: View {
                     RoundedRectangle(cornerRadius: 4)
                       .stroke(Color(NSColor.separatorColor), lineWidth: 1)
                   )
-                Text("e.g., echo 'Hello' or bash ~/my-script.sh")
-                  .font(.caption2)
-                  .foregroundColor(.secondary)
+                Text(
+                  "Script output uses xbar format: lines before --- cycle in the bar, lines after --- appear in a dropdown menu. Use | to add parameters (color, href, shell, etc.)."
+                )
+                .font(.caption2)
+                .foregroundColor(.secondary)
               }
 
               HStack(spacing: 8) {
-                Text("Refresh frequency")
+                Text("Refresh interval")
                   .font(.caption)
                   .foregroundColor(.secondary)
                 Spacer()
@@ -1215,25 +1182,50 @@ struct CustomWidgetEditorView: View {
                   .font(.caption)
                   .foregroundColor(.secondary)
               }
+
+              HStack(spacing: 8) {
+                Text("Cycle duration")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+                Spacer()
+                TextField("", value: $cycleDuration, formatter: NumberFormatter())
+                  .frame(width: 60)
+                  .textFieldStyle(RoundedBorderTextFieldStyle())
+                  .multilineTextAlignment(.trailing)
+                Text("seconds")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+              }
+              Text("How long each header line is displayed before cycling to the next one.")
+                .font(.caption2)
+                .foregroundColor(.secondary)
             }
             .padding(.vertical, 8)
           }
 
-          // Interaction Section
-          GroupBox(label: Text("On Click Action").font(.subheadline).fontWeight(.medium)) {
-            VStack(alignment: .leading, spacing: 6) {
-              Text("Command to run on click (optional)")
+          // xbar Format Reference
+          GroupBox(label: Text("xbar Format Reference").font(.subheadline).fontWeight(.medium)) {
+            VStack(alignment: .leading, spacing: 8) {
+              Text("Lines before `---` cycle in the menu bar. Lines after `---` appear in the dropdown.")
                 .font(.caption)
                 .foregroundColor(.secondary)
-              TextEditor(text: $clickCommand)
-                .font(.system(.body, design: .monospaced))
-                .frame(height: 60)
-                .background(Color(NSColor.textBackgroundColor))
-                .cornerRadius(4)
-                .overlay(
-                  RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color(NSColor.separatorColor), lineWidth: 1)
+              Text("Add parameters with pipe: `text | color=red | href=https://...`")
+                .font(.caption)
+                .foregroundColor(.secondary)
+              Text("Submenus: prefix with `--` (two dashes per level).")
+                .font(.caption)
+                .foregroundColor(.secondary)
+              Group {
+                Text("Supported parameters:")
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+                  .fontWeight(.medium)
+                Text(
+                  "color, font, size, href, shell, param1…paramN, terminal, refresh, dropdown, length, trim, alternate, image, templateImage, disabled, key"
                 )
+                .font(.system(.caption2, design: .monospaced))
+                .foregroundColor(.secondary)
+              }
             }
             .padding(.vertical, 8)
           }
@@ -1243,7 +1235,6 @@ struct CustomWidgetEditorView: View {
 
       Divider()
 
-      // Action Buttons
       HStack(spacing: 12) {
         Button("Cancel") {
           presentationMode.wrappedValue.dismiss()
@@ -1252,7 +1243,6 @@ struct CustomWidgetEditorView: View {
         Spacer()
 
         Button("Save") {
-          // Validate unique name (exclude current widget if editing)
           let nameTaken = existingWidgets.contains { existingWidget in
             existingWidget.name == name && existingWidget.id != widget?.id
           }
@@ -1264,23 +1254,20 @@ struct CustomWidgetEditorView: View {
             return
           }
 
-          // Construct the UserWidgetDefinition
           let newWidget = UserWidgetDefinition(
             id: widget?.id ?? UUID(),
             name: name,
-            icon: icon,
             command: command,
             refreshInterval: refreshInterval,
-            clickCommand: clickCommand.isEmpty ? nil : clickCommand,
-            backgroundColor: backgroundColor.isEmpty ? nil : backgroundColor,
             isActive: isActive,
-            hideIcon: hideIcon,
-            hideWhenEmpty: hideWhenEmpty
+            backgroundColor: backgroundColor.isEmpty ? nil : backgroundColor,
+            hideWhenEmpty: hideWhenEmpty,
+            cycleDuration: cycleDuration
           )
           onSave(newWidget)
           presentationMode.wrappedValue.dismiss()
         }
-        .disabled(name.isEmpty || icon.isEmpty)
+        .disabled(name.isEmpty)
         .keyboardShortcut(.defaultAction)
       }
       .padding(20)
@@ -1289,16 +1276,13 @@ struct CustomWidgetEditorView: View {
     .onAppear {
       if let widget = widget {
         name = widget.name
-        icon = widget.icon
         command = widget.command
-        clickCommand = widget.clickCommand ?? ""
         refreshInterval = widget.refreshInterval
+        cycleDuration = widget.cycleDuration
         backgroundColor = widget.backgroundColor ?? ""
         isActive = widget.isActive
-        hideIcon = widget.hideIcon
         hideWhenEmpty = widget.hideWhenEmpty
 
-        // Determine color preset
         if let bg = widget.backgroundColor, !bg.isEmpty {
           if colorPresets.contains(where: { $0.value == bg }) {
             selectedColorPreset = bg
@@ -1309,9 +1293,6 @@ struct CustomWidgetEditorView: View {
           selectedColorPreset = "none"
         }
       }
-    }
-    .sheet(isPresented: $showIconPicker) {
-      IconPickerView(selectedIcon: $icon)
     }
     .alert("Invalid Widget Name", isPresented: $showErrorAlert) {
       Button("OK", role: .cancel) {}
@@ -1429,7 +1410,7 @@ struct AboutView: View {
         .font(.headline)
         .foregroundColor(.secondary)
 
-      Text("Version 1.3.8")
+      Text("Version 1.4.0")
         .font(.caption)
 
       Divider()

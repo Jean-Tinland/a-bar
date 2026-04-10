@@ -25,7 +25,7 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
   - Click to switch workspaces or focus windows
   - Show/hide empty workspaces
 - **A handful selection of widgets**: 17+ widgets for system information and performance monitoring
-- **Custom widgets**: Create your own widgets that reads data from `shell` commands or scripts
+- **Custom widgets**: Create your own widgets with XBar-compatible scripts
 - **Theming, customization, and profiles**
 
 [See all features in documentation](https://www.jeantinland.com/toolbox/a-bar/documentation/features/).

@@ -182,7 +182,7 @@ struct WidgetContainer: View {
         if let index = widget.userWidgetIndex,
           index < settings.settings.userWidgets.count
         {
-          UserWidget(config: settings.settings.userWidgets[index])
+          UserWidget(config: settings.settings.userWidgets[index], position: position)
         } else {
           EmptyView()
         }

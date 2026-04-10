@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Error types for user widget operations
@@ -15,18 +16,44 @@ enum UserWidgetError: LocalizedError {
   }
 }
 
-/// User-defined custom widget
+/// Captures a reference to the hosting NSView for menu positioning
+struct ViewAnchor: NSViewRepresentable {
+  @Binding var nsView: NSView?
+
+  func makeNSView(context: Context) -> NSView {
+    let view = NSView()
+    DispatchQueue.main.async { self.nsView = view }
+    return view
+  }
+
+  func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+/// User-defined custom widget with xbar-compatible output parsing.
+///
+/// Scripts write to stdout:
+/// - Lines before `---` cycle in the bar
+/// - Lines after `---` appear in a dropdown menu on click
+/// - Parameters are specified via pipe: `text | color=red | href=...`
 struct UserWidget: View {
   let config: UserWidgetDefinition
+  var position: BarPosition = .top
 
   @EnvironmentObject var settings: SettingsManager
 
-  @State private var output: String = ""
+  @State private var parsedOutput: XBarParsedOutput = .empty
   @State private var isLoading = true
-  
-  
+  @State private var errorMessage: String? = nil
+  @State private var currentHeaderIndex = 0
+  @State private var anchorView: NSView?
+  @State private var menuActionHandler = XBarMenuActionHandler()
+
+  /// Maximum script output size that will be parsed (512 KB).
+  /// Output exceeding this is treated as a script error to prevent memory issues.
+  private static let maxOutputBytes = 512 * 1024
+
   private var globalSettings: GlobalSettings {
-      settings.settings.global
+    settings.settings.global
   }
 
   private var theme: ABarTheme {
@@ -34,11 +61,9 @@ struct UserWidget: View {
   }
 
   /// Parse backgroundColor string to SwiftUI Color
-  /// Supports theme color names (main, red, etc.) and CSS color strings
   private var customBackgroundColor: Color? {
     guard let bg = config.backgroundColor, !bg.isEmpty else { return nil }
-    
-    // Check if it's a theme color name
+
     switch bg.lowercased() {
     case "main": return theme.main
     case "mainalt": return theme.mainAlt
@@ -67,41 +92,88 @@ struct UserWidget: View {
     return theme.foreground
   }
 
+  private var errorBackgroundColor: Color { theme.red }
+
+  private var errorForegroundColor: Color {
+    theme.red.contrastingForeground(
+      from: theme,
+      opacity: globalSettings.barElementsBackgroundOpacity,
+      barBackground: theme.background
+    )
+  }
+
+  /// The currently displayed header item (cycles through header lines)
+  private var currentHeaderItem: XBarLineItem? {
+    let headers = parsedOutput.headerLines
+    guard !headers.isEmpty else { return nil }
+    let index = currentHeaderIndex % headers.count
+    return headers[index]
+  }
+
+  /// Whether there are dropdown items to show
+  private var hasDropdown: Bool {
+    if !parsedOutput.menuItems.isEmpty { return true }
+    return parsedOutput.headerLines.filter({ $0.params.dropdown }).count > 1
+  }
+
   var body: some View {
     Group {
-      if config.isActive && !(config.hideWhenEmpty && output.isEmpty && !isLoading) {
-        BaseWidgetView(
-          backgroundColor: customBackgroundColor,
-          onClick: config.clickCommand != nil ? executeClick : nil,
-        ) {
-          HStack(spacing: 4) {
-            if !config.hideIcon {
-              Image(systemName: config.icon)
-                .font(.system(size: 10))
-                .foregroundColor(foregroundColor)
+      if config.isActive {
+        if errorMessage != nil {
+          // Error state: always visible regardless of hideWhenEmpty
+          BaseWidgetView(
+            backgroundColor: errorBackgroundColor,
+            onClick: showErrorMenu
+          ) {
+            HStack(spacing: 4) {
+              Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 9))
+                .foregroundColor(errorForegroundColor)
+              Text(config.name)
+                .foregroundColor(errorForegroundColor)
+                .lineLimit(1)
             }
-
+          }
+          .background(ViewAnchor(nsView: $anchorView))
+        } else if !(config.hideWhenEmpty && parsedOutput.headerLines.isEmpty && !isLoading) {
+          BaseWidgetView(
+            backgroundColor: customBackgroundColor,
+            onClick: hasDropdown ? showDropdownMenu : nil
+          ) {
             if isLoading {
               ProgressView()
                 .scaleEffect(0.4)
                 .frame(width: 12, height: 12)
-            } else if !output.isEmpty {
-              Text(output)
+            } else if let item = currentHeaderItem {
+              headerItemView(item)
+            } else {
+              Text(config.name)
                 .foregroundColor(foregroundColor)
                 .lineLimit(1)
             }
           }
+          .background(ViewAnchor(nsView: $anchorView))
         }
       }
     }
     .onAppear {
+      menuActionHandler.onRefresh = { refreshOutput() }
       if config.isActive {
         refreshOutput()
       }
     }
-    .onReceive(Timer.publish(every: config.refreshInterval, on: .main, in: .common).autoconnect()) { _ in
+    .onReceive(
+      Timer.publish(every: config.refreshInterval, on: .main, in: .common).autoconnect()
+    ) { _ in
       if config.isActive {
         refreshOutput()
+      }
+    }
+    .onReceive(
+      Timer.publish(every: max(1, config.cycleDuration), on: .main, in: .common).autoconnect()
+    ) { _ in
+      if parsedOutput.headerLines.count > 1 {
+        currentHeaderIndex = (currentHeaderIndex + 1) % parsedOutput.headerLines.count
       }
     }
     .onReceive(
@@ -113,36 +185,161 @@ struct UserWidget: View {
     }
   }
 
+  @ViewBuilder
+  private func headerItemView(_ item: XBarLineItem) -> some View {
+    HStack(spacing: 4) {
+      if let imageData = item.params.templateImage ?? item.params.image,
+        let data = Data(base64Encoded: imageData),
+        let nsImage = NSImage(data: data)
+      {
+        Image(nsImage: nsImage)
+          .resizable()
+          .scaledToFit()
+          .frame(height: 14)
+      }
+
+      if !item.title.isEmpty {
+        let displayText = truncatedTitle(item)
+        Text(displayText)
+          .foregroundColor(itemColor(item))
+          .lineLimit(1)
+          .if(item.params.font != nil || item.params.size != nil) { view in
+            view.font(
+              .custom(
+                item.params.font ?? globalSettings.fontName,
+                size: item.params.size ?? CGFloat(globalSettings.fontSize)
+              )
+            )
+          }
+      }
+    }
+  }
+
+  private func itemColor(_ item: XBarLineItem) -> Color {
+    if let colorStr = item.params.color,
+      let nsColor = NSColor(xbarString: colorStr)
+    {
+      return Color(nsColor)
+    }
+    return foregroundColor
+  }
+
+  private func truncatedTitle(_ item: XBarLineItem) -> String {
+    guard let maxLen = item.params.length, item.title.count > maxLen else {
+      return item.title
+    }
+    return String(item.title.prefix(maxLen)) + "…"
+  }
+
+  private func showDropdownMenu() {
+    guard let view = anchorView else { return }
+
+    let menu = XBarMenuBuilder.buildMenu(from: parsedOutput, handler: menuActionHandler)
+    guard menu.items.count > 0 else { return }
+
+    objc_setAssociatedObject(menu, "handler", menuActionHandler, .OBJC_ASSOCIATION_RETAIN)
+
+    let anchorPoint = position == .bottom
+      ? NSPoint(x: 0, y: view.bounds.height)
+      : NSPoint(x: 0, y: 0)
+    menu.popUp(positioning: nil, at: anchorPoint, in: view)
+  }
+
+  private func showErrorMenu() {
+    guard let view = anchorView, let errMsg = errorMessage else { return }
+
+    let menu = NSMenu()
+    menu.autoenablesItems = false
+
+    let titleItem = NSMenuItem(title: "Script error — \(config.name)", action: nil, keyEquivalent: "")
+    titleItem.isEnabled = false
+    titleItem.attributedTitle = NSAttributedString(
+      string: "Script error — \(config.name)",
+      attributes: [
+        .foregroundColor: NSColor.systemRed,
+        .font: NSFont.menuFont(ofSize: NSFont.menuFont(ofSize: 0).pointSize),
+      ]
+    )
+    menu.addItem(titleItem)
+    menu.addItem(.separator())
+
+    // Show each line of stderr as a disabled item
+    let lines = errMsg
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .components(separatedBy: "\n")
+    for line in lines where !line.isEmpty {
+      let item = NSMenuItem(title: line, action: nil, keyEquivalent: "")
+      item.isEnabled = false
+      menu.addItem(item)
+    }
+
+    menu.addItem(.separator())
+
+    let retryItem = NSMenuItem(title: "Retry", action: #selector(NSObject.doesNotRecognizeSelector(_:)), keyEquivalent: "")
+    retryItem.isEnabled = true
+    let handler = menuActionHandler
+    handler.onRefresh = { refreshOutput() }
+    let retryWrapper = NSMenuItem()
+    retryWrapper.title = "Retry"
+    retryWrapper.target = handler
+    retryWrapper.action = #selector(XBarMenuActionHandler.retryAction(_:))
+    retryWrapper.isEnabled = true
+    objc_setAssociatedObject(menu, "handler", handler, .OBJC_ASSOCIATION_RETAIN)
+    menu.addItem(retryWrapper)
+
+    let anchorPoint = position == .bottom
+      ? NSPoint(x: 0, y: view.bounds.height)
+      : NSPoint(x: 0, y: 0)
+    menu.popUp(positioning: nil, at: anchorPoint, in: view)
+  }
+
   private func refreshOutput() {
     let command = config.command
-
     if command.isEmpty {
       isLoading = false
       return
     }
 
     Task {
-      do {
-        let result = try await ShellExecutor.run(command)
-        await MainActor.run {
-          output = result.trimmingCharacters(in: .whitespacesAndNewlines)
+      let result = await ShellExecutor.runWidget(command)
+      await MainActor.run {
+        if !result.succeeded {
+          // Build an informative error message from stderr and exit code
+          let stderrTrimmed = result.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+          if result.exitCode == -1 {
+            // Process launch failure — stderr already contains the description
+            errorMessage = stderrTrimmed.isEmpty
+              ? "Script could not be started."
+              : stderrTrimmed
+          } else {
+            let codeNote = "Exit code: \(result.exitCode)"
+            errorMessage = stderrTrimmed.isEmpty ? codeNote : "\(codeNote)\n\(stderrTrimmed)"
+          }
+          parsedOutput = .empty
+          currentHeaderIndex = 0
           isLoading = false
+          return
         }
-      } catch {
-        print("User widget error: \(error)")
-        await MainActor.run {
-          output = "Error"
+
+        // Guard against excessively large output before parsing
+        let rawOutput = result.stdout
+        guard rawOutput.utf8.count <= Self.maxOutputBytes else {
+          errorMessage =
+            "Script output too large (\(rawOutput.utf8.count / 1024) KB). Maximum is \(Self.maxOutputBytes / 1024) KB."
+          parsedOutput = .empty
+          currentHeaderIndex = 0
           isLoading = false
+          return
         }
+
+        errorMessage = nil
+        let newOutput = XBarParser.parse(rawOutput)
+        if newOutput.headerLines.count != parsedOutput.headerLines.count {
+          currentHeaderIndex = 0
+        }
+        parsedOutput = newOutput
+        isLoading = false
       }
-    }
-  }
-
-  private func executeClick() {
-    guard let command = config.clickCommand, !command.isEmpty else { return }
-
-    Task {
-      _ = try? await ShellExecutor.run(command)
     }
   }
 }
@@ -159,7 +356,6 @@ class UserWidgetManager: ObservableObject {
 
   private init() {}
 
-  /// Check if a widget name is already in use (excluding a specific widget ID)
   private func isNameTaken(_ name: String, excludingId: UUID? = nil) -> Bool {
     return widgets.contains { widget in
       widget.name == name && widget.id != excludingId
@@ -167,7 +363,6 @@ class UserWidgetManager: ObservableObject {
   }
 
   func addWidget(_ config: UserWidgetDefinition) throws {
-    // Ensure unique name
     if isNameTaken(config.name) {
       throw UserWidgetError.duplicateName(config.name)
     }
@@ -179,7 +374,6 @@ class UserWidgetManager: ObservableObject {
   }
 
   func updateWidget(_ config: UserWidgetDefinition) throws {
-    // Ensure unique name (excluding current widget)
     if isNameTaken(config.name, excludingId: config.id) {
       throw UserWidgetError.duplicateName(config.name)
     }
@@ -193,16 +387,12 @@ class UserWidgetManager: ObservableObject {
     settingsManager.settings.userWidgets.move(fromOffsets: source, toOffset: destination)
   }
 
-  /// Refresh a specific user widget by name
-  /// - Parameter name: The name of the widget to refresh
-  /// - Returns: true if the widget was found and can be refreshed, false otherwise
   @discardableResult
   func refreshWidget(named name: String) -> Bool {
     guard let widget = widgets.first(where: { $0.name == name }) else {
       return false
     }
 
-    // Post notification to trigger refresh
     NotificationCenter.default.post(
       name: NSNotification.Name("RefreshUserWidget"),
       object: nil,
@@ -212,11 +402,10 @@ class UserWidgetManager: ObservableObject {
     return true
   }
 
-  /// Toggle visibility of a specific user widget by name
-  /// - Parameter name: The name of the widget to toggle
-  /// - Returns: Result with the new isActive state, or error if not found
   func toggleWidget(named name: String) -> Result<Bool, UserWidgetError> {
-    guard let index = settingsManager.settings.userWidgets.firstIndex(where: { $0.name == name }) else {
+    guard
+      let index = settingsManager.settings.userWidgets.firstIndex(where: { $0.name == name })
+    else {
       return .failure(.widgetNotFound(name))
     }
 
@@ -225,11 +414,10 @@ class UserWidgetManager: ObservableObject {
     return .success(newState)
   }
 
-  /// Hide a specific user widget by name
-  /// - Parameter name: The name of the widget to hide
-  /// - Returns: Result with true if the widget was hidden, false if already hidden, or error if not found
   func hideWidget(named name: String) -> Result<Bool, UserWidgetError> {
-    guard let index = settingsManager.settings.userWidgets.firstIndex(where: { $0.name == name }) else {
+    guard
+      let index = settingsManager.settings.userWidgets.firstIndex(where: { $0.name == name })
+    else {
       return .failure(.widgetNotFound(name))
     }
 
@@ -241,11 +429,10 @@ class UserWidgetManager: ObservableObject {
     }
   }
 
-  /// Show a specific user widget by name
-  /// - Parameter name: The name of the widget to show
-  /// - Returns: Result with true if the widget was shown, false if already shown, or error if not found
   func showWidget(named name: String) -> Result<Bool, UserWidgetError> {
-    guard let index = settingsManager.settings.userWidgets.firstIndex(where: { $0.name == name }) else {
+    guard
+      let index = settingsManager.settings.userWidgets.firstIndex(where: { $0.name == name })
+    else {
       return .failure(.widgetNotFound(name))
     }
 

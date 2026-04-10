@@ -12,7 +12,7 @@ enum ShellExecutor {
     private static let pathPrefix = "/usr/local/bin:/opt/homebrew/bin"
 
     /// Build an environment dictionary with a reliable PATH.
-    private static func shellEnvironment() -> [String: String] {
+    static func shellEnvironment() -> [String: String] {
         var env = ProcessInfo.processInfo.environment
         if let existing = env["PATH"] {
             env["PATH"] = "\(pathPrefix):\(existing)"
@@ -66,6 +66,78 @@ enum ShellExecutor {
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()
                 let output = String(data: data, encoding: .utf8) ?? ""
                 continuation.resume(returning: output)
+            }
+        }
+    }
+
+    /// The result of running a custom widget script.
+    struct WidgetRunResult {
+        /// Raw stdout output from the script.
+        let stdout: String
+        /// Raw stderr output from the script (empty on success).
+        let stderr: String
+        /// Process exit code. 0 means success.
+        let exitCode: Int32
+
+        var succeeded: Bool { exitCode == 0 }
+    }
+
+    /// Run a widget script with stdout and stderr captured separately.
+    ///
+    /// Unlike `run(_:)`, this method never throws. Errors (process launch
+    /// failures, non-zero exit codes) are encoded in the returned result so
+    /// widgets can display them without crashing the bar.
+    static func runWidget(_ command: String, timeout: TimeInterval = defaultTimeout) async -> WidgetRunResult {
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let process = Process()
+                let stdoutPipe = Pipe()
+                let stderrPipe = Pipe()
+
+                process.standardOutput = stdoutPipe
+                process.standardError = stderrPipe
+                process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+                process.arguments = ["-c", command]
+                process.environment = shellEnvironment()
+
+                do {
+                    try process.run()
+                } catch {
+                    continuation.resume(returning: WidgetRunResult(
+                        stdout: "",
+                        stderr: "Could not start script: \(error.localizedDescription)",
+                        exitCode: -1
+                    ))
+                    return
+                }
+
+                let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+                timer.schedule(deadline: .now() + timeout)
+                timer.setEventHandler {
+                    if process.isRunning {
+                        process.terminate()
+                        DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
+                            if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+                        }
+                    }
+                }
+                timer.resume()
+
+                process.waitUntilExit()
+                timer.cancel()
+
+                let stdout = String(
+                    data: stdoutPipe.fileHandleForReading.readDataToEndOfFile(),
+                    encoding: .utf8) ?? ""
+                let stderr = String(
+                    data: stderrPipe.fileHandleForReading.readDataToEndOfFile(),
+                    encoding: .utf8) ?? ""
+
+                continuation.resume(returning: WidgetRunResult(
+                    stdout: stdout,
+                    stderr: stderr,
+                    exitCode: process.terminationStatus
+                ))
             }
         }
     }

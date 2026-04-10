@@ -985,11 +985,8 @@ struct WidgetInstanceRowView: View {
   }
 
   private var widgetIcon: String {
-    if widget.identifier == .userWidget,
-      let index = widget.userWidgetIndex,
-      index < settings.draftSettings.userWidgets.count
-    {
-      return settings.draftSettings.userWidgets[index].icon
+    if widget.identifier == .userWidget {
+      return "terminal"
     }
     return widget.identifier.symbolName
   }
@@ -1119,7 +1116,7 @@ struct AvailableWidgetsView: View {
           DraggableWidgetView(
             identifier: .userWidget,
             name: widget.name,
-            icon: widget.icon,
+            icon: "terminal",
             color: Color.purple,
             userWidgetIndex: index
           )

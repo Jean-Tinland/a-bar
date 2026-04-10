@@ -57,6 +57,7 @@
 		A1000082 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000082 /* Theme.swift */; };
 		A1000083 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000083 /* Extensions.swift */; };
 		A1000084 /* RefreshWidgetCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000084 /* RefreshWidgetCommand.swift */; };
+		A1000085 /* XBarParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000085 /* XBarParser.swift */; };
 		A1000090 /* sfsymbols.txt in Resources */ = {isa = PBXBuildFile; fileRef = E1000012 /* sfsymbols.txt */; };
 		E1000014 /* a-bar.sdef in Resources */ = {isa = PBXBuildFile; fileRef = E1000013 /* a-bar.sdef */; };
 /* End PBXBuildFile section */
@@ -112,6 +113,7 @@
 		B1000082 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		B1000083 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		B1000084 /* RefreshWidgetCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshWidgetCommand.swift; sourceTree = "<group>"; };
+		B1000085 /* XBarParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XBarParser.swift; sourceTree = "<group>"; };
 		D1000001 /* a-bar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "a-bar.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E1000010 /* a-bar.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "a-bar.entitlements"; sourceTree = "<group>"; };
 		E1000011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -178,6 +180,7 @@
 				C2000002 /* AerospaceService.swift */,
 				B1000022 /* SystemInfoService.swift */,
 				B1000084 /* RefreshWidgetCommand.swift */,
+			B1000085 /* XBarParser.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -423,6 +426,7 @@
 				C1000004 /* AerospaceSpaceView.swift in Sources */,
 				C1000005 /* AerospaceOpenedAppsView.swift in Sources */,
 				C1000006 /* AerospaceProcessWidget.swift in Sources */,
+				A1000085 /* XBarParser.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -573,7 +577,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.3.8;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.jeantinland.a-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -603,7 +607,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.3.8;
+				MARKETING_VERSION = 1.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.jeantinland.a-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

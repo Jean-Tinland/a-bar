@@ -472,61 +472,53 @@ struct BarLayout: Codable, Equatable {
   }
 }
 
-/// Definition for a custom user widget
+/// Definition for a custom user widget (xbar-compatible)
+///
+/// Scripts write to stdout using the xbar plugin format:
+/// - Lines before `---` cycle in the bar
+/// - Lines after `---` appear in a dropdown menu on click
+/// - Parameters are specified via pipe: `text | color=red | href=...`
 struct UserWidgetDefinition: Codable, Identifiable, Equatable {
   let id: UUID
   var name: String
-  var icon: String  // SF Symbol name
   var command: String
   var refreshInterval: TimeInterval  // in seconds
-  var clickCommand: String?
-  var rightClickCommand: String?
-  var backgroundColor: String?  // CSS color or predefined name
   var isActive: Bool
-  var hideIcon: Bool
+  var backgroundColor: String?  // CSS color or theme color name
   var hideWhenEmpty: Bool
+  var cycleDuration: TimeInterval  // seconds between header line changes
 
   init(
     id: UUID = UUID(),
     name: String = "My Widget",
-    icon: String = "star",
     command: String = "echo 'Hello'",
     refreshInterval: TimeInterval = 60,
-    clickCommand: String? = nil,
-    rightClickCommand: String? = nil,
-    backgroundColor: String? = nil,
     isActive: Bool = true,
-    hideIcon: Bool = false,
-    hideWhenEmpty: Bool = false
+    backgroundColor: String? = nil,
+    hideWhenEmpty: Bool = false,
+    cycleDuration: TimeInterval = 4
   ) {
     self.id = id
     self.name = name
-    self.icon = icon
     self.command = command
     self.refreshInterval = refreshInterval
-    self.clickCommand = clickCommand
-    self.rightClickCommand = rightClickCommand
-    self.backgroundColor = backgroundColor
     self.isActive = isActive
-    self.hideIcon = hideIcon
+    self.backgroundColor = backgroundColor
     self.hideWhenEmpty = hideWhenEmpty
+    self.cycleDuration = cycleDuration
   }
 
-  // Custom decoder for backward compatibility
+  // Custom decoder for backward compatibility (silently ignores removed fields)
   init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     id = try container.decode(UUID.self, forKey: .id)
     name = try container.decode(String.self, forKey: .name)
-    icon = try container.decode(String.self, forKey: .icon)
     command = try container.decode(String.self, forKey: .command)
     refreshInterval = try container.decode(TimeInterval.self, forKey: .refreshInterval)
-    clickCommand = try container.decodeIfPresent(String.self, forKey: .clickCommand)
-    rightClickCommand = try container.decodeIfPresent(String.self, forKey: .rightClickCommand)
-    backgroundColor = try container.decodeIfPresent(String.self, forKey: .backgroundColor)
     isActive = try container.decode(Bool.self, forKey: .isActive)
-    hideIcon = try container.decode(Bool.self, forKey: .hideIcon)
-    // Provide default value for new property to maintain backward compatibility
+    backgroundColor = try container.decodeIfPresent(String.self, forKey: .backgroundColor)
     hideWhenEmpty = try container.decodeIfPresent(Bool.self, forKey: .hideWhenEmpty) ?? false
+    cycleDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .cycleDuration) ?? 4
   }
 }
 

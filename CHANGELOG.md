@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.4.0 - 2026-04-10
+
+- feat: revamp custom widget system with a XBar inspired API
+
 ## v1.3.8 - 2026-03-12
 
 - fix: handle monitor ID mapping by screen name for Aerospace widgets
