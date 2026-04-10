@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.4.1 - 2026-04-10
+
+- feat: implement timed signal action for yabai commands to prevent hangs
+
 ## v1.4.0 - 2026-04-10
 
 - feat: revamp custom widget system with a XBar inspired API

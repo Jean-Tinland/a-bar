@@ -128,6 +128,18 @@ class YabaiService: ObservableObject {
         signalTimer = nil
     }
     
+    /// Yabai signal action string, pre-escaped for embedding inside `action="..."` in a zsh command.
+    ///
+    /// Wraps `osascript` in a bash watchdog: the script backgrounds osascript, then starts a
+    /// `(sleep 2 && kill -9 $pid)` subshell. If osascript hangs beyond 2 seconds it is forcibly
+    /// killed, preventing signal pile-up that makes the system unresponsive.
+    ///
+    /// Quoting chain: Swift literal → runtime string (zsh-escaped) → embedded in `action="..."` →
+    /// yabai stores the unescaped value → shell executes it → bash -c receives the script.
+    private var timedSignalAction: String {
+        "/bin/bash -c 'osascript -e \\\"tell application \\\\\\\"a-bar\\\\\\\" to refresh \\\\\\\"yabai\\\\\\\"\\\" & p=\\$!; (sleep 2 && kill -9 \\$p 2>/dev/null) & wait \\$p'"
+    }
+
     /// Set up yabai signals to automatically refresh on window events
     private func setupYabaiSignals() {
         Task {
@@ -150,15 +162,15 @@ class YabaiService: ObservableObject {
                 }
                 
                 // Add signal for window destroyed
-                let destroyedCmd = "\(yabaiPath) -m signal --add event=window_destroyed action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-destroyed\""
+                let destroyedCmd = "\(yabaiPath) -m signal --add event=window_destroyed action=\"\(timedSignalAction)\" label=\"abar-window-destroyed\""
                 try await ShellExecutor.run(destroyedCmd)
-                
+
                 // Add signal for window title changed
-                let titleCmd = "\(yabaiPath) -m signal --add event=window_title_changed action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-title-changed\""
+                let titleCmd = "\(yabaiPath) -m signal --add event=window_title_changed action=\"\(timedSignalAction)\" label=\"abar-window-title-changed\""
                 try await ShellExecutor.run(titleCmd)
-              
+
                 // Add signal for window focus changed
-                let focusCmd = "\(yabaiPath) -m signal --add event=window_focused action=\"osascript -e 'tell application \\\"a-bar\\\" to refresh \\\"yabai\\\"'\" label=\"abar-window-focused\""
+                let focusCmd = "\(yabaiPath) -m signal --add event=window_focused action=\"\(timedSignalAction)\" label=\"abar-window-focused\""
                 try await ShellExecutor.run(focusCmd)
                 
                 await MainActor.run {
