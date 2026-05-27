@@ -6,6 +6,8 @@ A native macOS menu bar replacement inspired by [simple-bar](https://github.com/
 
 [Website](https://www.jeantinland.com/toolbox/a-bar) • [Documentation](https://www.jeantinland.com/toolbox/a-bar/documentation)
 
+**Notice: As I am working simultaneously on a lot of projects, things here may seem to move slowly but they are still in progress. I'm always monitoring my notifications and messages, so if you have any questions or want to chat about anything, feel free [to reach out](https://www.jeantinland.com/contact/)!**
+
 > [!CAUTION]
 > **Note of caution:** Even in v1.x.x, _a-bar_ stays in early development. Expect bugs and missing features. Feedback and contributions are welcome!
 
