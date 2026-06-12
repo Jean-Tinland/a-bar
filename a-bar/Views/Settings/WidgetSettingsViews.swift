@@ -1258,11 +1258,11 @@ struct CustomWidgetEditorView: View {
             id: widget?.id ?? UUID(),
             name: name,
             command: command,
-            refreshInterval: refreshInterval,
+            refreshInterval: max(1, refreshInterval),
             isActive: isActive,
             backgroundColor: backgroundColor.isEmpty ? nil : backgroundColor,
             hideWhenEmpty: hideWhenEmpty,
-            cycleDuration: cycleDuration
+            cycleDuration: max(1, cycleDuration)
           )
           onSave(newWidget)
           presentationMode.wrappedValue.dismiss()
@@ -1410,7 +1410,7 @@ struct AboutView: View {
         .font(.headline)
         .foregroundColor(.secondary)
 
-      Text("Version 1.4.1")
+      Text("Version 1.4.2")
         .font(.caption)
 
       Divider()

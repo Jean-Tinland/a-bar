@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.4.2 - 2026-06-12
+
+- feat: enhance widget refresh and cycle duration handling with minimum constraints + update app signing in release script
+
 ## v1.4.1 - 2026-04-10
 
 - feat: implement timed signal action for yabai commands to prevent hangs

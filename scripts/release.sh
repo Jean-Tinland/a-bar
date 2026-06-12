@@ -25,6 +25,7 @@ BUILD_DIR="build"
 ARCHIVE_PATH="$BUILD_DIR/$APP_NAME.xcarchive"
 EXPORT_PATH="$BUILD_DIR/export"
 ZIP_PATH="$BUILD_DIR/$APP_NAME.zip"
+ENTITLEMENTS_PATH="a-bar/a-bar.entitlements"
 
 # Clean build directory
 rm -rf "$BUILD_DIR"
@@ -45,6 +46,13 @@ xcodebuild archive \
 echo "Extracting app from archive..."
 mkdir -p "$EXPORT_PATH"
 cp -R "$ARCHIVE_PATH/Products/Applications/$APP_NAME.app" "$EXPORT_PATH/"
+
+echo "Signing app with entitlements..."
+codesign --force --deep --sign - --options runtime --entitlements "$ENTITLEMENTS_PATH" \
+    "$EXPORT_PATH/$APP_NAME.app"
+
+echo "Validating signature..."
+codesign --verify --deep --strict "$EXPORT_PATH/$APP_NAME.app"
 
 echo "Creating zip..."
 cd "$EXPORT_PATH"

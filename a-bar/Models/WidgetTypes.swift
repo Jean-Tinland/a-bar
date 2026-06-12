@@ -479,6 +479,9 @@ struct BarLayout: Codable, Equatable {
 /// - Lines after `---` appear in a dropdown menu on click
 /// - Parameters are specified via pipe: `text | color=red | href=...`
 struct UserWidgetDefinition: Codable, Identifiable, Equatable {
+  private static let minimumRefreshInterval: TimeInterval = 1
+  private static let minimumCycleDuration: TimeInterval = 1
+
   let id: UUID
   var name: String
   var command: String
@@ -501,11 +504,11 @@ struct UserWidgetDefinition: Codable, Identifiable, Equatable {
     self.id = id
     self.name = name
     self.command = command
-    self.refreshInterval = refreshInterval
+    self.refreshInterval = max(Self.minimumRefreshInterval, refreshInterval)
     self.isActive = isActive
     self.backgroundColor = backgroundColor
     self.hideWhenEmpty = hideWhenEmpty
-    self.cycleDuration = cycleDuration
+    self.cycleDuration = max(Self.minimumCycleDuration, cycleDuration)
   }
 
   // Custom decoder for backward compatibility (silently ignores removed fields)
@@ -514,11 +517,17 @@ struct UserWidgetDefinition: Codable, Identifiable, Equatable {
     id = try container.decode(UUID.self, forKey: .id)
     name = try container.decode(String.self, forKey: .name)
     command = try container.decode(String.self, forKey: .command)
-    refreshInterval = try container.decode(TimeInterval.self, forKey: .refreshInterval)
+    refreshInterval = max(
+      Self.minimumRefreshInterval,
+      try container.decode(TimeInterval.self, forKey: .refreshInterval)
+    )
     isActive = try container.decode(Bool.self, forKey: .isActive)
     backgroundColor = try container.decodeIfPresent(String.self, forKey: .backgroundColor)
     hideWhenEmpty = try container.decodeIfPresent(Bool.self, forKey: .hideWhenEmpty) ?? false
-    cycleDuration = try container.decodeIfPresent(TimeInterval.self, forKey: .cycleDuration) ?? 4
+    cycleDuration = max(
+      Self.minimumCycleDuration,
+      try container.decodeIfPresent(TimeInterval.self, forKey: .cycleDuration) ?? 4
+    )
   }
 }
 

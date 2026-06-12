@@ -35,7 +35,7 @@
 		<key>NSPrincipalClass</key>
 		<string>NSApplication</string>
 		<key>NSAppleEventsUsageDescription</key>
-		<string>a-bar needs access to send Apple Events to control system functions.</string>
+		<string>a-bar needs Apple Events access so custom widgets and automations can open or control other apps when you trigger their commands.</string>
 		<key>NSCalendarsUsageDescription</key>
 		<string>a-bar widgets need access to your calendar only in order to allow custom widgets to
 			retrieve information if necessary.</string>

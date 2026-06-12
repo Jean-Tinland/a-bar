@@ -47,10 +47,20 @@ struct UserWidget: View {
   @State private var currentHeaderIndex = 0
   @State private var anchorView: NSView?
   @State private var menuActionHandler = XBarMenuActionHandler()
+  @State private var refreshTimer: Timer?
+  @State private var cycleTimer: Timer?
+  @State private var isRefreshingOutput = false
+  @State private var hasQueuedRefresh = false
 
   /// Maximum script output size that will be parsed (512 KB).
   /// Output exceeding this is treated as a script error to prevent memory issues.
   private static let maxOutputBytes = 512 * 1024
+
+  /// Minimum custom widget refresh interval.
+  private static let minimumRefreshInterval: TimeInterval = 1
+
+  /// Minimum header cycle duration.
+  private static let minimumCycleDuration: TimeInterval = 1
 
   private var globalSettings: GlobalSettings {
     settings.settings.global
@@ -116,6 +126,14 @@ struct UserWidget: View {
     return parsedOutput.headerLines.filter({ $0.params.dropdown }).count > 1
   }
 
+  private var safeRefreshInterval: TimeInterval {
+    max(Self.minimumRefreshInterval, config.refreshInterval)
+  }
+
+  private var safeCycleDuration: TimeInterval {
+    max(Self.minimumCycleDuration, config.cycleDuration)
+  }
+
   var body: some View {
     Group {
       if config.isActive {
@@ -158,22 +176,34 @@ struct UserWidget: View {
     }
     .onAppear {
       menuActionHandler.onRefresh = { refreshOutput() }
+      restartRefreshTimer()
+      restartCycleTimer()
       if config.isActive {
         refreshOutput()
+      } else {
+        isLoading = false
       }
     }
-    .onReceive(
-      Timer.publish(every: config.refreshInterval, on: .main, in: .common).autoconnect()
-    ) { _ in
+    .onDisappear {
+      stopTimers()
+    }
+    .onChange(of: config.refreshInterval) { _ in
+      restartRefreshTimer()
+    }
+    .onChange(of: config.cycleDuration) { _ in
+      restartCycleTimer()
+    }
+    .onChange(of: config.isActive) { isActive in
+      restartRefreshTimer()
+      if isActive {
+        refreshOutput()
+      } else {
+        isLoading = false
+      }
+    }
+    .onChange(of: config.command) { _ in
       if config.isActive {
         refreshOutput()
-      }
-    }
-    .onReceive(
-      Timer.publish(every: max(1, config.cycleDuration), on: .main, in: .common).autoconnect()
-    ) { _ in
-      if parsedOutput.headerLines.count > 1 {
-        currentHeaderIndex = (currentHeaderIndex + 1) % parsedOutput.headerLines.count
       }
     }
     .onReceive(
@@ -293,16 +323,66 @@ struct UserWidget: View {
     menu.popUp(positioning: nil, at: anchorPoint, in: view)
   }
 
+  private func restartRefreshTimer() {
+    refreshTimer?.invalidate()
+    refreshTimer = nil
+
+    guard config.isActive else { return }
+
+    let timer = Timer(timeInterval: safeRefreshInterval, repeats: true) { _ in
+      refreshOutput()
+    }
+    RunLoop.main.add(timer, forMode: .common)
+    refreshTimer = timer
+  }
+
+  private func restartCycleTimer() {
+    cycleTimer?.invalidate()
+    let timer = Timer(timeInterval: safeCycleDuration, repeats: true) { _ in
+      if parsedOutput.headerLines.count > 1 {
+        currentHeaderIndex = (currentHeaderIndex + 1) % parsedOutput.headerLines.count
+      }
+    }
+    RunLoop.main.add(timer, forMode: .common)
+    cycleTimer = timer
+  }
+
+  private func stopTimers() {
+    refreshTimer?.invalidate()
+    refreshTimer = nil
+    cycleTimer?.invalidate()
+    cycleTimer = nil
+  }
+
   private func refreshOutput() {
-    let command = config.command
-    if command.isEmpty {
-      isLoading = false
+    if isRefreshingOutput {
+      hasQueuedRefresh = true
       return
     }
+
+    let command = config.command.trimmingCharacters(in: .whitespacesAndNewlines)
+    if command.isEmpty {
+      errorMessage = nil
+      parsedOutput = .empty
+      currentHeaderIndex = 0
+      isLoading = false
+      hasQueuedRefresh = false
+      return
+    }
+
+    isRefreshingOutput = true
 
     Task {
       let result = await ShellExecutor.runWidget(command)
       await MainActor.run {
+        defer {
+          isRefreshingOutput = false
+          if hasQueuedRefresh {
+            hasQueuedRefresh = false
+            refreshOutput()
+          }
+        }
+
         if !result.succeeded {
           // Build an informative error message from stderr and exit code
           let stderrTrimmed = result.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
