@@ -15,10 +15,6 @@ struct SpacesWidget: View {
         settings.settings.widgets.spaces
     }
     
-    private var theme: ABarTheme {
-        ThemeManager.currentTheme(for: settings.settings.theme)
-    }
-    
     var body: some View {
         HStack(spacing: globalSettings.barElementGap) {
             // Sticky windows section (if enabled)
@@ -33,8 +29,7 @@ struct SpacesWidget: View {
             ForEach(filteredSpaces) { space in
                 SpaceView(
                     space: space,
-                    displayIndex: displayIndex,
-                    currentSpaceIndex: currentSpaceIndex
+                    displayIndex: displayIndex
                 )
             }
             
@@ -82,9 +77,6 @@ struct SpacesWidget: View {
         return spaces
     }
     
-    private var currentSpaceIndex: Int {
-        yabaiService.state.focusedSpace?.index ?? 1
-    }
 }
 
 struct StickyWindowsView: View {

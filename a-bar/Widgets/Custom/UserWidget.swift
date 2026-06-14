@@ -304,9 +304,6 @@ struct UserWidget: View {
     }
 
     menu.addItem(.separator())
-
-    let retryItem = NSMenuItem(title: "Retry", action: #selector(NSObject.doesNotRecognizeSelector(_:)), keyEquivalent: "")
-    retryItem.isEnabled = true
     let handler = menuActionHandler
     handler.onRefresh = { refreshOutput() }
     let retryWrapper = NSMenuItem()

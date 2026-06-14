@@ -1,5 +1,4 @@
 import AppKit
-import NotificationCenter
 import SwiftUI
 
 /// Sound/Volume widget
@@ -10,8 +9,8 @@ struct SoundWidget: View {
   @EnvironmentObject var systemInfo: SystemInfoService
 
   @State private var showPopper: Bool = false
-  @State private var tempVolume: Double? = nil
   @StateObject private var popoverManager = SoundPopoverManager()
+  private static let outsideClickMonitor = OutsideClickMonitor()
 
   private var globalSettings: GlobalSettings {
     settings.settings.global
@@ -38,20 +37,19 @@ struct SoundWidget: View {
         if showPopper {
           showPopper = false
           popoverManager.scheduleClose()
-          OutsideClickMonitor.shared.stop()
+          Self.outsideClickMonitor.stop()
         } else {
           // Activate abar so the popover can render even if not focused
           NSApp.activate(ignoringOtherApps: true)
-          tempVolume = Double(systemInfo.volumeLevel)
           showPopper = true
           popoverManager.showPanel()
           // Listen for outside click only when opening
           DispatchQueue.main.async {
-            OutsideClickMonitor.shared.start {
+            Self.outsideClickMonitor.start {
               if showPopper {
                 showPopper = false
                 popoverManager.scheduleClose()
-                OutsideClickMonitor.shared.stop()
+                Self.outsideClickMonitor.stop()
               }
             }
           }
@@ -89,10 +87,7 @@ struct SoundWidget: View {
           }
 
           let openPrefs: () -> Void = {
-            Task {
-              _ = try? await ShellExecutor.run(
-                "open /System/Library/PreferencePanes/Sound.prefPane/")
-            }
+            openSoundPreferences()
           }
 
           popoverManager.setContent {
@@ -105,56 +100,6 @@ struct SoundWidget: View {
           }
         }
       ))
-  }
-
-  // Helper for outside click detection
-  private class OutsideClickMonitor {
-    static let shared = OutsideClickMonitor()
-    private var globalMonitor: Any?
-    private var localMonitor: Any?
-    private var handler: (() -> Void)?
-
-    func start(_ handler: @escaping () -> Void) {
-      stop()
-      self.handler = handler
-      // Global monitor: catches clicks when app is inactive
-      globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown])
-      { [weak self] event in
-        self?.handle(event: event)
-      }
-      // Local monitor: catches clicks when app is active
-      localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) {
-        [weak self] event in
-        self?.handle(event: event)
-        return event
-      }
-    }
-
-    func stop() {
-      if let globalMonitor = globalMonitor {
-        NSEvent.removeMonitor(globalMonitor)
-        self.globalMonitor = nil
-      }
-      if let localMonitor = localMonitor {
-        NSEvent.removeMonitor(localMonitor)
-        self.localMonitor = nil
-      }
-      handler = nil
-    }
-
-    private func handle(event: NSEvent) {
-      // Only close if click is outside both the widget and the popover panel
-      let windowNumber = event.windowNumber
-      // Get all windows belonging to this process
-      let myWindows = NSApp.windows
-      // If the click is in any of our windows, ignore
-      if myWindows.contains(where: { $0.windowNumber == windowNumber }) {
-        // Click is inside our app, ignore
-        return
-      }
-      // Otherwise, treat as outside click
-      self.handler?()
-    }
   }
 
   private var normalizedVolume: Double {
@@ -185,52 +130,6 @@ struct SoundWidget: View {
       return "-%"
     }
     return "\(Int(normalizedVolume * 100))%"
-  }
-
-  @ViewBuilder
-  private func popperView() -> some View {
-    VStack(spacing: 6) {
-      HStack(spacing: 8) {
-        Button(action: toggleMute) {
-          Image(systemName: systemInfo.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-            .font(.system(size: 12, weight: .regular))
-            .foregroundColor(theme.foreground)
-        }
-
-        Slider(
-          value: Binding(
-            get: {
-              if let t = tempVolume { return t }
-              // Use normalized value for slider
-              let v = systemInfo.volumeLevel
-              return Double(v > 1.01 ? v / 100.0 : v)
-            },
-            set: { new in tempVolume = new }
-          ), in: 0...1,
-          onEditingChanged: { editing in
-            if !editing {
-              commitVolume()
-            }
-          }
-        )
-        .frame(minWidth: 120, maxWidth: 200)
-
-        Button(action: openSoundPreferences) {
-          Image(systemName: "gearshape")
-            .font(.system(size: 12, weight: .regular))
-            .foregroundColor(theme.foreground)
-        }
-      }
-      .padding(8)
-      .background(
-        RoundedRectangle(cornerRadius: 8)
-          .fill(globalSettings.noColorInDataWidgets ? theme.minor : theme.background)
-          .shadow(color: Color.black.opacity(0.12), radius: 4, x: 0, y: 2)
-      )
-    }
-    .padding(.bottom, 6)
-    .frame(maxWidth: .infinity)
-    .padding(.horizontal, 6)
   }
 
   private struct PopoverContent: View {
@@ -476,18 +375,6 @@ struct SoundWidget: View {
     }
   }
 
-  private func commitVolume() {
-    guard let v = tempVolume else { return }
-    Task {
-      systemInfo.setSystemVolume(Float(v))
-    }
-  }
-
-  private func toggleMute() {
-    Task {
-      systemInfo.setSystemMuted(!systemInfo.isMuted)
-    }
-  }
   private func openSoundPreferences() {
     Task {
       _ = try? await ShellExecutor.run("open /System/Library/PreferencePanes/Sound.prefPane/")

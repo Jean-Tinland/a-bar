@@ -15,6 +15,7 @@ struct HackerNewsWidget: View {
     @State private var isChevronPressed = false
     @State private var isTitlePressed = false
     @StateObject private var popoverManager = HNPopoverManager()
+    private static let outsideClickMonitor = OutsideClickMonitor()
     
     private var hnSettings: HackerNewsWidgetSettings {
         settings.settings.widgets.hackerNews
@@ -26,20 +27,6 @@ struct HackerNewsWidget: View {
 
     private var globalSettings: GlobalSettings {
         settings.settings.global
-    }
-
-    private func settingsFont(scaledBy factor: Double = 1.0, weight: Font.Weight? = nil, design: Font.Design? = nil) -> Font {
-        let size = CGFloat(Double(globalSettings.fontSize) * factor)
-        if globalSettings.fontName.isEmpty {
-            if let weight = weight {
-                if let design = design {
-                    return .system(size: size, weight: weight, design: design)
-                }
-                return .system(size: size, weight: weight)
-            }
-            return .system(size: size)
-        }
-        return .custom(globalSettings.fontName, size: size)
     }
     
     var body: some View {
@@ -61,7 +48,7 @@ struct HackerNewsWidget: View {
                     }) {
                         Text((stories[currentIndex].title ?? "").truncated(to: hnSettings.maxTitleLength))
                             .foregroundColor(theme.foreground)
-                            .font(settingsFont())
+                            .font(globalSettings.settingsFont())
                     }
                     .buttonStyle(PlainButtonStyle())
                     .scaleEffect(isTitlePressed ? 0.97 : 1.0)
@@ -73,7 +60,7 @@ struct HackerNewsWidget: View {
                     
                     if hnSettings.showPoints {
                         Text("(\(stories[currentIndex].points))")
-                            .font(settingsFont(scaledBy: 0.8))
+                            .font(globalSettings.settingsFont(scaledBy: 0.8))
                             .foregroundColor(theme.foreground.opacity(0.7))
                     }
                     
@@ -179,18 +166,18 @@ struct HackerNewsWidget: View {
         if showPopover {
             showPopover = false
             popoverManager.scheduleClose()
-            OutsideClickMonitor.shared.stop()
+            Self.outsideClickMonitor.stop()
         } else {
             NSApp.activate(ignoringOtherApps: true)
             showPopover = true
             popoverManager.showPanel()
             
             DispatchQueue.main.async {
-                OutsideClickMonitor.shared.start {
+                Self.outsideClickMonitor.start {
                     if showPopover {
                         showPopover = false
                         popoverManager.scheduleClose()
-                        OutsideClickMonitor.shared.stop()
+                        Self.outsideClickMonitor.stop()
                     }
                 }
             }
@@ -202,7 +189,7 @@ struct HackerNewsWidget: View {
         NSWorkspace.shared.open(url)
         showPopover = false
         popoverManager.scheduleClose()
-        OutsideClickMonitor.shared.stop()
+        Self.outsideClickMonitor.stop()
     }
 
     private func openHNComments(_ story: HNStory) {
@@ -210,7 +197,7 @@ struct HackerNewsWidget: View {
         NSWorkspace.shared.open(commentsURL)
         showPopover = false
         popoverManager.scheduleClose()
-        OutsideClickMonitor.shared.stop()
+        Self.outsideClickMonitor.stop()
     }
     
     private func fetchHackerNewsStories() async throws -> [HNStory] {
@@ -219,47 +206,6 @@ struct HackerNewsWidget: View {
         
         let response = try JSONDecoder().decode(HNResponse.self, from: data)
         return response.hits.filter { $0.title != nil && !$0.title!.isEmpty }
-    }
-    
-    // Helper for outside click detection (same as SoundWidget)
-    private class OutsideClickMonitor {
-        static let shared = OutsideClickMonitor()
-        private var globalMonitor: Any?
-        private var localMonitor: Any?
-        private var handler: (() -> Void)?
-        
-        func start(_ handler: @escaping () -> Void) {
-            stop()
-            self.handler = handler
-            globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-                self?.handle(event: event)
-            }
-            localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-                self?.handle(event: event)
-                return event
-            }
-        }
-        
-        func stop() {
-            if let globalMonitor = globalMonitor {
-                NSEvent.removeMonitor(globalMonitor)
-                self.globalMonitor = nil
-            }
-            if let localMonitor = localMonitor {
-                NSEvent.removeMonitor(localMonitor)
-                self.localMonitor = nil
-            }
-            handler = nil
-        }
-        
-        private func handle(event: NSEvent) {
-            let windowNumber = event.windowNumber
-            let myWindows = NSApp.windows
-            if myWindows.contains(where: { $0.windowNumber == windowNumber }) {
-                return
-            }
-            self.handler?()
-        }
     }
     
     // Popover content view
@@ -279,20 +225,6 @@ struct HackerNewsWidget: View {
         private var globalSettings: GlobalSettings {
             settings.settings.global
         }
-      
-        private func settingsFont(scaledBy factor: Double = 1.0, weight: Font.Weight? = nil, design: Font.Design? = nil) -> Font {
-            let size = CGFloat(Double(globalSettings.fontSize) * factor)
-            if globalSettings.fontName.isEmpty {
-                if let weight = weight {
-                    if let design = design {
-                        return .system(size: size, weight: weight, design: design)
-                    }
-                    return .system(size: size, weight: weight)
-                }
-                return .system(size: size)
-            }
-            return .custom(globalSettings.fontName, size: size)
-        }
         
         var body: some View {
             VStack(spacing: 0) {
@@ -302,7 +234,7 @@ struct HackerNewsWidget: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack(alignment: .top, spacing: 6) {
                                     Text("#\(index + 1)")
-                                        .font(settingsFont(scaledBy: 0.9))
+                                        .font(globalSettings.settingsFont(scaledBy: 0.9))
                                         .foregroundColor(Color(nsColor: .secondaryLabelColor))
                                         .frame(width: 20, alignment: .trailing)
                                         .padding(.top, 3)
@@ -313,7 +245,7 @@ struct HackerNewsWidget: View {
                                             onOpenStory(story)
                                         }) {
                                             Text(story.title ?? "")
-                                                .font(settingsFont(weight: .semibold))
+                                                .font(globalSettings.settingsFont(weight: .semibold))
                                                 .foregroundColor(theme.foreground)
                                                 .lineLimit(2)
                                                 .multilineTextAlignment(.leading)
@@ -341,18 +273,18 @@ struct HackerNewsWidget: View {
                                         }) {
                                             HStack(spacing: 8) {
                                                 Text("\(story.points) points")
-                                                    .font(settingsFont(scaledBy: 0.8))
+                                                    .font(globalSettings.settingsFont(scaledBy: 0.8))
                                                     .foregroundColor(theme.foreground)
                                                 
                                                 if let author = story.author {
                                                     Text("by \(author)")
-                                                        .font(settingsFont(scaledBy: 0.8))
+                                                        .font(globalSettings.settingsFont(scaledBy: 0.8))
                                                         .foregroundColor(theme.foreground)
                                                 }
                                                 
                                                 if story.numComments > 0 {
                                                     Text("\(story.numComments) comments")
-                                                        .font(settingsFont(scaledBy: 0.8))
+                                                        .font(globalSettings.settingsFont(scaledBy: 0.8))
                                                         .foregroundColor(theme.foreground)
                                                 }
                                             }

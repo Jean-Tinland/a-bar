@@ -336,12 +336,40 @@ class SystemInfoService: ObservableObject {
         // Fallback to netstat command for M4 Macs where native approach may fail
         return await getNetworkStatsViaNetstat()
     }
+
+    private func calculateNetworkStats(rxBytes: UInt64, txBytes: UInt64) -> NetworkStats {
+        let now = Date()
+
+        if let previous = previousNetworkBytes,
+           let lastTime = lastNetworkCheckTime {
+            let delta = now.timeIntervalSince(lastTime)
+            guard delta > 0 else { return NetworkStats() }
+
+            let rxDiff = rxBytes >= previous.rx ? rxBytes - previous.rx : rxBytes
+            let txDiff = txBytes >= previous.tx ? txBytes - previous.tx : txBytes
+
+            let download = Double(rxDiff) / delta
+            let upload = Double(txDiff) / delta
+
+            previousNetworkBytes = (rxBytes, txBytes)
+            lastNetworkCheckTime = now
+
+            return NetworkStats(
+                download: UInt64(max(0, download)),
+                upload: UInt64(max(0, upload))
+            )
+        }
+
+        previousNetworkBytes = (rxBytes, txBytes)
+        lastNetworkCheckTime = now
+        return NetworkStats()
+    }
     
     /// Native sysctl-based network statistics (primary method)
     private func getNetworkStatsNative() -> NetworkStats? {
         var rxBytes: UInt64 = 0
         var txBytes: UInt64 = 0
-        var foundInterfaces: [String] = []
+        var foundValidInterface = false
         
         // Use sysctl to get interface statistics with proper 64-bit counters
         var mib: [Int32] = [CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST2, 0]
@@ -378,7 +406,7 @@ class SystemInfoService: ObservableObject {
                     let ifTx = ifm2.ifm_data.ifi_obytes
                     
                     if isValidDataInterface(ifName) {
-                        foundInterfaces.append("\(ifName): rx=\(ifRx) tx=\(ifTx)")
+                        foundValidInterface = true
                         rxBytes &+= ifRx
                         txBytes &+= ifTx
                     }
@@ -391,38 +419,12 @@ class SystemInfoService: ObservableObject {
             offset += msgLen
         }
         
-        if foundInterfaces.isEmpty {
+        if !foundValidInterface {
             print("[NetworkStats] No valid interfaces found via sysctl, falling back to netstat")
             return nil
         }
-        
-        let now = Date()
-        
-        if let previous = previousNetworkBytes,
-           let lastTime = lastNetworkCheckTime {
-            
-            let delta = now.timeIntervalSince(lastTime)
-            guard delta > 0 else { return NetworkStats() }
-            
-            // Handle counter wraparound gracefully
-            let rxDiff = rxBytes >= previous.rx ? rxBytes - previous.rx : rxBytes
-            let txDiff = txBytes >= previous.tx ? txBytes - previous.tx : txBytes
-            
-            let download = Double(rxDiff) / delta
-            let upload = Double(txDiff) / delta
-            
-            previousNetworkBytes = (rxBytes, txBytes)
-            lastNetworkCheckTime = now
-            
-            return NetworkStats(
-                download: UInt64(max(0, download)),
-                upload: UInt64(max(0, upload))
-            )
-        }
-        
-        previousNetworkBytes = (rxBytes, txBytes)
-        lastNetworkCheckTime = now
-        return NetworkStats()
+
+        return calculateNetworkStats(rxBytes: rxBytes, txBytes: txBytes)
     }
     
     /// Fallback method using netstat command
@@ -448,34 +450,8 @@ class SystemInfoService: ObservableObject {
                     txBytes &+= tx
                 }
             }
-            
-            let now = Date()
-            
-            if let previous = previousNetworkBytes,
-               let lastTime = lastNetworkCheckTime {
-                
-                let delta = now.timeIntervalSince(lastTime)
-                guard delta > 0 else { return NetworkStats() }
-                
-                // Handle counter wraparound
-                let rxDiff = rxBytes >= previous.rx ? rxBytes - previous.rx : rxBytes
-                let txDiff = txBytes >= previous.tx ? txBytes - previous.tx : txBytes
-                
-                let download = Double(rxDiff) / delta
-                let upload = Double(txDiff) / delta
-                
-                previousNetworkBytes = (rxBytes, txBytes)
-                lastNetworkCheckTime = now
-                
-                return NetworkStats(
-                    download: UInt64(max(0, download)),
-                    upload: UInt64(max(0, upload))
-                )
-            }
-            
-            previousNetworkBytes = (rxBytes, txBytes)
-            lastNetworkCheckTime = now
-            return NetworkStats()
+
+            return calculateNetworkStats(rxBytes: rxBytes, txBytes: txBytes)
             
         } catch {
             print("[NetworkStats] netstat fallback failed: \(error)")
@@ -631,6 +607,72 @@ class SystemInfoService: ObservableObject {
         return info
     }
 
+    private enum AudioDeviceKind {
+        case output
+        case input
+
+        var selector: AudioObjectPropertySelector {
+            switch self {
+            case .output:
+                return kAudioHardwarePropertyDefaultOutputDevice
+            case .input:
+                return kAudioHardwarePropertyDefaultInputDevice
+            }
+        }
+    }
+
+    private func defaultAudioDeviceID(for kind: AudioDeviceKind) -> AudioObjectID? {
+        var deviceID = AudioObjectID(kAudioObjectUnknown)
+        var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
+
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kind.selector,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        guard AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &propertyAddress,
+            0,
+            nil,
+            &propertySize,
+            &deviceID
+        ) == noErr else {
+            return nil
+        }
+
+        return deviceID
+    }
+
+    private func audioDeviceName(for deviceID: AudioObjectID) -> String? {
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioObjectPropertyName,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        var deviceName: CFString? = nil
+        var propertySize = UInt32(MemoryLayout<CFString?>.size)
+
+        let status = withUnsafeMutablePointer(to: &deviceName) { pointer in
+            AudioObjectGetPropertyData(
+                deviceID,
+                &propertyAddress,
+                0,
+                nil,
+                &propertySize,
+                pointer
+            )
+        }
+
+        guard status == noErr else {
+            return nil
+        }
+
+        return deviceName as String?
+    }
+
     func refreshVolume() {
         let volume = getSystemVolume()
         let muted = isSystemMuted()
@@ -649,23 +691,7 @@ class SystemInfoService: ObservableObject {
         let clampedValue = min(max(level, 0.0), 1.0)
         var didSet = false
         DispatchQueue.global(qos: .userInitiated).async {
-            var deviceID = AudioObjectID(kAudioObjectUnknown)
-            var size = UInt32(MemoryLayout<AudioObjectID>.size)
-
-            var address = AudioObjectPropertyAddress(
-                mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-                mScope: kAudioObjectPropertyScopeGlobal,
-                mElement: kAudioObjectPropertyElementMain
-            )
-
-            guard AudioObjectGetPropertyData(
-                AudioObjectID(kAudioObjectSystemObject),
-                &address,
-                0,
-                nil,
-                &size,
-                &deviceID
-            ) == noErr else {
+            guard let deviceID = self.defaultAudioDeviceID(for: .output) else {
                 return
             }
 
@@ -678,19 +704,21 @@ class SystemInfoService: ObservableObject {
                     mScope: kAudioDevicePropertyScopeOutput,
                     mElement: element
                 )
-                                var isSettable: DarwinBoolean = false
-                                guard AudioObjectHasProperty(deviceID, &volumeAddress),
-                                            AudioObjectIsPropertySettable(deviceID, &volumeAddress, &isSettable) == noErr, isSettable != false,
-                                            AudioObjectSetPropertyData(
-                                                deviceID,
-                                                &volumeAddress,
-                                                0,
-                                                nil,
-                                                propertySize,
-                                                &volume
-                                            ) == noErr else {
-                                        return false
-                                }
+                var isSettable: DarwinBoolean = false
+                guard AudioObjectHasProperty(deviceID, &volumeAddress),
+                      AudioObjectIsPropertySettable(deviceID, &volumeAddress, &isSettable) == noErr,
+                      isSettable != false,
+                      AudioObjectSetPropertyData(
+                          deviceID,
+                          &volumeAddress,
+                          0,
+                          nil,
+                          propertySize,
+                          &volume
+                      ) == noErr
+                else {
+                    return false
+                }
                 return true
             }
 
@@ -717,30 +745,12 @@ class SystemInfoService: ObservableObject {
     /// Set system output mute state using CoreAudio and update published state.
     func setSystemMuted(_ muted: Bool) {
         DispatchQueue.global(qos: .userInitiated).async {
-            var defaultOutputDeviceID = AudioObjectID(kAudioObjectUnknown)
-            var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
-
-            var propertyAddress = AudioObjectPropertyAddress(
-                mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-                mScope: kAudioObjectPropertyScopeGlobal,
-                mElement: kAudioObjectPropertyElementMain
-            )
-
-            let status = AudioObjectGetPropertyData(
-                AudioObjectID(kAudioObjectSystemObject),
-                &propertyAddress,
-                0,
-                nil,
-                &propertySize,
-                &defaultOutputDeviceID
-            )
-
-            guard status == noErr else { return }
+            guard let defaultOutputDeviceID = self.defaultAudioDeviceID(for: .output) else { return }
 
             var mutedValue: UInt32 = muted ? 1 : 0
-            propertySize = UInt32(MemoryLayout<UInt32>.size)
+            let propertySize = UInt32(MemoryLayout<UInt32>.size)
 
-            propertyAddress = AudioObjectPropertyAddress(
+            var propertyAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyMute,
                 mScope: kAudioDevicePropertyScopeOutput,
                 mElement: kAudioObjectPropertyElementMain
@@ -757,23 +767,7 @@ class SystemInfoService: ObservableObject {
 
     private func getSystemVolume() -> Float {
         // Robust, production-safe macOS output volume retrieval
-        var deviceID = AudioObjectID(kAudioObjectUnknown)
-        var size = UInt32(MemoryLayout<AudioObjectID>.size)
-
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-
-        guard AudioObjectGetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
-            &address,
-            0,
-            nil,
-            &size,
-            &deviceID
-        ) == noErr else {
+        guard let deviceID = defaultAudioDeviceID(for: .output) else {
             return 0
         }
 
@@ -820,30 +814,12 @@ class SystemInfoService: ObservableObject {
     }
 
     private func isSystemMuted() -> Bool {
-        var defaultOutputDeviceID = AudioObjectID(kAudioObjectUnknown)
-        var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
-
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-
-        let status = AudioObjectGetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
-            &propertyAddress,
-            0,
-            nil,
-            &propertySize,
-            &defaultOutputDeviceID
-        )
-
-        guard status == noErr else { return false }
+        guard let defaultOutputDeviceID = defaultAudioDeviceID(for: .output) else { return false }
 
         var muted: UInt32 = 0
-        propertySize = UInt32(MemoryLayout<UInt32>.size)
+        var propertySize = UInt32(MemoryLayout<UInt32>.size)
 
-        propertyAddress = AudioObjectPropertyAddress(
+        var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyMute,
             mScope: kAudioDevicePropertyScopeOutput,
             mElement: kAudioObjectPropertyElementMain
@@ -862,52 +838,8 @@ class SystemInfoService: ObservableObject {
     }
     
     private func getAudioOutputDeviceName() -> String {
-        var defaultOutputDeviceID = AudioObjectID(kAudioObjectUnknown)
-        var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
-
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-
-        let status = AudioObjectGetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
-            &propertyAddress,
-            0,
-            nil,
-            &propertySize,
-            &defaultOutputDeviceID
-        )
-
-        guard status == noErr else { return "Unknown" }
-
-        // Get device name
-        propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioObjectPropertyName,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        
-        var deviceName: CFString? = nil
-        propertySize = UInt32(MemoryLayout<CFString?>.size)
-        
-        let nameStatus = withUnsafeMutablePointer(to: &deviceName) { pointer in
-            AudioObjectGetPropertyData(
-                defaultOutputDeviceID,
-                &propertyAddress,
-                0,
-                nil,
-                &propertySize,
-                pointer
-            )
-        }
-        
-        guard nameStatus == noErr, let name = deviceName as String? else {
-            return "Unknown"
-        }
-        
-        return name
+        guard let defaultOutputDeviceID = defaultAudioDeviceID(for: .output) else { return "Unknown" }
+        return audioDeviceName(for: defaultOutputDeviceID) ?? "Unknown"
     }
 
     func refreshMic() {
@@ -923,30 +855,12 @@ class SystemInfoService: ObservableObject {
     }
 
     private func getMicLevel() -> Float {
-        var defaultInputDeviceID = AudioObjectID(kAudioObjectUnknown)
-        var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
-
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultInputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-
-        let status = AudioObjectGetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
-            &propertyAddress,
-            0,
-            nil,
-            &propertySize,
-            &defaultInputDeviceID
-        )
-
-        guard status == noErr else { return 0 }
+        guard let defaultInputDeviceID = defaultAudioDeviceID(for: .input) else { return 0 }
 
         var volume: Float32 = 0
-        propertySize = UInt32(MemoryLayout<Float32>.size)
+        var propertySize = UInt32(MemoryLayout<Float32>.size)
 
-        propertyAddress = AudioObjectPropertyAddress(
+        var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyVolumeScalar,
             mScope: kAudioDevicePropertyScopeInput,
             mElement: kAudioObjectPropertyElementMain
@@ -965,30 +879,12 @@ class SystemInfoService: ObservableObject {
     }
 
     private func checkIfMicMuted() -> Bool {
-        var defaultInputDeviceID = AudioObjectID(kAudioObjectUnknown)
-        var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
-
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultInputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-
-        let status = AudioObjectGetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
-            &propertyAddress,
-            0,
-            nil,
-            &propertySize,
-            &defaultInputDeviceID
-        )
-
-        guard status == noErr else { return false }
+        guard let defaultInputDeviceID = defaultAudioDeviceID(for: .input) else { return false }
 
         var muted: UInt32 = 0
-        propertySize = UInt32(MemoryLayout<UInt32>.size)
+        var propertySize = UInt32(MemoryLayout<UInt32>.size)
 
-        propertyAddress = AudioObjectPropertyAddress(
+        var propertyAddress = AudioObjectPropertyAddress(
             mSelector: kAudioDevicePropertyMute,
             mScope: kAudioDevicePropertyScopeInput,
             mElement: kAudioObjectPropertyElementMain
@@ -1007,52 +903,8 @@ class SystemInfoService: ObservableObject {
     }
     
     private func getAudioInputDeviceName() -> String {
-        var defaultInputDeviceID = AudioObjectID(kAudioObjectUnknown)
-        var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
-
-        var propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultInputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-
-        let status = AudioObjectGetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
-            &propertyAddress,
-            0,
-            nil,
-            &propertySize,
-            &defaultInputDeviceID
-        )
-
-        guard status == noErr else { return "Unknown" }
-
-        // Get device name
-        propertyAddress = AudioObjectPropertyAddress(
-            mSelector: kAudioObjectPropertyName,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        
-        var deviceName: CFString? = nil
-        propertySize = UInt32(MemoryLayout<CFString?>.size)
-        
-        let nameStatus = withUnsafeMutablePointer(to: &deviceName) { pointer in
-            AudioObjectGetPropertyData(
-                defaultInputDeviceID,
-                &propertyAddress,
-                0,
-                nil,
-                &propertySize,
-                pointer
-            )
-        }
-        
-        guard nameStatus == noErr, let name = deviceName as String? else {
-            return "Unknown"
-        }
-        
-        return name
+        guard let defaultInputDeviceID = defaultAudioDeviceID(for: .input) else { return "Unknown" }
+        return audioDeviceName(for: defaultInputDeviceID) ?? "Unknown"
     }
 
     /// Set microphone input level (0.0 - 1.0) using CoreAudio and update published state.
@@ -1061,23 +913,7 @@ class SystemInfoService: ObservableObject {
         let clampedValue = min(max(level, 0.0), 1.0)
         var didSet = false
         DispatchQueue.global(qos: .userInitiated).async {
-            var deviceID = AudioObjectID(kAudioObjectUnknown)
-            var size = UInt32(MemoryLayout<AudioObjectID>.size)
-
-            var address = AudioObjectPropertyAddress(
-                mSelector: kAudioHardwarePropertyDefaultInputDevice,
-                mScope: kAudioObjectPropertyScopeGlobal,
-                mElement: kAudioObjectPropertyElementMain
-            )
-
-            guard AudioObjectGetPropertyData(
-                AudioObjectID(kAudioObjectSystemObject),
-                &address,
-                0,
-                nil,
-                &size,
-                &deviceID
-            ) == noErr else {
+            guard let deviceID = self.defaultAudioDeviceID(for: .input) else {
                 return
             }
 
@@ -1120,30 +956,12 @@ class SystemInfoService: ObservableObject {
     /// Set microphone mute state using CoreAudio and update published state.
     func setMicMuted(_ muted: Bool) {
         DispatchQueue.global(qos: .userInitiated).async {
-            var defaultInputDeviceID = AudioObjectID(kAudioObjectUnknown)
-            var propertySize = UInt32(MemoryLayout<AudioObjectID>.size)
-
-            var propertyAddress = AudioObjectPropertyAddress(
-                mSelector: kAudioHardwarePropertyDefaultInputDevice,
-                mScope: kAudioObjectPropertyScopeGlobal,
-                mElement: kAudioObjectPropertyElementMain
-            )
-
-            let status = AudioObjectGetPropertyData(
-                AudioObjectID(kAudioObjectSystemObject),
-                &propertyAddress,
-                0,
-                nil,
-                &propertySize,
-                &defaultInputDeviceID
-            )
-
-            guard status == noErr else { return }
+            guard let defaultInputDeviceID = self.defaultAudioDeviceID(for: .input) else { return }
 
             var mutedValue: UInt32 = muted ? 1 : 0
-            propertySize = UInt32(MemoryLayout<UInt32>.size)
+            let propertySize = UInt32(MemoryLayout<UInt32>.size)
 
-            propertyAddress = AudioObjectPropertyAddress(
+            var propertyAddress = AudioObjectPropertyAddress(
                 mSelector: kAudioDevicePropertyMute,
                 mScope: kAudioDevicePropertyScopeInput,
                 mElement: kAudioObjectPropertyElementMain
@@ -1475,22 +1293,10 @@ struct DiskIOStats: Equatable {
     var write: UInt64 = 0
     
     var formattedRead: String {
-        formatSpeed(Double(read))
+        Double(read).formattedTransferRate(spacedUnits: true)
     }
     
     var formattedWrite: String {
-        formatSpeed(Double(write))
-    }
-    
-    private func formatSpeed(_ bytesPerSecond: Double) -> String {
-        if bytesPerSecond < 1024 {
-            return String(format: "%.0f B/s", bytesPerSecond)
-        } else if bytesPerSecond < 1024 * 1024 {
-            return String(format: "%.1f K/s", bytesPerSecond / 1024)
-        } else if bytesPerSecond < 1024 * 1024 * 1024 {
-            return String(format: "%.1f M/s", bytesPerSecond / 1024 / 1024)
-        } else {
-            return String(format: "%.1f G/s", bytesPerSecond / 1024 / 1024 / 1024)
-        }
+        Double(write).formattedTransferRate(spacedUnits: true)
     }
 }

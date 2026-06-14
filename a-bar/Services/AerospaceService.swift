@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 import Foundation
 
 /// Service for interacting with AeroSpace window manager
@@ -12,7 +11,6 @@ class AerospaceService: ObservableObject {
 
     private var refreshWorkItem: DispatchWorkItem?
     private let refreshDebounceInterval: TimeInterval = 0.1
-    private var cancellables = Set<AnyCancellable>()
     private let settingsManager = SettingsManager.shared
 
     private var aerospacePath: String {

@@ -19,20 +19,6 @@ struct GraphView: View {
         settings.settings.global
     }
 
-    private func settingsFont(scaledBy factor: Double = 1.0, weight: Font.Weight? = nil, design: Font.Design? = nil) -> Font {
-        let size = CGFloat(Double(globalSettings.fontSize) * factor)
-        if globalSettings.fontName.isEmpty {
-            if let weight = weight {
-                if let design = design {
-                    return .system(size: size, weight: weight, design: design)
-                }
-                return .system(size: size, weight: weight)
-            }
-            return .system(size: size)
-        }
-        return .custom(globalSettings.fontName, size: size)
-    }
-
     init(
         values: [Double],
         maxValue: Double = 100.0,
@@ -97,7 +83,7 @@ struct GraphView: View {
                 // Current value label
                 if showLabels, let lastValue = values.last {
                     Text("\(labelPrefix)\(Int(lastValue))%")
-                        .font(settingsFont(scaledBy: 0.6))
+                        .font(globalSettings.settingsFont(scaledBy: 0.6))
                         .foregroundColor(theme.foreground)
                         .padding(1)
                         .background(theme.background.opacity(0.7))

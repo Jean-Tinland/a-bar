@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Theme and appearance settings
-struct AppearanceSettingsView: View {
+struct AppearanceSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -283,13 +283,6 @@ struct AppearanceSettingsView: View {
       .padding()
     }
     .navigationTitle("Appearance")
-  }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
   }
 
   private func resetCustomColors() {

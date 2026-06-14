@@ -20,20 +20,6 @@ struct WeatherWidget: View {
     private var globalSettings: GlobalSettings {
         settings.settings.global
     }
-
-    private func settingsFont(scaledBy factor: Double = 1.0, weight: Font.Weight? = nil, design: Font.Design? = nil) -> Font {
-        let size = CGFloat(Double(globalSettings.fontSize) * factor)
-        if globalSettings.fontName.isEmpty {
-            if let weight = weight {
-                if let design = design {
-                    return .system(size: size, weight: weight, design: design)
-                }
-                return .system(size: size, weight: weight)
-            }
-            return .system(size: size)
-        }
-        return .custom(globalSettings.fontName, size: size)
-    }
     
     var body: some View {
         BaseWidgetView(onRightClick: refreshWeather) {
@@ -52,7 +38,7 @@ struct WeatherWidget: View {
                     
                     if !weatherSettings.hideLocation {
                             Text(location.truncated(to: 15))
-                                .font(settingsFont(scaledBy: 0.75))
+                                .font(globalSettings.settingsFont(scaledBy: 0.75))
                                 .foregroundColor(theme.minor)
                     }
                 }
@@ -174,10 +160,9 @@ struct WeatherWidget: View {
                     lat = gLat
                     lon = gLon
                     break
-                } else {
-                    
                 }
             } catch {
+                continue
             }
         }
 
@@ -196,10 +181,9 @@ struct WeatherWidget: View {
                    let nLon = Double(lonStr) {
                     lat = nLat
                     lon = nLon
-                } else {
-                    
                 }
             } catch {
+                // Keep fallback behavior: failure here is handled by the guard below.
             }
         }
 
@@ -210,16 +194,17 @@ struct WeatherWidget: View {
         // Use Open-Meteo Weather API to get current weather
         let unit = weatherSettings.unit == .celsius ? "celsius" : "fahrenheit"
         let tempParam = "temperature_2m"
-        let weatherUrl = URL(string: "https://api.open-meteo.com/v1/forecast?latitude=\(finalLat)&longitude=\(finalLon)&current_weather=true&hourly=weathercode,\(tempParam)&temperature_unit=\(unit)")!
-                let (weatherData, _) = try await URLSession.shared.data(from: weatherUrl)
-                guard let weatherJson = try? JSONSerialization.jsonObject(with: weatherData) as? [String: Any],
-                            let current = weatherJson["current_weather"] as? [String: Any],
-                            let temp = current["temperature"] as? Double,
-                            let weatherCode = current["weathercode"] as? Int,
-                            let isDay = current["is_day"] as? Int else {
-                        
-                        throw NSError(domain: "Weather", code: 3, userInfo: [NSLocalizedDescriptionKey: "Weather data not found"])
-                }
+        let weatherUrl = URL(
+            string: "https://api.open-meteo.com/v1/forecast?latitude=\(finalLat)&longitude=\(finalLon)&current_weather=true&hourly=weathercode,\(tempParam)&temperature_unit=\(unit)"
+        )!
+        let (weatherData, _) = try await URLSession.shared.data(from: weatherUrl)
+        guard let weatherJson = try? JSONSerialization.jsonObject(with: weatherData) as? [String: Any],
+              let current = weatherJson["current_weather"] as? [String: Any],
+              let temp = current["temperature"] as? Double,
+              let weatherCode = current["weathercode"] as? Int,
+              let isDay = current["is_day"] as? Int else {
+            throw NSError(domain: "Weather", code: 3, userInfo: [NSLocalizedDescriptionKey: "Weather data not found"])
+        }
 
         // Use is_day (1=day, 0=night) from Open-Meteo
         let isNight = isDay == 0
@@ -255,39 +240,6 @@ struct WeatherWidget: View {
         case 96, 99: return "Thunderstorm with hail"
         default: return "Unknown"
         }
-    }
-    
-    private func checkIfNight(sunrise: String, sunset: String) -> Bool {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "hh:mm a"
-        
-        let now = Date()
-        let calendar = Calendar.current
-        
-        guard let sunriseTime = formatter.date(from: sunrise),
-              let sunsetTime = formatter.date(from: sunset) else {
-            return false
-        }
-        
-        // Create dates for today
-        var sunriseComponents = calendar.dateComponents([.hour, .minute], from: sunriseTime)
-        var sunsetComponents = calendar.dateComponents([.hour, .minute], from: sunsetTime)
-        
-        let todayComponents = calendar.dateComponents([.year, .month, .day], from: now)
-        sunriseComponents.year = todayComponents.year
-        sunriseComponents.month = todayComponents.month
-        sunriseComponents.day = todayComponents.day
-        
-        sunsetComponents.year = todayComponents.year
-        sunsetComponents.month = todayComponents.month
-        sunsetComponents.day = todayComponents.day
-        
-        guard let todaySunrise = calendar.date(from: sunriseComponents),
-              let todaySunset = calendar.date(from: sunsetComponents) else {
-            return false
-        }
-        
-        return now < todaySunrise || now > todaySunset
     }
     
     private func temperatureString(_ temp: Int) -> String {
@@ -335,9 +287,4 @@ struct WeatherData {
     let temperatureF: Int
     let description: String
     let isNight: Bool
-    
-    var temperature: Int {
-        // Deprecated: use temperatureC or temperatureF directly
-        temperatureC
-    }
 }

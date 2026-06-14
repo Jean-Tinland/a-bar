@@ -1,34 +1,50 @@
 import Cocoa
 
+private extension NSScriptCommand {
+  func withWidgetName(_ body: (String) -> String) -> String {
+    guard let widgetName = directParameter as? String else {
+      return "error: missing widget name"
+    }
+    return body(widgetName)
+  }
+
+  func widgetResultMessage<E: Error>(
+    for widgetName: String,
+    result: Result<Bool, E>,
+    success: (Bool) -> String
+  ) -> String {
+    switch result {
+    case .success(let value):
+      return success(value)
+    case .failure(let error):
+      return "error: \(error.localizedDescription)"
+    }
+  }
+}
+
 /// AppleScript command handler for refreshing widgets
 @objc(RefreshWidgetCommand)
 class RefreshWidgetCommand: NSScriptCommand {
 
   override func performDefaultImplementation() -> Any? {
-    // Get the direct parameter (widget name)
-    guard let widgetName = directParameter as? String else {
-      return "error: missing widget name"
-    }
+    withWidgetName { widgetName in
+      // Check if refreshing yabai widgets
+      if widgetName.lowercased() == "yabai" {
+        YabaiService.shared.refresh()
+        return "ok: refreshed yabai widgets"
+      }
 
-    // Check if refreshing yabai widgets
-    if widgetName.lowercased() == "yabai" {
-      YabaiService.shared.refresh()
-      return "ok: refreshed yabai widgets"
-    }
+      // Check if refreshing aerospace widgets
+      if widgetName.lowercased() == "aerospace" {
+        AerospaceService.shared.refresh()
+        return "ok: refreshed aerospace widgets"
+      }
 
-    // Check if refreshing aerospace widgets
-    if widgetName.lowercased() == "aerospace" {
-      AerospaceService.shared.refresh()
-      return "ok: refreshed aerospace widgets"
-    }
-
-    // Otherwise, refresh a custom user widget
-    let userWidgetManager = UserWidgetManager.shared
-    let success = userWidgetManager.refreshWidget(named: widgetName)
-
-    if success {
-      return "ok: refreshed widget '\(widgetName)'"
-    } else {
+      // Otherwise, refresh a custom user widget
+      let success = UserWidgetManager.shared.refreshWidget(named: widgetName)
+      if success {
+        return "ok: refreshed widget '\(widgetName)'"
+      }
       return "error: widget '\(widgetName)' not found"
     }
   }
@@ -39,19 +55,14 @@ class RefreshWidgetCommand: NSScriptCommand {
 class ToggleWidgetCommand: NSScriptCommand {
 
   override func performDefaultImplementation() -> Any? {
-    guard let widgetName = directParameter as? String else {
-      return "error: missing widget name"
-    }
-
-    let userWidgetManager = UserWidgetManager.shared
-    let result = userWidgetManager.toggleWidget(named: widgetName)
-
-    switch result {
-    case .success(let isNowActive):
-      let state = isNowActive ? "shown" : "hidden"
-      return "ok: widget '\(widgetName)' is now \(state)"
-    case .failure(let error):
-      return "error: \(error.localizedDescription)"
+    withWidgetName { widgetName in
+      widgetResultMessage(
+        for: widgetName,
+        result: UserWidgetManager.shared.toggleWidget(named: widgetName)
+      ) { isNowActive in
+        let state = isNowActive ? "shown" : "hidden"
+        return "ok: widget '\(widgetName)' is now \(state)"
+      }
     }
   }
 }
@@ -61,22 +72,16 @@ class ToggleWidgetCommand: NSScriptCommand {
 class HideWidgetCommand: NSScriptCommand {
 
   override func performDefaultImplementation() -> Any? {
-    guard let widgetName = directParameter as? String else {
-      return "error: missing widget name"
-    }
-
-    let userWidgetManager = UserWidgetManager.shared
-    let result = userWidgetManager.hideWidget(named: widgetName)
-
-    switch result {
-    case .success(let wasHidden):
-      if wasHidden {
-        return "ok: widget '\(widgetName)' is now hidden"
-      } else {
+    withWidgetName { widgetName in
+      widgetResultMessage(
+        for: widgetName,
+        result: UserWidgetManager.shared.hideWidget(named: widgetName)
+      ) { wasHidden in
+        if wasHidden {
+          return "ok: widget '\(widgetName)' is now hidden"
+        }
         return "ok: widget '\(widgetName)' was already hidden"
       }
-    case .failure(let error):
-      return "error: \(error.localizedDescription)"
     }
   }
 }
@@ -86,22 +91,16 @@ class HideWidgetCommand: NSScriptCommand {
 class ShowWidgetCommand: NSScriptCommand {
 
   override func performDefaultImplementation() -> Any? {
-    guard let widgetName = directParameter as? String else {
-      return "error: missing widget name"
-    }
-
-    let userWidgetManager = UserWidgetManager.shared
-    let result = userWidgetManager.showWidget(named: widgetName)
-
-    switch result {
-    case .success(let wasShown):
-      if wasShown {
-        return "ok: widget '\(widgetName)' is now shown"
-      } else {
+    withWidgetName { widgetName in
+      widgetResultMessage(
+        for: widgetName,
+        result: UserWidgetManager.shared.showWidget(named: widgetName)
+      ) { wasShown in
+        if wasShown {
+          return "ok: widget '\(widgetName)' is now shown"
+        }
         return "ok: widget '\(widgetName)' was already shown"
       }
-    case .failure(let error):
-      return "error: \(error.localizedDescription)"
     }
   }
 }

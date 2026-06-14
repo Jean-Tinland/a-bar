@@ -15,17 +15,12 @@ struct AerospaceSpacesWidget: View {
         settings.settings.widgets.spaces
     }
 
-    private var theme: ABarTheme {
-        ThemeManager.currentTheme(for: settings.settings.theme)
-    }
-
     var body: some View {
         HStack(spacing: globalSettings.barElementGap) {
             // Workspaces
             ForEach(filteredWorkspaces) { workspace in
                 AerospaceSpaceView(
-                    workspace: workspace,
-                    displayIndex: displayIndex
+                    workspace: workspace
                 )
             }
         }

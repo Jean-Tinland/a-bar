@@ -90,15 +90,42 @@ extension View {
             self
         }
     }
-    
-    /// Apply a modifier if a value is non-nil
-    @ViewBuilder
-    func ifLet<Value, Content: View>(_ value: Value?, transform: (Self, Value) -> Content) -> some View {
-        if let value = value {
-            transform(self, value)
-        } else {
-            self
+}
+
+protocol ABarSettingsBindable {
+    var settings: SettingsManager { get }
+}
+
+extension ABarSettingsBindable {
+    func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
+        Binding(
+            get: { settings.draftSettings[keyPath: keyPath] },
+            set: { settings.draftSettings[keyPath: keyPath] = $0 }
+        )
+    }
+}
+
+extension GlobalSettings {
+    func settingsFont(
+        scaledBy factor: Double = 1.0,
+        weight: Font.Weight? = nil,
+        design: Font.Design? = nil
+    ) -> Font {
+        let size = CGFloat(Double(fontSize) * factor)
+
+        if !fontName.isEmpty {
+            return .custom(fontName, size: size)
         }
+
+        if let design = design, let weight = weight {
+            return .system(size: size, weight: weight, design: design)
+        }
+
+        if let weight = weight {
+            return .system(size: size, weight: weight)
+        }
+
+        return .system(size: size)
     }
 }
 
@@ -118,14 +145,6 @@ extension String {
 }
 
 extension Date {
-    /// Format date with the given format string
-    func formatted(as format: String, locale: Locale = .current) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = format
-        formatter.locale = locale
-        return formatter.string(from: self)
-    }
-    
     /// Get progress through the day (0.0 to 1.0)
     var dayProgress: Double {
         let calendar = Calendar.current
@@ -137,124 +156,65 @@ extension Date {
     }
 }
 
-extension Collection {
-    /// Safe subscript that returns nil instead of crashing for out of bounds
-    subscript(safe index: Index) -> Element? {
-        return indices.contains(index) ? self[index] : nil
-    }
-}
-
-extension Array where Element: Equatable {
-    /// Remove duplicates while preserving order
-    func uniqued() -> [Element] {
-        var seen = [Element]()
-        return filter { element in
-            if seen.contains(element) {
-                return false
-            }
-            seen.append(element)
-            return true
-        }
-    }
-}
-
 extension Double {
-    /// Format as percentage
-    var percentageString: String {
-        return "\(Int(self))%"
-    }
-    
-    /// Format with fixed decimal places
-    func formatted(decimals: Int) -> String {
-        return String(format: "%.\(decimals)f", self)
-    }
-}
-
-extension Int {
-    /// Format as human readable byte count
-    var formattedBytes: String {
-        ByteCountFormatter.string(fromByteCount: Int64(self), countStyle: .binary)
-    }
-}
-
-extension UInt64 {
-    /// Format as human readable byte count
-    var formattedBytes: String {
-        ByteCountFormatter.string(fromByteCount: Int64(self), countStyle: .binary)
-    }
-}
-
-extension NSScreen {
-    /// Get the screen index (0-based)
-    var screenIndex: Int {
-        return NSScreen.screens.firstIndex(of: self) ?? 0
-    }
-    
-    /// Check if this is the main screen
-    var isMainScreen: Bool {
-        return self == NSScreen.main
-    }
-}
-
-import Combine
-
-extension Publisher {
-    /// Debounce and receive on main thread
-    func debounceOnMain(for dueTime: RunLoop.SchedulerTimeType.Stride) -> AnyPublisher<Output, Failure> {
-        return self
-            .debounce(for: dueTime, scheduler: RunLoop.main)
-            .receive(on: DispatchQueue.main)
-            .eraseToAnyPublisher()
+    /// Format transfer speed as B/s, K/s, M/s, or G/s.
+    func formattedTransferRate(spacedUnits: Bool = false) -> String {
+        let sep = spacedUnits ? " " : ""
+        if self < 1024 {
+            return String(format: "%.0f%@B/s", self, sep)
+        }
+        if self < 1024 * 1024 {
+            return String(format: "%.1f%@K/s", self / 1024, sep)
+        }
+        if self < 1024 * 1024 * 1024 {
+            return String(format: "%.1f%@M/s", self / 1024 / 1024, sep)
+        }
+        return String(format: "%.1f%@G/s", self / 1024 / 1024 / 1024, sep)
     }
 }
 
 extension Animation {
-    static var abarDefault: Animation {
-        .easeInOut(duration: 0.48)
-    }
-    
     static var abarFast: Animation {
         .easeInOut(duration: 0.32)
     }
-    
-    static var abarSlow: Animation {
-        .easeInOut(duration: 0.64)
-    }
 }
 
-extension Notification.Name {
-    static let abarRefreshAll = Notification.Name("abar.refresh.all")
-    static let abarRefreshYabai = Notification.Name("abar.refresh.yabai")
-    static let abarRefreshWidget = Notification.Name("abar.refresh.widget")
-    static let abarSettingsChanged = Notification.Name("abar.settings.changed")
-}
+/// Shared click-outside monitor used by popover-style widgets.
+final class OutsideClickMonitor {
+    private var globalMonitor: Any?
+    private var localMonitor: Any?
+    private var handler: (() -> Void)?
 
-enum UserDefaultsKey {
-    static let settings = "abar-settings"
-    static let layout = "abar-layout"
-    static let userWidgets = "abar-user-widgets"
-    static let firstLaunch = "abar-first-launch"
-}
+    func start(_ handler: @escaping () -> Void) {
+        stop()
+        self.handler = handler
 
-enum ABarError: LocalizedError {
-    case yabaiNotFound
-    case yabaiCommandFailed(String)
-    case settingsCorrupted
-    case widgetRefreshFailed(String)
-    case networkError(String)
-    
-    var errorDescription: String? {
-        switch self {
-        case .yabaiNotFound:
-            return "yabai executable not found at the specified path"
-        case .yabaiCommandFailed(let message):
-            return "yabai command failed: \(message)"
-        case .settingsCorrupted:
-            return "Settings file is corrupted"
-        case .widgetRefreshFailed(let widget):
-            return "Failed to refresh widget: \(widget)"
-        case .networkError(let message):
-            return "Network error: \(message)"
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            self?.handle(event: event)
         }
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            self?.handle(event: event)
+            return event
+        }
+    }
+
+    func stop() {
+        if let globalMonitor = globalMonitor {
+            NSEvent.removeMonitor(globalMonitor)
+            self.globalMonitor = nil
+        }
+        if let localMonitor = localMonitor {
+            NSEvent.removeMonitor(localMonitor)
+            self.localMonitor = nil
+        }
+        handler = nil
+    }
+
+    private func handle(event: NSEvent) {
+        let windowNumber = event.windowNumber
+        if NSApp.windows.contains(where: { $0.windowNumber == windowNumber }) {
+            return
+        }
+        handler?()
     }
 }

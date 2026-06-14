@@ -103,13 +103,17 @@ struct BatteryIconView: View {
         Image(systemName: "bolt.fill")
           .font(.system(size: 6))
           .foregroundColor(fgColor)
-          .shadow(color: globalSettings.noColorInDataWidgets ? theme.minor.opacity(0.95) : bgColor.opacity(0.95), radius: 0, x: 1, y: 0)
-          .shadow(color: globalSettings.noColorInDataWidgets ? theme.minor.opacity(0.95) : bgColor.opacity(0.95), radius: 0, x: -1, y: 0)
-          .shadow(color: globalSettings.noColorInDataWidgets ? theme.minor.opacity(0.95) : bgColor.opacity(0.95), radius: 0, x: 0, y: 1)
-          .shadow(color: globalSettings.noColorInDataWidgets ? theme.minor.opacity(0.95) : bgColor.opacity(0.95), radius: 0, x: 0, y: 0)
+          .shadow(color: boltShadowColor, radius: 0, x: 1, y: 0)
+          .shadow(color: boltShadowColor, radius: 0, x: -1, y: 0)
+          .shadow(color: boltShadowColor, radius: 0, x: 0, y: 1)
+          .shadow(color: boltShadowColor, radius: 0, x: 0, y: 0)
       }
     }
     .frame(width: 22, height: 11)
+  }
+
+  private var boltShadowColor: Color {
+    globalSettings.noColorInDataWidgets ? theme.minor.opacity(0.95) : bgColor.opacity(0.95)
   }
 
   private var fillColor: Color {

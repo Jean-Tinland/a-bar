@@ -1,6 +1,4 @@
 import AppKit
-import ApplicationServices
-import Combine
 import SwiftUI
 
 /// Reusable color picker component for theme colors
@@ -33,7 +31,7 @@ struct ThemeColorPicker: View {
   }
 }
 
-struct YabaiSettingsView: View {
+struct YabaiSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -84,13 +82,6 @@ struct YabaiSettingsView: View {
     }
     .navigationTitle("Yabai")
   }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
-  }
 }
 
 struct AerospaceSettingsView: View {
@@ -124,7 +115,7 @@ struct AerospaceSettingsView: View {
   }
 }
 
-struct ProcessSettingsView: View {
+struct ProcessSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -143,16 +134,9 @@ struct ProcessSettingsView: View {
     }
     .navigationTitle("Process")
   }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
-  }
 }
 
-struct BatterySettingsView: View {
+struct BatterySettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -207,16 +191,9 @@ struct BatterySettingsView: View {
       set: { settings.draftSettings.widgets.battery.caffeinateOption = $0.rawValue }
     )
   }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
-  }
 }
 
-struct WeatherSettingsView: View {
+struct WeatherSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -270,16 +247,9 @@ struct WeatherSettingsView: View {
       set: { settings.draftSettings.widgets.weather.unit = $0 }
     )
   }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
-  }
 }
 
-struct DateTimeSettingsView: View {
+struct DateTimeSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -335,16 +305,9 @@ struct DateTimeSettingsView: View {
     }
     .navigationTitle("Date & Time")
   }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
-  }
 }
 
-struct NetworkSettingsView: View {
+struct NetworkSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -377,16 +340,9 @@ struct NetworkSettingsView: View {
     }
     .navigationTitle("Network")
   }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
-  }
 }
 
-struct AudioSettingsView: View {
+struct AudioSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -472,16 +428,9 @@ struct AudioSettingsView: View {
     }
     .navigationTitle("Input / Output")
   }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
-  }
 }
 
-struct SystemStatsSettingsView: View {
+struct SystemStatsSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -679,16 +628,9 @@ struct SystemStatsSettingsView: View {
       set: { settings.draftSettings.widgets.memory.monitorApp = $0 }
     )
   }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
-  }
 }
 
-struct GitHubSettingsView: View {
+struct GitHubSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -729,16 +671,9 @@ struct GitHubSettingsView: View {
     }
     .navigationTitle("GitHub")
   }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
-  }
 }
 
-struct HackerNewsSettingsView: View {
+struct HackerNewsSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   var body: some View {
@@ -790,13 +725,6 @@ struct HackerNewsSettingsView: View {
       .padding()
     }
     .navigationTitle("Hacker News")
-  }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
   }
 }
 
@@ -1410,7 +1338,7 @@ struct AboutView: View {
         .font(.headline)
         .foregroundColor(.secondary)
 
-      Text("Version 1.4.2")
+      Text("Version 1.4.3")
         .font(.caption)
 
       Divider()

@@ -3,7 +3,7 @@ import ServiceManagement
 import SwiftUI
 
 /// General settings view
-struct GeneralSettingsView: View {
+struct GeneralSettingsView: View, ABarSettingsBindable {
   @EnvironmentObject var settings: SettingsManager
 
   @State private var launchAtLogin = false
@@ -68,13 +68,6 @@ struct GeneralSettingsView: View {
       }
     }
     .navigationTitle("General")
-  }
-
-  private func binding<T>(_ keyPath: WritableKeyPath<ABarSettings, T>) -> Binding<T> {
-    Binding(
-      get: { settings.draftSettings[keyPath: keyPath] },
-      set: { settings.draftSettings[keyPath: keyPath] = $0 }
-    )
   }
 
   private func setLaunchAtLogin(_ enabled: Bool) {

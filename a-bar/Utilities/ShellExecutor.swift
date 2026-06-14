@@ -22,6 +22,36 @@ enum ShellExecutor {
         return env
     }
 
+    private static func makeProcess(command: String, stdout: Any?, stderr: Any?) -> Process {
+        let process = Process()
+        process.standardOutput = stdout
+        process.standardError = stderr
+        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        process.arguments = ["-c", command]
+        process.environment = shellEnvironment()
+        return process
+    }
+
+    private static func scheduleTimeoutWatchdog(for process: Process, timeout: TimeInterval) -> DispatchSourceTimer {
+        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        timer.schedule(deadline: .now() + timeout)
+        timer.setEventHandler {
+            if process.isRunning {
+                process.terminate()  // SIGTERM
+                DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
+                    if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+                }
+            }
+        }
+        timer.resume()
+        return timer
+    }
+
+    private static func readString(from pipe: Pipe) -> String {
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        return String(data: data, encoding: .utf8) ?? ""
+    }
+
     /// Execute a shell command and return the output.
     ///
     /// A per-command `timeout` (seconds) prevents runaway processes from
@@ -31,14 +61,8 @@ enum ShellExecutor {
     static func run(_ command: String, timeout: TimeInterval = defaultTimeout) async throws -> String {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                let process = Process()
                 let pipe = Pipe()
-
-                process.standardOutput = pipe
-                process.standardError = pipe
-                process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-                process.arguments = ["-c", command]
-                process.environment = shellEnvironment()
+                let process = makeProcess(command: command, stdout: pipe, stderr: pipe)
 
                 do {
                     try process.run()
@@ -47,25 +71,11 @@ enum ShellExecutor {
                     return
                 }
 
-                // Arm a timeout watchdog so a hung process never blocks forever.
-                let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
-                timer.schedule(deadline: .now() + timeout)
-                timer.setEventHandler {
-                    if process.isRunning {
-                        process.terminate()                 // SIGTERM
-                        DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
-                            if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-                        }
-                    }
-                }
-                timer.resume()
+                let timer = scheduleTimeoutWatchdog(for: process, timeout: timeout)
+                defer { timer.cancel() }
 
                 process.waitUntilExit()
-                timer.cancel()
-
-                let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                let output = String(data: data, encoding: .utf8) ?? ""
-                continuation.resume(returning: output)
+                continuation.resume(returning: readString(from: pipe))
             }
         }
     }
@@ -90,15 +100,9 @@ enum ShellExecutor {
     static func runWidget(_ command: String, timeout: TimeInterval = defaultTimeout) async -> WidgetRunResult {
         return await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                let process = Process()
                 let stdoutPipe = Pipe()
                 let stderrPipe = Pipe()
-
-                process.standardOutput = stdoutPipe
-                process.standardError = stderrPipe
-                process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-                process.arguments = ["-c", command]
-                process.environment = shellEnvironment()
+                let process = makeProcess(command: command, stdout: stdoutPipe, stderr: stderrPipe)
 
                 do {
                     try process.run()
@@ -111,27 +115,12 @@ enum ShellExecutor {
                     return
                 }
 
-                let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
-                timer.schedule(deadline: .now() + timeout)
-                timer.setEventHandler {
-                    if process.isRunning {
-                        process.terminate()
-                        DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
-                            if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-                        }
-                    }
-                }
-                timer.resume()
+                let timer = scheduleTimeoutWatchdog(for: process, timeout: timeout)
+                defer { timer.cancel() }
 
                 process.waitUntilExit()
-                timer.cancel()
-
-                let stdout = String(
-                    data: stdoutPipe.fileHandleForReading.readDataToEndOfFile(),
-                    encoding: .utf8) ?? ""
-                let stderr = String(
-                    data: stderrPipe.fileHandleForReading.readDataToEndOfFile(),
-                    encoding: .utf8) ?? ""
+                let stdout = readString(from: stdoutPipe)
+                let stderr = readString(from: stderrPipe)
 
                 continuation.resume(returning: WidgetRunResult(
                     stdout: stdout,
@@ -145,14 +134,8 @@ enum ShellExecutor {
     /// Execute a shell command synchronously (use sparingly – never on the main thread).
     @discardableResult
     static func runSync(_ command: String, timeout: TimeInterval = defaultTimeout) -> String {
-        let process = Process()
         let pipe = Pipe()
-
-        process.standardOutput = pipe
-        process.standardError = pipe
-        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = ["-c", command]
-        process.environment = shellEnvironment()
+        let process = makeProcess(command: command, stdout: pipe, stderr: pipe)
 
         do {
             try process.run()
@@ -160,24 +143,11 @@ enum ShellExecutor {
             return ""
         }
 
-        // Arm a timeout watchdog.
-        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
-        timer.schedule(deadline: .now() + timeout)
-        timer.setEventHandler {
-            if process.isRunning {
-                process.terminate()
-                DispatchQueue.global().asyncAfter(deadline: .now() + 1) {
-                    if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-                }
-            }
-        }
-        timer.resume()
+        let timer = scheduleTimeoutWatchdog(for: process, timeout: timeout)
+        defer { timer.cancel() }
 
         process.waitUntilExit()
-        timer.cancel()
-
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        return String(data: data, encoding: .utf8) ?? ""
+        return readString(from: pipe)
     }
     
     /// Run command in user's terminal app

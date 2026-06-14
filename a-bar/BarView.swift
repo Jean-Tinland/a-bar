@@ -10,12 +10,10 @@ struct BarView: View {
   @EnvironmentObject var yabaiService: YabaiService
   @EnvironmentObject var layoutManager: LayoutManager
 
-  // We access the current theme and global settings to apply consistent styling and behavior across the bar and its widgets
   private var theme: ABarTheme {
     ThemeManager.currentTheme(for: settings.settings.theme)
   }
 
-  // Global settings are accessed to determine things like whether to show borders, spacing between widgets, and other user preferences that affect the overall appearance of the bar
   private var globalSettings: GlobalSettings {
     settings.settings.global
   }
@@ -25,7 +23,6 @@ struct BarView: View {
     layoutManager.barLayout(forDisplay: displayIndex, position: position)
   }
 
-  // The body of the view constructs the layout of the bar using an HStack to arrange the left, center, and right sections. Each section contains its respective widgets, which are rendered using the WidgetContainer view. The bar's background and optional border are also applied here based on user settings.
   var body: some View {
     GeometryReader { geometry in
       let borderEnabled = globalSettings.showBorder
@@ -53,8 +50,6 @@ struct BarView: View {
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
       }
-      // A minimal padding is necessary on the built-in screen as it has rounded corners
-      // Without it, the content might be clipped or appear too close to the edges
       .padding(.horizontal, globalSettings.barHorizontalPadding)
       .padding(.vertical, globalSettings.barVerticalPadding)
       .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -133,15 +128,13 @@ struct WidgetContainer: View {
   @EnvironmentObject var aerospaceService: AerospaceService
   @EnvironmentObject var systemInfoService: SystemInfoService
 
-  // The body of the WidgetContainer uses a switch statement to determine which specific widget view to render based on the widget's identifier. Each case corresponds to a different type of widget
-  // If the widget type is not recognized or if there's an issue with user widgets, it falls back to rendering an EmptyView
   var body: some View {
     Group {
       switch widget.identifier {
       case .spaces:
         SpacesWidget(displayIndex: displayIndex)
       case .process:
-        ProcessWidget(displayIndex: displayIndex)
+        ProcessWidget()
       case .aerospaceSpaces:
         AerospaceSpacesWidget(displayIndex: displayIndex)
       case .aerospaceProcess:

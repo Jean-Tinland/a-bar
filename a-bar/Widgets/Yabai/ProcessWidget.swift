@@ -2,8 +2,6 @@ import SwiftUI
 
 /// Widget showing the currently focused application and window
 struct ProcessWidget: View {
-    let displayIndex: Int
-    
     @EnvironmentObject var settings: SettingsManager
     @EnvironmentObject var yabaiService: YabaiService
     
@@ -200,22 +198,6 @@ struct ProcessWidget: View {
         }
       }
     }
-    
-    
-    private var focusedWindow: YabaiWindow? {
-        let state = yabaiService.state
-        
-        if processSettings.showCurrentSpaceOnly {
-            // Only show process if it's in the current space
-            guard let focusedSpace = state.focusedSpace else { return nil }
-            return state.focusedWindow.flatMap { window in
-                window.space == focusedSpace.index ? window : nil
-            }
-        }
-        
-        return state.focusedWindow
-    }
-    
     private func focusWindow(_ window: YabaiWindow) {
         Task {
             await yabaiService.focusWindow(window.id)

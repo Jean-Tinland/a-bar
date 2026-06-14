@@ -9,8 +9,8 @@ struct MicWidget: View {
   @EnvironmentObject var systemInfo: SystemInfoService
 
   @State private var showPopper: Bool = false
-  @State private var tempMicLevel: Double? = nil
   @StateObject private var popoverManager = MicPopoverManager()
+  private static let outsideClickMonitor = OutsideClickMonitor()
 
   private var globalSettings: GlobalSettings {
     settings.settings.global
@@ -37,20 +37,19 @@ struct MicWidget: View {
         if showPopper {
           showPopper = false
           popoverManager.scheduleClose()
-          OutsideClickMonitor.shared.stop()
+          Self.outsideClickMonitor.stop()
         } else {
           // Activate abar so the popover can render even if not focused
           NSApp.activate(ignoringOtherApps: true)
-          tempMicLevel = Double(systemInfo.micLevel)
           showPopper = true
           popoverManager.showPanel()
           // Listen for outside click only when opening
           DispatchQueue.main.async {
-            OutsideClickMonitor.shared.start {
+            Self.outsideClickMonitor.start {
               if showPopper {
                 showPopper = false
                 popoverManager.scheduleClose()
-                OutsideClickMonitor.shared.stop()
+                Self.outsideClickMonitor.stop()
               }
             }
           }
@@ -101,56 +100,6 @@ struct MicWidget: View {
           }
         }
       ))
-  }
-
-  // Helper for outside click detection
-  private class OutsideClickMonitor {
-    static let shared = OutsideClickMonitor()
-    private var globalMonitor: Any?
-    private var localMonitor: Any?
-    private var handler: (() -> Void)?
-
-    func start(_ handler: @escaping () -> Void) {
-      stop()
-      self.handler = handler
-      // Global monitor: catches clicks when app is inactive
-      globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown])
-      { [weak self] event in
-        self?.handle(event: event)
-      }
-      // Local monitor: catches clicks when app is active
-      localMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) {
-        [weak self] event in
-        self?.handle(event: event)
-        return event
-      }
-    }
-
-    func stop() {
-      if let globalMonitor = globalMonitor {
-        NSEvent.removeMonitor(globalMonitor)
-        self.globalMonitor = nil
-      }
-      if let localMonitor = localMonitor {
-        NSEvent.removeMonitor(localMonitor)
-        self.localMonitor = nil
-      }
-      handler = nil
-    }
-
-    private func handle(event: NSEvent) {
-      // Only close if click is outside both the widget and the popover panel
-      let windowNumber = event.windowNumber
-      // Get all windows belonging to this process
-      let myWindows = NSApp.windows
-      // If the click is in any of our windows, ignore
-      if myWindows.contains(where: { $0.windowNumber == windowNumber }) {
-        // Click is inside our app, ignore
-        return
-      }
-      // Otherwise, treat as outside click
-      self.handler?()
-    }
   }
 
   private var micIcon: String {

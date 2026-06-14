@@ -4,7 +4,6 @@ import SwiftUI
 struct SpaceView: View {
     let space: YabaiSpace
     let displayIndex: Int
-    let currentSpaceIndex: Int
     
     @EnvironmentObject var settings: SettingsManager
     @EnvironmentObject var yabaiService: YabaiService
@@ -25,20 +24,6 @@ struct SpaceView: View {
     private var globalSettings: GlobalSettings {
         settings.settings.global
     }
-
-    private func settingsFont(scaledBy factor: Double = 1.0, weight: Font.Weight? = nil, design: Font.Design? = nil) -> Font {
-        let size = CGFloat(Double(globalSettings.fontSize) * factor)
-        if globalSettings.fontName.isEmpty {
-            if let weight = weight {
-                if let design = design {
-                    return .system(size: size, weight: weight, design: design)
-                }
-                return .system(size: size, weight: weight)
-            }
-            return .system(size: size)
-        }
-        return .custom(globalSettings.fontName, size: size)
-    }
     
     private var isFocused: Bool {
         space.hasFocus
@@ -54,14 +39,14 @@ struct SpaceView: View {
           if isEditing {
               TextField("", text: $editedLabel, onCommit: saveLabel)
                   .textFieldStyle(.plain)
-                  .font(settingsFont(scaledBy: 1.0, weight: .medium))
+                  .font(globalSettings.settingsFont(scaledBy: 1.0, weight: .medium))
                   .foregroundColor(theme.foreground)
                   .frame(width: CGFloat(max(1, editedLabel.count)) * 12)
                   .lineLimit(1)
                   .truncationMode(.tail)
           } else {
               Text(space.displayLabel)
-                  .font(settingsFont(scaledBy: 1.0, weight: .medium))
+                  .font(globalSettings.settingsFont(scaledBy: 1.0, weight: .medium))
                   .foregroundColor(labelColor)
                   .lineLimit(1)
                   .truncationMode(.tail)

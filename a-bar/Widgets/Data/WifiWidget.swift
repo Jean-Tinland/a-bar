@@ -1,4 +1,3 @@
-import CoreWLAN
 import Foundation
 import SwiftUI
 
@@ -21,17 +20,6 @@ func getSSIDFromShell() -> String? {
     }
   } catch {
     print("getSSIDFromShell error: \(error)")
-  }
-  return nil
-}
-
-// Utility to get current WiFi SSID on macOS
-@discardableResult
-func getCurrentSSID() -> String? {
-  if let interface = CWWiFiClient.shared().interface(),
-    let ssid = interface.ssid()
-  {
-    return ssid
   }
   return nil
 }

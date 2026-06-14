@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 import Foundation
 
 /// Service for interacting with yabai window manager
@@ -11,11 +10,9 @@ class YabaiService: ObservableObject {
     @Published private(set) var lastError: Error?
     @Published private(set) var signalsRegistered = false
 
-    private var refreshTimer: Timer?
     private var refreshWorkItem: DispatchWorkItem?
     private let refreshDebounceInterval: TimeInterval = 0.1
     private var signalTimer: Timer?
-    private var cancellables = Set<AnyCancellable>()
     private let settingsManager = SettingsManager.shared
 
     private var yabaiPath: String {

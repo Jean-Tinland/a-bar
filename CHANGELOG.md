@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.4.3 - 2026-06-14
+
+- refactor: duplicated code cleanup and utilities centralization in widgets, settings and services
+
 ## v1.4.2 - 2026-06-12
 
 - feat: enhance widget refresh and cycle duration handling with minimum constraints + update app signing in release script

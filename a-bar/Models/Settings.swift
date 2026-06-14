@@ -103,10 +103,8 @@ class SettingsManager: ObservableObject {
 
     // Load settings from config file and merge (after initialization)
     if let fileSettings = loadSettingsFromFile() {
-      // Merge file settings with UserDefaults settings
-      let mergedSettings = mergeSettings(base: userDefaultsSettings, override: fileSettings)
-      self.settings = mergedSettings
-      self.draftSettings = mergedSettings
+      self.settings = fileSettings
+      self.draftSettings = fileSettings
     }
 
     // Monitor changes to draftSettings with debounce to avoid constant re-renders
@@ -241,19 +239,19 @@ class SettingsManager: ObservableObject {
         return validated
       } else {
         print("⚠️ Settings validation failed - using recovery mode")
-        return tryRecoverSettings(from: data, filePath: filePath)
+        return tryRecoverSettings(from: data)
       }
     } catch let error as DecodingError {
       print("⚠️ Decoding error: \(describeDecodingError(error))")
-      return tryRecoverSettings(from: data, filePath: filePath)
+      return tryRecoverSettings(from: data)
     } catch {
       print("⚠️ Failed to load settings: \(error.localizedDescription)")
-      return tryRecoverSettings(from: data, filePath: filePath)
+      return tryRecoverSettings(from: data)
     }
   }
 
   /// Attempt to recover settings by merging with defaults
-  private func tryRecoverSettings(from data: Data, filePath: URL) -> ABarSettings? {
+  private func tryRecoverSettings(from data: Data) -> ABarSettings? {
     if let recovered = SettingsManager.recoverSettingsByMergingDefaults(with: data) {
       if let validated = validateSettings(recovered) {
         // Save the recovered settings back to file to prevent future errors
@@ -354,12 +352,6 @@ class SettingsManager: ObservableObject {
     }
   }
 
-  /// Merge two settings objects, with override taking precedence
-  private func mergeSettings(base: ABarSettings, override: ABarSettings) -> ABarSettings {
-    // For now, we simply use the override settings as they represent the file content
-    // In the future, we could implement more sophisticated merging if needed
-    return override
-  }
 }
 
 extension SettingsManager {

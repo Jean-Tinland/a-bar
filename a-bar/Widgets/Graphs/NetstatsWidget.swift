@@ -17,28 +17,6 @@ struct NetstatsWidget: View {
     settings.settings.global
   }
 
-  private var userFont: Font {
-    globalSettings.fontName.isEmpty
-      ? .system(size: CGFloat(globalSettings.fontSize))
-      : .custom(globalSettings.fontName, size: CGFloat(globalSettings.fontSize))
-  }
-
-  private func settingsFont(
-    scaledBy factor: Double = 1.0, weight: Font.Weight? = nil, design: Font.Design? = nil
-  ) -> Font {
-    let size = CGFloat(Double(globalSettings.fontSize) * factor)
-    if globalSettings.fontName.isEmpty {
-      if let weight = weight {
-        if let design = design {
-          return .system(size: size, weight: weight, design: design)
-        }
-        return .system(size: size, weight: weight)
-      }
-      return .system(size: size)
-    }
-    return .custom(globalSettings.fontName, size: size)
-  }
-
   var body: some View {
     let downloadColor = netstatsSettings.downloadColor.color(from: theme)
     let uploadColor = netstatsSettings.uploadColor.color(from: theme)
@@ -81,8 +59,8 @@ struct NetstatsWidget: View {
             .foregroundColor(downloadColor)
             .padding(.leading, 6)
             .padding(.top, -6)
-          Text(formatSpeed(Double(systemInfo.networkStats.download)))
-            .font(settingsFont(scaledBy: 0.8))
+          Text(Double(systemInfo.networkStats.download).formattedTransferRate())
+            .font(globalSettings.settingsFont(scaledBy: 0.8))
             .foregroundColor(theme.foreground)
             .padding(.top, -6)
             .padding(.leading, -4)
@@ -92,8 +70,8 @@ struct NetstatsWidget: View {
         // Upload icon and speed (right)
         HStack {
           Spacer()
-          Text(formatSpeed(Double(systemInfo.networkStats.upload)))
-            .font(settingsFont(scaledBy: 0.8))
+          Text(Double(systemInfo.networkStats.upload).formattedTransferRate())
+            .font(globalSettings.settingsFont(scaledBy: 0.8))
             .foregroundColor(theme.foreground)
             .padding(.top, -6)
             .padding(.trailing, -4)
@@ -104,18 +82,6 @@ struct NetstatsWidget: View {
             .padding(.top, -6)
         }
       }
-    }
-  }
-
-  private func formatSpeed(_ bytesPerSecond: Double) -> String {
-    if bytesPerSecond < 1024 {
-      return String(format: "%.0fB/s", bytesPerSecond)
-    } else if bytesPerSecond < 1024 * 1024 {
-      return String(format: "%.1fK/s", bytesPerSecond / 1024)
-    } else if bytesPerSecond < 1024 * 1024 * 1024 {
-      return String(format: "%.1fM/s", bytesPerSecond / 1024 / 1024)
-    } else {
-      return String(format: "%.1fG/s", bytesPerSecond / 1024 / 1024 / 1024)
     }
   }
 
