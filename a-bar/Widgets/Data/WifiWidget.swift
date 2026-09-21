@@ -176,7 +176,7 @@ private struct WifiPopoverContent: View {
       Button(info.isPoweredOn ? "On" : "Off") {
         wifi.togglePower()
       }
-      .buttonStyle(.plain)
+      .buttonStyle(.bordered)
       .font(globalSettings.settingsFont(scaledBy: 0.85))
       .foregroundColor(info.isPoweredOn ? theme.green : theme.red)
       .disabled(!info.hasInterface)
