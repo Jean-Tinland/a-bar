@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+_No changes yet._
+
+## v1.6.0 - 2026-09-21
+
 - chore: deadcode removal
 - fix: a single unrecognised value in the config no longer resets every setting - unknown widgets, themes and malformed values are now repaired one value at a time
 - fix: a config file that cannot be read is preserved and quarantined instead of being overwritten with defaults, with the last known good config kept as a backup
