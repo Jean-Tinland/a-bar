@@ -108,5 +108,5 @@ color_for() {
 }
 
 badge "Version" "$version" "#007ec6" "version.svg"
-badge "Coverage" "$coverage%" "$(color_for "$coverage")" "coverage.svg"
+badge "Global coverage" "$coverage%" "$(color_for "$coverage")" "coverage.svg"
 badge "Logic coverage" "$logic_coverage%" "$(color_for "$logic_coverage")" "logic.svg"

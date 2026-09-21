@@ -2,7 +2,7 @@
 
 [![Version](https://raw.githubusercontent.com/Jean-Tinland/a-bar/badges/version.svg?v=1)](https://github.com/Jean-Tinland/a-bar/releases/latest)
 [![Tests](https://github.com/Jean-Tinland/a-bar/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Jean-Tinland/a-bar/actions/workflows/tests.yml)
-[![Coverage](https://raw.githubusercontent.com/Jean-Tinland/a-bar/badges/coverage.svg?v=1)](https://github.com/Jean-Tinland/a-bar/actions/workflows/tests.yml)
+[![Global coverage](https://raw.githubusercontent.com/Jean-Tinland/a-bar/badges/coverage.svg?v=1)](https://github.com/Jean-Tinland/a-bar/actions/workflows/tests.yml)
 [![Logic coverage](https://raw.githubusercontent.com/Jean-Tinland/a-bar/badges/logic.svg?v=1)](https://github.com/Jean-Tinland/a-bar/actions/workflows/tests.yml)
 
 Yet **a(nother) bar** :)
