@@ -5,6 +5,27 @@ import Foundation
 import IOKit.ps
 import AppKit
 
+/// The CoreAudio registration boundary is injectable; readers retain their existing native calls.
+struct AudioPropertyEvents {
+    var hasProperty: (AudioObjectID, AudioObjectPropertyAddress) -> Bool
+    var add: (AudioObjectID, AudioObjectPropertyAddress, @escaping AudioObjectPropertyListenerBlock) -> OSStatus
+    var remove: (AudioObjectID, AudioObjectPropertyAddress, @escaping AudioObjectPropertyListenerBlock) -> Void
+
+    static let live = AudioPropertyEvents(
+        hasProperty: { object, address in
+            var address = address
+            return AudioObjectHasProperty(object, &address)
+        },
+        add: { object, address, block in
+            var address = address
+            return AudioObjectAddPropertyListenerBlock(object, &address, .main, block)
+        },
+        remove: { object, address, block in
+            var address = address
+            _ = AudioObjectRemovePropertyListenerBlock(object, &address, .main, block)
+        })
+}
+
 /// Service for collecting system information (battery, CPU, memory, etc.)
 class SystemInfoService: ObservableObject {
     static let shared = SystemInfoService()
@@ -40,8 +61,11 @@ class SystemInfoService: ObservableObject {
     @Published var diskWriteHistory = GraphHistory(maxLength: 30)
 
     private var refreshTimers: [String: Timer] = [:]
-    private var cancellables = Set<AnyCancellable>()
     private let settingsManager: SettingsManager
+    private let readingQueue: DispatchQueue
+    private let onRead: (WidgetRefreshSchedule.Reading) -> Void
+    private let keyboardNotifications: NotificationCenter
+    private let workspaceNotifications: NotificationCenter
 
     /// An interface that re-attaches counts from zero again, so the whole new reading is this
     /// interval's traffic.
@@ -51,6 +75,41 @@ class SystemInfoService: ObservableObject {
     @Published private(set) var volumes: [StorageVolume] = []
     private var activeWidgets = Set<WidgetIdentifier>()
 
+    private typealias Reading = WidgetRefreshSchedule.Reading
+    // Versions and pending work are protected because workers finish after visibility changes.
+    private let readingLock = NSLock()
+    private let samplerLock = NSLock()
+    private var activeReadings = Set<Reading>()
+    private var versions: [Reading: UInt] = [:]
+    private var pendingReadings: [Reading: UInt] = [:]
+    private var queuedReadings = Set<Reading>()
+    private var asyncReadings: [Reading: (version: UInt, task: Task<Void, Never>)] = [:]
+    private var eventDrivenReadings = Set<Reading>()
+    private var timerReadings: [String: [Reading]] = [:]
+    private var keyboardObserver: NSObjectProtocol?
+    private var storageObservers: [NSObjectProtocol] = []
+    private var powerObserver: NSObjectProtocol?
+    private var powerSource: CFRunLoopSource?
+    private var powerContext: PowerContext?
+    private let audioEvents: AudioPropertyEvents
+    private let eventAudioDevice: ((Bool) -> AudioObjectID?)?
+    typealias PowerSourceFactory = (IOPowerSourceCallbackType, UnsafeMutableRawPointer?) -> CFRunLoopSource?
+    private let makePowerSource: PowerSourceFactory
+    private struct AudioListener {
+        let object: AudioObjectID
+        let address: AudioObjectPropertyAddress
+        let block: AudioObjectPropertyListenerBlock
+    }
+    private var audioListeners: [Reading: [AudioListener]] = [:]
+    private final class PowerContext {
+        weak var service: SystemInfoService?
+        let version: UInt
+        init(_ service: SystemInfoService, version: UInt) {
+            self.service = service
+            self.version = version
+        }
+    }
+
     /// Cached host port to avoid Mach port leaks.
     /// Each call to mach_host_self() creates a new send right that must be
     /// manually deallocated. Caching it once avoids leaking ~2,700 ports/hour
@@ -58,33 +117,146 @@ class SystemInfoService: ObservableObject {
     /// system-wide input freeze (keyboard/mouse unresponsive).
     private let hostPort: mach_port_t = mach_host_self()
 
-    init(settingsManager: SettingsManager = .shared) {
+    init(
+        settingsManager: SettingsManager = .shared,
+        audioEvents: AudioPropertyEvents = .live,
+        eventAudioDevice: ((Bool) -> AudioObjectID?)? = nil,
+        readingQueue: DispatchQueue = DispatchQueue.global(qos: .utility),
+        onRead: @escaping (WidgetRefreshSchedule.Reading) -> Void = { _ in },
+        makePowerSource: @escaping PowerSourceFactory = { callback, context in
+            IOPSNotificationCreateRunLoopSource(callback, context)?.takeRetainedValue()
+        },
+        keyboardNotifications: NotificationCenter = DistributedNotificationCenter.default(),
+        workspaceNotifications: NotificationCenter = NSWorkspace.shared.notificationCenter
+    ) {
         self.settingsManager = settingsManager
-        setupKeyboardLayoutObserver()
-        setupNotifications()
+        self.readingQueue = readingQueue
+        self.onRead = onRead
+        self.audioEvents = audioEvents
+        self.eventAudioDevice = eventAudioDevice
+        self.makePowerSource = makePowerSource
+        self.keyboardNotifications = keyboardNotifications
+        self.workspaceNotifications = workspaceNotifications
+    }
+
+    deinit {
+        stop()
+        mach_port_deallocate(mach_task_self_, hostPort)
     }
 
     func start(widgets: Set<WidgetIdentifier>) {
-        stop()
+        let next = WidgetRefreshSchedule.readings(for: widgets)
+        readingLock.lock()
+        let removed = activeReadings.subtracting(next)
+        let added = next.subtracting(activeReadings)
+        activeReadings = next
+        for reading in removed.union(added) {
+            versions[reading, default: 0] += 1
+            pendingReadings.removeValue(forKey: reading)
+            queuedReadings.remove(reading)
+        }
+        readingLock.unlock()
         activeWidgets = widgets
-        refresh()
+        for reading in removed {
+            asyncReadings.removeValue(forKey: reading)?.task.cancel()
+            removeObserver(for: reading)
+        }
+        // Restarting a counter sampler establishes a new baseline, not a rate across hidden time.
+        samplerLock.lock()
+        if added.contains(.cpu) { previousCPUTicks = nil }
+        if added.contains(.networkStats) { networkSampler = RateSampler(onCounterReset: .countWholeReading) }
+        if added.contains(.diskStats) { diskSampler = RateSampler(onCounterReset: .reportNothing) }
+        samplerLock.unlock()
+        for reading in added { installObserver(for: reading) }
         startTimers()
+        for reading in added { collect(reading) }
     }
 
     func stop() {
-        refreshTimers.values.forEach { $0.invalidate() }
-        refreshTimers.removeAll()
-        activeWidgets.removeAll()
+        start(widgets: [])
     }
 
     func refresh() {
-        for widget in activeWidgets { refresh(widget) }
+        for reading in WidgetRefreshSchedule.readings(for: activeWidgets) { collect(reading) }
     }
 
-    private func refresh(_ widget: WidgetIdentifier) {
-        for reading in WidgetRefreshSchedule.readings(for: widget) {
-            collect(reading)
+    private func isActive(_ reading: Reading) -> Bool {
+        readingLock.lock()
+        defer { readingLock.unlock() }
+        return activeReadings.contains(reading)
+    }
+
+    private func version(of reading: Reading) -> UInt {
+        readingLock.lock()
+        defer { readingLock.unlock() }
+        return versions[reading, default: 0]
+    }
+
+    private func isCurrent(_ reading: Reading, _ version: UInt) -> Bool {
+        readingLock.lock()
+        defer { readingLock.unlock() }
+        return activeReadings.contains(reading) && versions[reading, default: 0] == version
+    }
+
+    private func beginReading(_ reading: Reading) -> UInt? {
+        readingLock.lock()
+        defer { readingLock.unlock() }
+        guard activeReadings.contains(reading) else { return nil }
+        if pendingReadings[reading] != nil {
+            // An event racing publication needs one latest follow-up, not a lost state change.
+            queuedReadings.insert(reading)
+            return nil
         }
+        let version = versions[reading, default: 0]
+        pendingReadings[reading] = version
+        return version
+    }
+
+    private func endReading(_ reading: Reading, _ version: UInt) {
+        readingLock.lock()
+        let current = activeReadings.contains(reading) && versions[reading, default: 0] == version
+        var repeatReading = false
+        if pendingReadings[reading] == version {
+            pendingReadings.removeValue(forKey: reading)
+            repeatReading = queuedReadings.remove(reading) != nil && current
+        }
+        readingLock.unlock()
+        if asyncReadings[reading]?.version == version { asyncReadings.removeValue(forKey: reading) }
+        if repeatReading { collect(reading) }
+    }
+
+    private func read<Value>(
+        _ reading: Reading, work: @escaping (UInt) -> Value, publish: @escaping (Value) -> Void
+    ) {
+        guard let version = beginReading(reading) else { return }
+        readingQueue.async { [weak self] in
+            guard let self else { return }
+            guard self.isCurrent(reading, version) else { return }
+            self.onRead(reading)
+            let value = work(version)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                defer { self.endReading(reading, version) }
+                guard self.isCurrent(reading, version) else { return }
+                publish(value)
+            }
+        }
+    }
+
+    private func readAsync<Value>(
+        _ reading: Reading, work: @escaping (UInt) async -> Value, publish: @escaping (Value) -> Void
+    ) {
+        guard let version = beginReading(reading) else { return }
+        let task = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.endReading(reading, version) }
+            guard !Task.isCancelled, self.isCurrent(reading, version) else { return }
+            self.onRead(reading)
+            let value = await work(version)
+            guard !Task.isCancelled, self.isCurrent(reading, version) else { return }
+            publish(value)
+        }
+        asyncReadings[reading] = (version, task)
     }
 
     private func collect(_ reading: WidgetRefreshSchedule.Reading) {
@@ -104,11 +276,8 @@ class SystemInfoService: ObservableObject {
     }
 
     func refreshBattery() {
-        DispatchQueue.global(qos: .background).async {
-            let info = self.getBatteryInfo()
-            DispatchQueue.main.async {
-                if self.batteryInfo != info { self.batteryInfo = info }
-            }
+        read(.battery, work: { _ in self.getBatteryInfo() }) { info in
+            if self.batteryInfo != info { self.batteryInfo = info }
         }
     }
 
@@ -144,16 +313,13 @@ class SystemInfoService: ObservableObject {
     private var previousCPUTicks: [UInt64]?
 
     func refreshCPU() {
-        Task {
-            let usage = getCPUUsage()
-            await MainActor.run {
-                self.cpuUsage = usage
-                self.cpuHistory.add(usage)
-            }
+        read(.cpu, work: { version in self.getCPUUsage(version: version) }) { usage in
+            if self.cpuUsage != usage { self.cpuUsage = usage }
+            self.cpuHistory.add(usage)
         }
     }
 
-    private func getCPUUsage() -> Double {
+    private func getCPUUsage(version: UInt) -> Double {
         var kr: kern_return_t
         var cpuInfo: processor_info_array_t?
         var numCPU: mach_msg_type_number_t = 0
@@ -182,8 +348,13 @@ class SystemInfoService: ObservableObject {
             ticks.append(nice)
         }
 
-        let usage = CPUTicks.usage(previous: previousCPUTicks, current: ticks) ?? 0
-        previousCPUTicks = ticks
+        samplerLock.lock()
+        let usage: Double
+        if isCurrent(.cpu, version) {
+            usage = CPUTicks.usage(previous: previousCPUTicks, current: ticks) ?? 0
+            previousCPUTicks = ticks
+        } else { usage = 0 }
+        samplerLock.unlock()
 
         // Deallocate the cpuInfo buffer
         let cpuInfoSize = Int(numCPU) * MemoryLayout<integer_t>.stride
@@ -193,11 +364,8 @@ class SystemInfoService: ObservableObject {
     }
 
     func refreshMemory() {
-        DispatchQueue.global(qos: .userInitiated).async {
-            let usage = self.getMemoryUsage()
-            DispatchQueue.main.async {
-                self.memoryPressure = usage
-            }
+        read(.memory, work: { _ in self.getMemoryUsage() }) { usage in
+            if self.memoryPressure != usage { self.memoryPressure = usage }
         }
     }
 
@@ -225,12 +393,9 @@ class SystemInfoService: ObservableObject {
     }
 
     func refreshGPU() {
-        Task {
-            let usage = await getGPUUsage()
-            await MainActor.run {
-                self.gpuUsage = usage
-                self.gpuHistory.add(usage)
-            }
+        readAsync(.gpu, work: { _ in await self.getGPUUsage() }) { usage in
+            if self.gpuUsage != usage { self.gpuUsage = usage }
+            self.gpuHistory.add(usage)
         }
     }
 
@@ -295,34 +460,34 @@ class SystemInfoService: ObservableObject {
     }
 
     func refreshNetworkStats() {
-        Task {
-            let stats = await getNetworkStats()
-            await MainActor.run {
-                self.networkStats = stats
-                self.downloadHistory.add(Double(stats.download))
-                self.uploadHistory.add(Double(stats.upload))
-            }
+        readAsync(.networkStats, work: { version in await self.getNetworkStats(version: version) }) { stats in
+            if self.networkStats != stats { self.networkStats = stats }
+            self.downloadHistory.add(Double(stats.download))
+            self.uploadHistory.add(Double(stats.upload))
         }
     }
 
     /// Get network statistics - uses shell command fallback for M4 compatibility
-    private func getNetworkStats() async -> NetworkStats {
+    private func getNetworkStats(version: UInt) async -> NetworkStats {
         // Try native approach first
-        if let stats = getNetworkStatsNative() {
+        if let stats = getNetworkStatsNative(version: version) {
             return stats
         }
         
         // Fallback to netstat command for M4 Macs where native approach may fail
-        return await getNetworkStatsViaNetstat()
+        return await getNetworkStatsViaNetstat(version: version)
     }
 
-    private func calculateNetworkStats(rxBytes: UInt64, txBytes: UInt64) -> NetworkStats {
+    private func calculateNetworkStats(rxBytes: UInt64, txBytes: UInt64, version: UInt) -> NetworkStats {
+        samplerLock.lock()
+        defer { samplerLock.unlock() }
+        guard isCurrent(.networkStats, version), !Task.isCancelled else { return NetworkStats() }
         let rates = networkSampler.sample(inbound: rxBytes, outbound: txBytes)
         return NetworkStats(download: rates.inbound, upload: rates.outbound)
     }
 
     /// Native sysctl-based network statistics (primary method)
-    private func getNetworkStatsNative() -> NetworkStats? {
+    private func getNetworkStatsNative(version: UInt) -> NetworkStats? {
         var rxBytes: UInt64 = 0
         var txBytes: UInt64 = 0
         var foundValidInterface = false
@@ -380,17 +545,17 @@ class SystemInfoService: ObservableObject {
             return nil
         }
 
-        return calculateNetworkStats(rxBytes: rxBytes, txBytes: txBytes)
+        return calculateNetworkStats(rxBytes: rxBytes, txBytes: txBytes, version: version)
     }
     
     /// Fallback method using netstat command
-    private func getNetworkStatsViaNetstat() async -> NetworkStats {
+    private func getNetworkStatsViaNetstat(version: UInt) async -> NetworkStats {
         do {
             // Get interface stats using netstat
             let output = try await ShellExecutor.run("netstat -ibn | awk 'NR>1 && $1 !~ /lo/ {print $1,$7,$10}'")
             
             let totals = NetstatParser.totals(output)
-            return calculateNetworkStats(rxBytes: totals.received, txBytes: totals.sent)
+            return calculateNetworkStats(rxBytes: totals.received, txBytes: totals.sent, version: version)
             
         } catch {
             print("[NetworkStats] netstat fallback failed: \(error)")
@@ -408,18 +573,15 @@ class SystemInfoService: ObservableObject {
     }
 
     func refreshDiskStats() {
-        Task {
-            let stats = await getDiskStats()
-            await MainActor.run {
-                self.diskStats = stats
-                self.diskReadHistory.add(Double(stats.read))
-                self.diskWriteHistory.add(Double(stats.write))
-            }
+        readAsync(.diskStats, work: { version in await self.getDiskStats(version: version) }) { stats in
+            if self.diskStats != stats { self.diskStats = stats }
+            self.diskReadHistory.add(Double(stats.read))
+            self.diskWriteHistory.add(Double(stats.write))
         }
     }
-    
+
     /// Get disk I/O statistics using IOKit (IOBlockStorageDriver)
-    private func getDiskStats() async -> DiskIOStats {
+    private func getDiskStats(version: UInt) async -> DiskIOStats {
         var readBytes: UInt64 = 0
         var writeBytes: UInt64 = 0
         
@@ -475,8 +637,11 @@ class SystemInfoService: ObservableObject {
             service = IOIteratorNext(iterator)
         }
         
-        let rates = diskSampler.sample(inbound: readBytes, outbound: writeBytes)
-        return DiskIOStats(read: rates.inbound, write: rates.outbound)
+        return samplerLock.withLock {
+            guard isCurrent(.diskStats, version), !Task.isCancelled else { return DiskIOStats() }
+            let rates = diskSampler.sample(inbound: readBytes, outbound: writeBytes)
+            return DiskIOStats(read: rates.inbound, write: rates.outbound)
+        }
     }
 
     private enum AudioDeviceKind {
@@ -546,14 +711,10 @@ class SystemInfoService: ObservableObject {
     }
 
     func refreshVolume() {
-        let volume = getSystemVolume()
-        let muted = isSystemMuted()
-        let deviceName = getAudioOutputDeviceName()
-
-        DispatchQueue.main.async {
+        read(.volume, work: { _ in (self.getSystemVolume(), self.isSystemMuted(), self.getAudioOutputDeviceName()) }) { volume, muted, name in
             if self.volumeLevel != volume { self.volumeLevel = volume }
             if self.isMuted != muted { self.isMuted = muted }
-            if self.audioOutputDeviceName != deviceName { self.audioOutputDeviceName = deviceName }
+            if self.audioOutputDeviceName != name { self.audioOutputDeviceName = name }
         }
     }
 
@@ -606,8 +767,7 @@ class SystemInfoService: ObservableObject {
 
             if didSet {
                 DispatchQueue.main.async {
-                    self.volumeLevel = clampedValue
-                    self.isMuted = self.isSystemMuted()
+                    self.refreshVolume()
                 }
             }
         }
@@ -631,8 +791,7 @@ class SystemInfoService: ObservableObject {
             AudioObjectSetPropertyData(defaultOutputDeviceID, &propertyAddress, 0, nil, propertySize, &mutedValue)
 
             DispatchQueue.main.async {
-                self.isMuted = self.isSystemMuted()
-                self.volumeLevel = self.getSystemVolume()
+                self.refreshVolume()
             }
         }
     }
@@ -715,14 +874,10 @@ class SystemInfoService: ObservableObject {
     }
 
     func refreshMic() {
-        let level = getMicLevel()
-        let muted = checkIfMicMuted()
-        let deviceName = getAudioInputDeviceName()
-
-        DispatchQueue.main.async {
-            if self.audioInputDeviceName != deviceName { self.audioInputDeviceName = deviceName }
+        read(.mic, work: { _ in (self.getMicLevel(), self.checkIfMicMuted(), self.getAudioInputDeviceName()) }) { level, muted, name in
             if self.micLevel != level { self.micLevel = level }
             if self.isMicMuted != muted { self.isMicMuted = muted }
+            if self.audioInputDeviceName != name { self.audioInputDeviceName = name }
         }
     }
 
@@ -817,8 +972,7 @@ class SystemInfoService: ObservableObject {
 
             if didSet {
                 DispatchQueue.main.async {
-                    self.micLevel = clampedValue
-                    self.isMicMuted = self.checkIfMicMuted()
+                    self.refreshMic()
                 }
             }
         }
@@ -843,15 +997,20 @@ class SystemInfoService: ObservableObject {
                 defaultInputDeviceID, &propertyAddress, 0, nil, propertySize, &mutedValue)
 
             DispatchQueue.main.async {
-                self.isMicMuted = self.checkIfMicMuted()
-                self.micLevel = self.getMicLevel()
+                self.refreshMic()
             }
         }
     }
 
     func refreshKeyboard() {
+        // TIS belongs to the main run loop; only publication is deferred.
+        guard let version = beginReading(.keyboard) else { return }
+        onRead(.keyboard)
         let layout = getCurrentKeyboardLayout()
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            defer { self.endReading(.keyboard, version) }
+            guard self.isCurrent(.keyboard, version) else { return }
             if self.keyboardLayout != layout { self.keyboardLayout = layout }
         }
     }
@@ -866,31 +1025,13 @@ class SystemInfoService: ObservableObject {
         return "Unknown"
     }
 
-    private func setupKeyboardLayoutObserver() {
-        DistributedNotificationCenter.default().addObserver(
-            forName: NSNotification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            guard let self, self.activeWidgets.contains(.keyboard) else { return }
-            self.refreshKeyboard()
-        }
-    }
-
     func refreshCaffeinate() {
-        // Check both our managed process and any existing system-wide caffeinate
-        DispatchQueue.global(qos: .background).async {
-            let managedActive = self.caffeinateProcess?.isRunning ?? false
-            let active: Bool
-            if managedActive {
-                active = true
-            } else {
-                // If our managed process isn't running, see if any caffeinate is already active on the system
-                active = self.isAnyCaffeinateRunning()
-            }
-            DispatchQueue.main.async {
-                if self.isCaffeinateActive != active { self.isCaffeinateActive = active }
-            }
+        guard isActive(.caffeinate) else { return }
+        let managedActive = caffeinateProcess?.isRunning ?? false
+        read(.caffeinate, work: { _ in
+            managedActive || self.isAnyCaffeinateRunning()
+        }) { active in
+            if self.isCaffeinateActive != active { self.isCaffeinateActive = active }
         }
     }
 
@@ -979,24 +1120,35 @@ class SystemInfoService: ObservableObject {
     }
 
     private func startTimers() {
-        let timers = WidgetRefreshSchedule.timers(
-            for: activeWidgets, in: settingsManager.settings.widgets)
+        let timers = WidgetRefreshSchedule.timers(for: activeWidgets, in: settingsManager.settings.widgets)
+        var wanted = Set<String>()
         for timer in timers {
-            scheduleTimer(id: timer.id, interval: timer.interval) { [weak self] in
-                self?.refresh(timer.widget)
+            let readings = WidgetRefreshSchedule.readings(for: timer.widget).filter {
+                // Mount notifications cannot describe capacity changes; caffeinate may be external.
+                $0 == .storageVolumes || $0 == .caffeinate || !eventDrivenReadings.contains($0)
             }
+            guard !readings.isEmpty else { continue }
+            wanted.insert(timer.id)
+            if refreshTimers[timer.id]?.timeInterval == timer.interval,
+               timerReadings[timer.id] == readings { continue }
+            refreshTimers[timer.id]?.invalidate()
+            timerReadings[timer.id] = readings
+            let id = timer.id
+            let scheduled = Timer(timeInterval: timer.interval, repeats: true) { [weak self] timer in
+                guard let self, self.refreshTimers[id] === timer else { return }
+                for reading in readings { self.collect(reading) }
+            }
+            refreshTimers[timer.id] = scheduled
+            RunLoop.main.add(scheduled, forMode: .common)
         }
-    }
-
-    private func scheduleTimer(id: String, interval: TimeInterval, action: @escaping () -> Void) {
-        refreshTimers[id]?.invalidate()
-        refreshTimers[id] = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
-            action()
+        for id in Array(refreshTimers.keys) where !wanted.contains(id) {
+            refreshTimers.removeValue(forKey: id)?.invalidate()
+            timerReadings.removeValue(forKey: id)
         }
     }
 
     private func refreshVolumes() {
-        DispatchQueue.global(qos: .utility).async {
+        read(.storageVolumes, work: { _ in
             let keys: Set<URLResourceKey> = [
                 .volumeNameKey,
                 .volumeTotalCapacityKey,
@@ -1021,20 +1173,133 @@ class SystemInfoService: ObservableObject {
                     usedBytes: total - available
                 )
             }
-            DispatchQueue.main.async {
-                self.volumes = volumes
-            }
+            return volumes
+        }) { volumes in
+            if self.volumes != volumes { self.volumes = volumes }
         }
     }
 
-    private func setupNotifications() {
-        let center = NSWorkspace.shared.notificationCenter
-        center.addObserver(self, selector: #selector(handleMount), name: NSWorkspace.didMountNotification, object: nil)
-        center.addObserver(self, selector: #selector(handleMount), name: NSWorkspace.didUnmountNotification, object: nil)
+    private func installObserver(for reading: Reading) {
+        let generation = version(of: reading)
+        switch reading {
+        case .keyboard:
+            keyboardObserver = keyboardNotifications.addObserver(
+                forName: NSNotification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
+                object: nil, queue: .main
+            ) { [weak self] _ in
+                guard let self, self.isCurrent(.keyboard, generation) else { return }
+                self.refreshKeyboard()
+            }
+            eventDrivenReadings.insert(.keyboard)
+        case .storageVolumes:
+            let center = workspaceNotifications
+            storageObservers = [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification].map { name in
+                center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    guard let self, self.isCurrent(.storageVolumes, generation) else { return }
+                    self.refreshVolumes()
+                }
+            }
+        case .battery:
+            let context = PowerContext(self, version: generation)
+            powerContext = context
+            powerSource = makePowerSource({ pointer in
+                guard let pointer else { return }
+                let context = Unmanaged<PowerContext>.fromOpaque(pointer).takeUnretainedValue()
+                // The source is attached to the main loop; capture its context before queuing.
+                DispatchQueue.main.async {
+                    guard let service = context.service, service.isCurrent(.battery, context.version) else { return }
+                    service.refreshBattery()
+                }
+            }, Unmanaged.passUnretained(context).toOpaque())
+            if let powerSource {
+                CFRunLoopAddSource(CFRunLoopGetMain(), powerSource, .commonModes)
+                eventDrivenReadings.insert(.battery)
+            }
+            powerObserver = NotificationCenter.default.addObserver(
+                forName: .NSProcessInfoPowerStateDidChange, object: nil, queue: .main
+            ) { [weak self] _ in
+                guard let self, self.isCurrent(.battery, generation) else { return }
+                self.refreshBattery()
+            }
+        case .volume, .mic:
+            installAudioObservers(for: reading)
+        default: break
+        }
     }
 
-    @objc private func handleMount(_ notification: Notification) {
-        guard activeWidgets.contains(.storage) else { return }
-        refreshVolumes()
+    private func removeObserver(for reading: Reading) {
+        eventDrivenReadings.remove(reading)
+        switch reading {
+        case .keyboard:
+            if let keyboardObserver { keyboardNotifications.removeObserver(keyboardObserver) }
+            keyboardObserver = nil
+        case .storageVolumes:
+            for observer in storageObservers { workspaceNotifications.removeObserver(observer) }
+            storageObservers.removeAll()
+        case .battery:
+            if let powerSource {
+                CFRunLoopRemoveSource(CFRunLoopGetMain(), powerSource, .commonModes)
+                CFRunLoopSourceInvalidate(powerSource)
+            }
+            powerSource = nil
+            powerContext = nil
+            if let powerObserver { NotificationCenter.default.removeObserver(powerObserver) }
+            powerObserver = nil
+        case .volume, .mic:
+            for listener in audioListeners.removeValue(forKey: reading) ?? [] {
+                audioEvents.remove(listener.object, listener.address, listener.block)
+            }
+        default: break
+        }
+    }
+
+    private func installAudioObservers(for reading: Reading) {
+        let generation = version(of: reading)
+        let input = reading == .mic
+        let kind: AudioDeviceKind = input ? .input : .output
+        let systemAddress = AudioObjectPropertyAddress(
+            mSelector: kind.selector, mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        var complete = true
+        func observe(_ object: AudioObjectID, _ address: AudioObjectPropertyAddress, rebind: Bool = false) {
+            let callback: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+                guard let self, self.isCurrent(reading, generation) else { return }
+                if rebind {
+                    // Old-device callbacks must not read or publish after the new binding starts.
+                    self.readingLock.lock()
+                    self.versions[reading, default: 0] += 1
+                    self.pendingReadings.removeValue(forKey: reading)
+                    self.queuedReadings.remove(reading)
+                    self.readingLock.unlock()
+                    self.removeObserver(for: reading)
+                    self.installAudioObservers(for: reading)
+                    self.startTimers()
+                }
+                self.collect(reading)
+            }
+            if audioEvents.add(object, address, callback) == noErr {
+                audioListeners[reading, default: []].append(AudioListener(object: object, address: address, block: callback))
+            } else { complete = false }
+        }
+        observe(AudioObjectID(kAudioObjectSystemObject), systemAddress, rebind: true)
+        let device = eventAudioDevice.map { $0(input) } ?? defaultAudioDeviceID(for: kind)
+        guard let device, device != AudioObjectID(kAudioObjectUnknown) else { return }
+        let scope = input ? kAudioDevicePropertyScopeInput : kAudioDevicePropertyScopeOutput
+        var addresses = [AudioObjectPropertyAddress(
+            mSelector: kAudioObjectPropertyName, mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain), AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyMute, mScope: scope, mElement: kAudioObjectPropertyElementMain)]
+        let master = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyVolumeScalar, mScope: scope, mElement: kAudioObjectPropertyElementMain)
+        addresses.append(master)
+        if !input {
+            // The getter also falls back when an advertised master property fails to read.
+            addresses += [1, 2].map { AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyVolumeScalar, mScope: scope, mElement: $0) }
+        }
+        // Unsupported properties are the reader's constant fallback values. Observe every
+        // supported property; polling is useful only when an available listener failed.
+        for address in addresses where audioEvents.hasProperty(device, address) { observe(device, address) }
+        if complete { eventDrivenReadings.insert(reading) }
     }
 }

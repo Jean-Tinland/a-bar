@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 
 /// The four things AppleScript can ask of a custom widget. Visibility changes have to persist
@@ -182,5 +183,77 @@ final class UserWidgetManagerTests: XCTestCase {
             UserWidgetError.widgetNotFound("Disk").errorDescription?.contains("Disk") ?? false)
         XCTAssertTrue(
             UserWidgetError.duplicateName("Disk").errorDescription?.contains("Disk") ?? false)
+    }
+}
+
+@MainActor
+final class UserWidgetRunnerTests: XCTestCase {
+    func testRepeatedOutputAndErrorsPublishOnlyChangesAndRecoverTheSameOutput() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let marker = directory.appendingPathComponent("runs")
+        let command = """
+        printf x >> '\(marker.path)'
+        count=$(wc -c < '\(marker.path)' | tr -d ' ')
+        case "$count" in
+          1|2) printf 'First\\nSecond\\n---\\nMenu\\n' ;;
+          4|5) printf 'fixture failure\\n' >&2; exit 7 ;;
+          *) printf 'Changed\\nSecond\\n---\\nMenu\\n' ;;
+        esac
+        """
+        let runner = UserWidgetRunner(config: UserWidgetDefinition(
+            command: command, refreshInterval: 60, cycleDuration: 60))
+        var outputs: [XBarParsedOutput] = []
+        var errors: [String?] = []
+        var loading: [Bool] = []
+        var indices: [Int] = []
+        let observations = [
+            runner.$parsedOutput.dropFirst().sink { outputs.append($0) },
+            runner.$errorMessage.dropFirst().sink { errors.append($0) },
+            runner.$isLoading.dropFirst().sink { loading.append($0) },
+            runner.$currentHeaderIndex.dropFirst().sink { indices.append($0) },
+        ]
+        var lifecycle: AnyCancellable?
+        defer { lifecycle?.cancel(); withExtendedLifetime(observations) {} }
+
+        await waitForOutput("First", runner) {
+            lifecycle = runner.refreshNotifications.sink { _ in }
+        }
+        await waitForOutput("Changed", runner) {
+            runner.refresh()
+            runner.refresh() // Queue one follow-up while the identical output is in flight.
+        }
+        XCTAssertEqual(outputs.count, 2)
+        XCTAssertEqual(try Data(contentsOf: marker).count, 3)
+        XCTAssertTrue(errors.isEmpty)
+
+        let failed = expectation(description: "first failure published")
+        let errorObservation = runner.$errorMessage.dropFirst().compactMap { $0 }.prefix(1)
+            .sink { _ in failed.fulfill() }
+        runner.refresh()
+        await fulfillment(of: [failed], timeout: 2)
+        withExtendedLifetime(errorObservation) {}
+        XCTAssertEqual(runner.parsedOutput, .empty)
+        await waitForOutput("Changed", runner) {
+            runner.refresh()
+            runner.refresh() // The same error is followed by the last successful stdout.
+        }
+        XCTAssertEqual(try Data(contentsOf: marker).count, 6)
+        XCTAssertEqual(outputs.count, 4, "only first output, change, failure clear and recovery publish")
+        XCTAssertEqual(errors, ["Exit code: 7\nfixture failure", nil])
+        XCTAssertEqual(loading, [false])
+        XCTAssertTrue(indices.isEmpty, "resetting an already-zero header index must not publish")
+        XCTAssertEqual(runner.parsedOutput.menuItems.first?.title, "Menu")
+    }
+
+    private func waitForOutput(_ title: String, _ runner: UserWidgetRunner, action: () -> Void) async {
+        let finished = expectation(description: "output \(title) published")
+        let observation = runner.$parsedOutput.dropFirst()
+            .filter { $0.headerLines.first?.title == title }.prefix(1)
+            .sink { _ in finished.fulfill() }
+        action()
+        await fulfillment(of: [finished], timeout: 2)
+        withExtendedLifetime(observation) {}
     }
 }

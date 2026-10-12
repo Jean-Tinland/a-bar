@@ -27,6 +27,10 @@ final class BluetoothService: ObservableObject {
 
   private var refreshTimer: Timer?
   private var batteryTimer: Timer?
+  private var batteryTask: Task<Void, Never>?
+  private var batteryRefreshWorkItem: DispatchWorkItem?
+  private var powerRefreshWorkItem: DispatchWorkItem?
+  private var pendingWatchdogs: [String: DispatchWorkItem] = [:]
   private var connectNotification: IOBluetoothUserNotification?
   private var disconnectNotifications: [String: IOBluetoothUserNotification] = [:]
   private var batteryCache: [String: BluetoothBatteryLevels] = [:]
@@ -44,9 +48,7 @@ final class BluetoothService: ObservableObject {
   private let initializeController: () -> Void
   private let workQueue = DispatchQueue(label: "com.a-bar.bluetooth", qos: .userInitiated)
 
-  private lazy var observer = BluetoothNotificationObserver { [weak self] in
-    self?.handleConnectionNotification()
-  }
+  private var observer: BluetoothNotificationObserver?
 
   private var settings: BluetoothWidgetSettings {
     settingsManager.settings.widgets.bluetooth
@@ -81,6 +83,13 @@ final class BluetoothService: ObservableObject {
       }
       return
     }
+    if observer == nil {
+      let generation = refreshGeneration
+      observer = BluetoothNotificationObserver { [weak self] in
+        guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+        self.handleConnectionNotification()
+      }
+    }
     refreshDevices()
     if connectNotification == nil { registerConnectNotification() }
     startTimers()
@@ -91,6 +100,15 @@ final class BluetoothService: ObservableObject {
     refreshGeneration += 1
     isPopoverOpen = false
     isFetchingBattery = false
+    batteryTask?.cancel()
+    batteryTask = nil
+    batteryRefreshWorkItem?.cancel()
+    batteryRefreshWorkItem = nil
+    powerRefreshWorkItem?.cancel()
+    powerRefreshWorkItem = nil
+    pendingWatchdogs.values.forEach { $0.cancel() }
+    pendingWatchdogs.removeAll()
+    pendingAddresses.removeAll()
     refreshTimer?.invalidate()
     refreshTimer = nil
     batteryTimer?.invalidate()
@@ -101,6 +119,7 @@ final class BluetoothService: ObservableObject {
       notification.unregister()
     }
     disconnectNotifications.removeAll()
+    observer = nil
   }
 
   func refresh() {
@@ -109,18 +128,21 @@ final class BluetoothService: ObservableObject {
   }
 
   private func startTimers() {
+    let generation = refreshGeneration
     refreshTimer?.invalidate()
     refreshTimer = Timer.scheduledTimer(
       withTimeInterval: settings.refreshInterval, repeats: true
     ) { [weak self] _ in
-      self?.refreshDevices()
+      guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+      self.refreshDevices()
     }
 
     batteryTimer?.invalidate()
     batteryTimer = Timer.scheduledTimer(
       withTimeInterval: settings.batteryRefreshInterval, repeats: true
     ) { [weak self] _ in
-      self?.refreshBatteryLevels()
+      guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+      self.refreshBatteryLevels()
     }
   }
 
@@ -192,10 +214,11 @@ final class BluetoothService: ObservableObject {
     isFetchingBattery = true
     let generation = refreshGeneration
 
-    Task { @MainActor in
-      guard isStarted, generation == refreshGeneration else { return }
+    batteryTask = Task { @MainActor in
+      guard isStarted, generation == refreshGeneration, !Task.isCancelled else { return }
       let parsed = await BluetoothService.fetchBatteryLevels()
-      guard isStarted, generation == refreshGeneration else { return }
+      guard isStarted, generation == refreshGeneration, !Task.isCancelled else { return }
+      batteryTask = nil
       isFetchingBattery = false
       guard let parsed else { return }
       batteryCache = parsed.battery
@@ -210,10 +233,14 @@ final class BluetoothService: ObservableObject {
   private func scheduleBatteryRefresh(after delay: TimeInterval) {
     guard isStarted else { return }
     let generation = refreshGeneration
-    DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+    batteryRefreshWorkItem?.cancel()
+    let work = DispatchWorkItem { [weak self] in
       guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+      self.batteryRefreshWorkItem = nil
       self.refreshBatteryLevels()
     }
+    batteryRefreshWorkItem = work
+    DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
   }
 
   /// Fork `system_profiler` and hand what it prints to `BluetoothProfileParser`.
@@ -278,10 +305,14 @@ final class BluetoothService: ObservableObject {
     setPowerState(info.isPoweredOn ? 0 : 1)
     let generation = refreshGeneration
     // The daemon applies the change asynchronously; re-read shortly after.
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+    powerRefreshWorkItem?.cancel()
+    let work = DispatchWorkItem { [weak self] in
       guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+      self.powerRefreshWorkItem = nil
       self.refreshDevices()
     }
+    powerRefreshWorkItem = work
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4, execute: work)
   }
 
   /// Connect or disconnect a paired device.
@@ -301,9 +332,13 @@ final class BluetoothService: ObservableObject {
     pendingAddresses.insert(id)
 
     // Watchdog: never let a row's spinner stick forever.
-    DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
-      self?.pendingAddresses.remove(id)
+    let watchdog = DispatchWorkItem { [weak self] in
+      guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+      self.pendingWatchdogs.removeValue(forKey: id)
+      self.pendingAddresses.remove(id)
     }
+    pendingWatchdogs[id] = watchdog
+    DispatchQueue.main.asyncAfter(deadline: .now() + 20, execute: watchdog)
 
     workQueue.async { [weak self] in
       var status: IOReturn = kIOReturnError
@@ -311,14 +346,14 @@ final class BluetoothService: ObservableObject {
         status = shouldConnect ? target.openConnection() : target.closeConnection()
       }
       DispatchQueue.main.async {
-        guard let self = self else { return }
+        guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+        self.pendingWatchdogs.removeValue(forKey: id)?.cancel()
         self.pendingAddresses.remove(id)
         if status != kIOReturnSuccess {
           print(
             "Bluetooth: \(shouldConnect ? "connect" : "disconnect") failed for \(address) (\(status))"
           )
         }
-        guard self.isStarted, generation == self.refreshGeneration else { return }
         self.refreshDevices()
         // AirPods and friends publish battery a beat after the link comes up.
         self.scheduleBatteryRefresh(after: 2.5)
@@ -335,6 +370,7 @@ final class BluetoothService: ObservableObject {
   // MARK: - Connect / disconnect notifications
 
   private func registerConnectNotification() {
+    guard let observer else { return }
     connectNotification?.unregister()
     connectNotification = IOBluetoothDevice.register(
       forConnectNotifications: observer,
@@ -345,6 +381,7 @@ final class BluetoothService: ObservableObject {
   /// Disconnect notifications are per device instance, so they are refreshed to
   /// match the currently connected set after every snapshot.
   private func registerDisconnectNotifications() {
+    guard let observer else { return }
     let connected = Set(info.connectedDevices.map { $0.id })
 
     for (id, notification) in disconnectNotifications where !connected.contains(id) {
@@ -362,6 +399,7 @@ final class BluetoothService: ObservableObject {
   }
 
   private func handleConnectionNotification() {
+    guard isStarted else { return }
     refreshDevices()
     scheduleBatteryRefresh(after: 2.5)
   }

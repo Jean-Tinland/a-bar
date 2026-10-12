@@ -251,6 +251,15 @@ final class BarWindowPlanTests: XCTestCase {
       "cosmetic and unused widget changes must not restart running samplers")
   }
 
+  func testSystemDemandIncludesEventDrivenReadingsWithoutDependingOnTimers() {
+    let widgets: Set<WidgetIdentifier> = [
+      .battery, .sound, .mic, .keyboard, .storage, .cpu, .bluetooth, .wifi, .time,
+    ]
+    let configuration = BarWindowPlan.ServiceConfiguration(widgets: widgets, settings: WidgetSettings())
+
+    XCTAssertEqual(configuration.systemWidgets, [.battery, .sound, .mic, .keyboard, .storage, .cpu])
+  }
+
   func testOnlyTheServiceWhoseInputsChangedNeedsUpdating() {
     let widgets: Set<WidgetIdentifier> = [.cpu, .wifi, .bluetooth]
     let original = WidgetSettings()
@@ -258,6 +267,7 @@ final class BarWindowPlanTests: XCTestCase {
     var changed = original
     changed.cpu.refreshInterval += 1
     let cpu = BarWindowPlan.ServiceConfiguration(widgets: widgets, settings: changed)
+    XCTAssertEqual(cpu.systemWidgets, baseline.systemWidgets)
     XCTAssertNotEqual(cpu.systemIntervals, baseline.systemIntervals)
     XCTAssertEqual(cpu.wifi, baseline.wifi)
     XCTAssertEqual(cpu.bluetooth, baseline.bluetooth)
@@ -279,6 +289,7 @@ final class BarWindowPlanTests: XCTestCase {
 
   func testHidingTheLastConsumerRemovesItsServiceConfiguration() {
     let configuration = BarWindowPlan.ServiceConfiguration(widgets: [], settings: WidgetSettings())
+    XCTAssertTrue(configuration.systemWidgets.isEmpty)
     XCTAssertTrue(configuration.systemIntervals.isEmpty)
     XCTAssertNil(configuration.wifi)
     XCTAssertNil(configuration.bluetooth)

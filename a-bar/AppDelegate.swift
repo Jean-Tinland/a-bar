@@ -68,9 +68,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Create bar windows for all screens
     setupBarWindows()
 
-    // Start services
-    startServices()
-
     // Setup screen change observer
     setupScreenObserver()
 
@@ -113,6 +110,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     yabaiService.stop()
     aerospaceService.stop()
     networkModels.stop()
+    systemInfoService.stop()
+    bluetoothService.stop()
+    wifiService.stop()
     runningWindowManager = nil
     runningWindowManagerPath = nil
   }
@@ -210,7 +210,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   // Create bar windows based on current screen configuration and layout settings
   private func setupBarWindows(force: Bool = false) {
     // Sampling settings must still update when the existing windows can be reused.
-    defer { updateSystemServices() }
+    defer { updateServices() }
     let screens = NSScreen.screens
     let configuration = BarWindowPlan.Configuration(
       screenCount: screens.count,
@@ -256,10 +256,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
   }
 
-  private func startServices() {
-    applyWindowManager(settingsManager.settings.global.windowManager)
-  }
-
   /// The only place that maps a `WindowManager` onto the service that implements it.
   private func setWindowManager(_ windowManager: WindowManager, running: Bool) {
     switch windowManager {
@@ -279,8 +275,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   /// Hidden widgets must not poll or initialize blocking hardware APIs.
-  private func updateSystemServices() {
+  private func updateServices() {
     let widgets = visibleWidgets
+    applyWindowManager(WindowManagerServices.requiredService(
+      for: settingsManager.settings.global.windowManager, widgets: widgets))
     let settings = settingsManager.settings.widgets
     // All bars share one request and timer per network source. A window rebuild must not stop them.
     poll(networkModels.github, when: widgets.contains(.github),
@@ -293,8 +291,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       widgets: widgets, settings: settings)
     let previous = appliedServiceConfiguration
 
-    if previous?.systemIntervals != configuration.systemIntervals {
-      systemInfoService.start(widgets: Set(configuration.systemIntervals.keys))
+    if previous?.systemWidgets != configuration.systemWidgets
+      || previous?.systemIntervals != configuration.systemIntervals {
+      systemInfoService.start(widgets: configuration.systemWidgets)
     }
     if previous?.bluetooth != configuration.bluetooth {
       if let bluetooth = configuration.bluetooth {
@@ -351,17 +350,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     WidgetPopoverManager.closeAll()
     setupBarWindows()
 
-    // Restart window manager services if the WM changed
-    applyWindowManager(settings.global.windowManager)
-
     // Update launch at login
     applyLaunchAtLogin(settings.global.launchAtLogin)
   }
 
   /// Restart only when the selected service or its executable changed.
-  private func applyWindowManager(_ windowManager: WindowManager) {
+  private func applyWindowManager(_ windowManager: WindowManager?) {
     let global = settingsManager.settings.global
-    let path = windowManager == .yabai ? global.yabaiPath : global.aerospacePath
+    let path = windowManager.map { $0 == .yabai ? global.yabaiPath : global.aerospacePath }
     guard
       let transition = WindowManagerServices.transition(
         to: windowManager, from: runningWindowManager,
@@ -369,7 +365,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     else { return }
 
     if let stop = transition.stop { setWindowManager(stop, running: false) }
-    setWindowManager(transition.start, running: true)
+    if let start = transition.start { setWindowManager(start, running: true) }
     runningWindowManager = transition.start
     runningWindowManagerPath = path
   }
@@ -435,12 +431,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   // Refresh all bar windows and services (called from menu)
   @objc private func refreshAll() {
-    let windowManager = settingsManager.settings.global.windowManager
-    switch windowManager {
+    switch runningWindowManager {
     case .yabai:
       yabaiService.refresh()
     case .aerospace:
       aerospaceService.refresh()
+    case nil:
+      break
     }
     systemInfoService.refresh()
     let widgets = visibleWidgets

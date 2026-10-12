@@ -31,13 +31,16 @@ final class WifiService: ObservableObject {
   /// Last association failure, surfaced in the popover and cleared on the next attempt.
   @Published private(set) var lastError: String?
 
-  private let client = CWWiFiClient.shared()
+  private lazy var client = CWWiFiClient.shared()
   private let location = WifiLocationAuthorization()
 
   private var refreshTimer: Timer?
   private var isStarted = false
   private var refreshGeneration = 0
   private var scanWorkItem: DispatchWorkItem?
+  private var knownNetworksTask: Task<Void, Never>?
+  private var powerRefreshWorkItem: DispatchWorkItem?
+  private var pendingWatchdogs: [String: DispatchWorkItem] = [:]
   private var isPopoverOpen = false
   /// SSIDs macOS already has credentials for, so a click can join them straight away
   /// instead of asking for a passphrase the keychain already holds.
@@ -49,10 +52,7 @@ final class WifiService: ObservableObject {
   private let settingsManager: SettingsManager
   private let workQueue = DispatchQueue(label: "com.a-bar.wifi", qos: .userInitiated)
 
-  private lazy var observer = WifiEventObserver { [weak self] in
-    guard let self, self.isStarted else { return }
-    self.refreshState()
-  }
+  private var observer: WifiEventObserver?
 
   private var settings: WifiWidgetSettings {
     settingsManager.settings.widgets.wifi
@@ -60,17 +60,6 @@ final class WifiService: ObservableObject {
 
   init(settingsManager: SettingsManager = .shared) {
     self.settingsManager = settingsManager
-    location.$isAuthorized
-      .removeDuplicates()
-      .receive(on: DispatchQueue.main)
-      .sink { [weak self] _ in
-        guard let self, self.isStarted else { return }
-        // The grant unredacts SSIDs, so everything on screen is stale the moment it
-        // lands — including a scan whose results all had nil names.
-        self.refreshState()
-        self.scanIfNeeded(force: true)
-      }
-      .store(in: &cancellables)
   }
 
   // MARK: - Lifecycle
@@ -78,22 +67,51 @@ final class WifiService: ObservableObject {
   func start() {
     let wasStarted = isStarted
     isStarted = true
+    if !wasStarted {
+      refreshGeneration += 1
+      location.start()
+      let generation = refreshGeneration
+      location.$isAuthorized
+        .removeDuplicates()
+        .dropFirst()
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] _ in
+          guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+          // A grant unredacts SSIDs, including a scan whose names were withheld.
+          self.refreshState()
+          self.scanIfNeeded(force: true)
+        }
+        .store(in: &cancellables)
+      startMonitoring()
+    }
     refreshState()
-    if !wasStarted { startMonitoring() }
     startTimer()
   }
 
   func stop() {
+    guard isStarted else { return }
     isStarted = false
     refreshGeneration += 1
     isPopoverOpen = false
+    cancellables.removeAll()
+    location.stop()
+    knownNetworksTask?.cancel()
+    knownNetworksTask = nil
+    powerRefreshWorkItem?.cancel()
+    powerRefreshWorkItem = nil
+    pendingWatchdogs.values.forEach { $0.cancel() }
+    pendingWatchdogs.removeAll()
+    pendingSSIDs.removeAll()
     scanWorkItem?.cancel()
     scanWorkItem = nil
     isScanning = false
+    lastScanDate = nil
+    knownSSIDs.removeAll()
     refreshTimer?.invalidate()
     refreshTimer = nil
     try? client.stopMonitoringAllEvents()
     client.delegate = nil
+    observer = nil
   }
 
   func refresh() {
@@ -106,14 +124,21 @@ final class WifiService: ObservableObject {
   /// mechanism.
   private func startTimer() {
     refreshTimer?.invalidate()
+    let generation = refreshGeneration
     refreshTimer = Timer.scheduledTimer(
       withTimeInterval: settings.refreshInterval, repeats: true
     ) { [weak self] _ in
-      self?.refreshState()
+      guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+      self.refreshState()
     }
   }
 
   private func startMonitoring() {
+    let generation = refreshGeneration
+    observer = WifiEventObserver { [weak self] in
+      guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+      self.refreshState()
+    }
     client.delegate = observer
     for event in [
       CWEventType.powerDidChange,
@@ -280,12 +305,15 @@ final class WifiService: ObservableObject {
   private func refreshKnownNetworks() {
     guard isStarted else { return }
     guard let device = interfaceName else { return }
+    guard knownNetworksTask == nil else { return }
     let generation = refreshGeneration
-    Task { @MainActor in
-      guard isStarted, generation == refreshGeneration else { return }
+    knownNetworksTask = Task { @MainActor in
+      guard isStarted, generation == refreshGeneration, !Task.isCancelled else { return }
       let output = try? await ShellExecutor.run(
         "networksetup -listpreferredwirelessnetworks \(WifiScan.shellQuoted(device))")
-      guard isStarted, generation == refreshGeneration, let output else { return }
+      guard isStarted, generation == refreshGeneration, !Task.isCancelled else { return }
+      knownNetworksTask = nil
+      guard let output else { return }
       // First line is the "Preferred networks on enN:" header; the rest are tab-indented.
       let names =
         output
@@ -316,11 +344,15 @@ final class WifiService: ObservableObject {
         self.refreshState()
         if turnOn {
           // The radio needs a beat before it can see anything.
-          DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+          self.powerRefreshWorkItem?.cancel()
+          let work = DispatchWorkItem { [weak self] in
             guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+            self.powerRefreshWorkItem = nil
             self.refreshState()
             self.scanIfNeeded(force: true)
           }
+          self.powerRefreshWorkItem = work
+          DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: work)
         }
       }
     }
@@ -342,12 +374,14 @@ final class WifiService: ObservableObject {
     }
 
     let ssid = network.ssid
-    lastError = nil
-    pendingSSIDs.insert(ssid)
-    startPendingWatchdog(for: ssid)
+    let generation = refreshGeneration
+    if isStarted {
+      lastError = nil
+      pendingSSIDs.insert(ssid)
+      startPendingWatchdog(for: ssid)
+    }
 
     let name = interfaceName
-    let generation = refreshGeneration
     workQueue.async { [weak self] in
       let interface = name.flatMap { CWWiFiClient.shared().interface(withName: $0) }
       var failure: String?
@@ -383,9 +417,9 @@ final class WifiService: ObservableObject {
       }
 
       DispatchQueue.main.async {
-        guard let self = self else { return }
+        guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+        self.pendingWatchdogs.removeValue(forKey: ssid)?.cancel()
         self.pendingSSIDs.remove(ssid)
-        guard self.isStarted, generation == self.refreshGeneration else { return }
         self.lastError = failure
         if let failure = failure {
           print("Wi-Fi: join failed for \(ssid): \(failure)")
@@ -405,18 +439,20 @@ final class WifiService: ObservableObject {
     // and disconnecting must still work.
     let ssid = info.ssid ?? WifiService.unnamedCurrentNetwork
     guard !pendingSSIDs.contains(ssid) else { return }
-    lastError = nil
-    pendingSSIDs.insert(ssid)
-    startPendingWatchdog(for: ssid)
+    let generation = refreshGeneration
+    if isStarted {
+      lastError = nil
+      pendingSSIDs.insert(ssid)
+      startPendingWatchdog(for: ssid)
+    }
 
     let name = interfaceName
-    let generation = refreshGeneration
     workQueue.async { [weak self] in
       name.flatMap { CWWiFiClient.shared().interface(withName: $0) }?.disassociate()
       DispatchQueue.main.async {
-        guard let self = self else { return }
+        guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+        self.pendingWatchdogs.removeValue(forKey: ssid)?.cancel()
         self.pendingSSIDs.remove(ssid)
-        guard self.isStarted, generation == self.refreshGeneration else { return }
         self.refreshState()
       }
     }
@@ -425,9 +461,15 @@ final class WifiService: ObservableObject {
   /// Never let a row's spinner stick forever if an association hangs past the CoreWLAN
   /// timeout.
   private func startPendingWatchdog(for ssid: String) {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in
-      self?.pendingSSIDs.remove(ssid)
+    let generation = refreshGeneration
+    let work = DispatchWorkItem { [weak self] in
+      guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+      self.pendingWatchdogs.removeValue(forKey: ssid)
+      self.pendingSSIDs.remove(ssid)
     }
+    pendingWatchdogs[ssid]?.cancel()
+    pendingWatchdogs[ssid] = work
+    DispatchQueue.main.asyncAfter(deadline: .now() + 30, execute: work)
   }
 
   /// Stand-in key for the connected network when macOS will not name it.
@@ -483,36 +525,62 @@ private final class WifiEventObserver: NSObject, CWEventDelegate {
 final class WifiLocationAuthorization: NSObject, ObservableObject, CLLocationManagerDelegate {
   @Published private(set) var isAuthorized = false
 
-  private let manager = CLLocationManager()
+  private var manager: CLLocationManager?
+  private let makeManager: () -> CLLocationManager
+  private var isStarted = false
+  private var refreshGeneration = 0
   private var hasRequested = false
+  private var authorizationTask: Task<Void, Never>?
 
-  override init() {
+  init(makeManager: @escaping () -> CLLocationManager = { CLLocationManager() }) {
+    self.makeManager = makeManager
     super.init()
-    manager.delegate = self
-    isAuthorized = WifiLocationAuthorization.isGranted(manager.authorizationStatus)
+  }
+
+  func start() {
+    guard !isStarted else { return }
+    isStarted = true
+    if manager == nil { manager = makeManager() }
+    manager?.delegate = self
+    if let manager {
+      isAuthorized = Self.isGranted(manager.authorizationStatus)
+    }
+  }
+
+  func stop() {
+    isStarted = false
+    refreshGeneration += 1
+    authorizationTask?.cancel()
+    authorizationTask = nil
+    manager?.delegate = nil
+    manager = nil
   }
 
   /// Ask once per launch, and only when something actually needs a network name.
   func requestIfNeeded() {
-    guard !hasRequested else { return }
-    hasRequested = true
-
-    guard !isAuthorized else { return }
-
-    // `locationServicesEnabled()` blocks, so it must not be called on the main thread.
-    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-      let enabled = CLLocationManager.locationServicesEnabled()
-      DispatchQueue.main.async {
-        guard enabled else { return }
-        self?.manager.requestWhenInUseAuthorization()
-      }
+    guard isStarted, !isAuthorized, !hasRequested, authorizationTask == nil else { return }
+    let generation = refreshGeneration
+    authorizationTask = Task { @MainActor [weak self] in
+      // The global check can block; it never runs on the UI run loop.
+      let enabled = await Task.detached(priority: .userInitiated) {
+        CLLocationManager.locationServicesEnabled()
+      }.value
+      guard let self, self.isStarted, generation == self.refreshGeneration,
+        !Task.isCancelled else { return }
+      self.authorizationTask = nil
+      guard enabled else { return }
+      self.hasRequested = true
+      self.manager?.requestWhenInUseAuthorization()
     }
   }
 
   func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-    let granted = WifiLocationAuthorization.isGranted(manager.authorizationStatus)
+    let generation = refreshGeneration
+    let granted = Self.isGranted(manager.authorizationStatus)
     DispatchQueue.main.async { [weak self] in
-      self?.isAuthorized = granted
+      guard let self, self.isStarted, generation == self.refreshGeneration,
+        self.manager === manager else { return }
+      if self.isAuthorized != granted { self.isAuthorized = granted }
     }
   }
 

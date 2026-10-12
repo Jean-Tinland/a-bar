@@ -16,6 +16,46 @@ import XCTest
 
 @MainActor
 final class NetworkWidgetModelsTests: XCTestCase {
+  func testUnchangedSuccessDoesNotPublishValueButStillFinishesAndRecovers() async throws {
+    let request = ControlledNetworkRequest<Int>()
+    let model = GitHubModel(load: request.load)
+    defer { model.stop(); request.cancelRemaining() }
+
+    await start(request) { model.refresh(input: "gh") }
+    await complete(.success(3), request, model.$isRefreshing)
+    let firstSuccess = try XCTUnwrap(model.lastSuccess)
+    var values: [Int?] = []
+    var refreshing: [Bool] = []
+    var successes: [Date?] = []
+    let observations = [
+      model.$value.dropFirst().sink { values.append($0) },
+      model.$isRefreshing.dropFirst().sink { refreshing.append($0) },
+      model.$lastSuccess.dropFirst().sink { successes.append($0) },
+    ]
+    defer { withExtendedLifetime(observations) {} }
+
+    await start(request) { model.refresh(input: "gh") }
+    await complete(.success(3), request, model.$isRefreshing)
+    XCTAssertTrue(values.isEmpty)
+    XCTAssertGreaterThan(try XCTUnwrap(model.lastSuccess), firstSuccess)
+
+    await start(request) { model.refresh(input: "gh") }
+    await complete(.failure(NetworkFixtureError.offline), request, model.$isRefreshing)
+    XCTAssertNotNil(model.errorMessage)
+    let beforeRecovery = model.lastSuccess
+    await start(request) { model.refresh(input: "gh") }
+    await complete(.success(3), request, model.$isRefreshing)
+    XCTAssertNil(model.errorMessage)
+    XCTAssertTrue(values.isEmpty, "recovery must not republish an unchanged cached value")
+    XCTAssertNotEqual(model.lastSuccess, beforeRecovery)
+
+    await start(request) { model.refresh(input: "gh") }
+    await complete(.success(4), request, model.$isRefreshing)
+    XCTAssertEqual(values, [4])
+    XCTAssertEqual(refreshing, [true, false, true, false, true, false, true, false])
+    XCTAssertEqual(successes.count, 3, "every successful request updates lastSuccess")
+  }
+
   func testGitHubStartIsIdempotentAndChangesOnlyThePollingSchedule() async {
     let request = ControlledNetworkRequest<Int>()
     let model = GitHubModel(load: request.load)

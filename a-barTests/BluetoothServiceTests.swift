@@ -188,8 +188,10 @@ final class BluetoothServiceTests: XCTestCase {
         XCTAssertTrue(service.isControllerInitialized)
         XCTAssertEqual(initializationCount, 1)
         XCTAssertEqual(service.info, BluetoothInfo())
-        service.refreshDevices()
+        service.refresh()
+        service.setPopoverOpen(true)
         XCTAssertEqual(service.info, BluetoothInfo(), "completion must not restart a stopped service")
+        XCTAssertTrue(service.pendingAddresses.isEmpty)
     }
 
     func testRefreshingBeforeStartPublishesNothing() {

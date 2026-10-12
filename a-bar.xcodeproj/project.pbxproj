@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		T1000500 /* WifiServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T2000500 /* WifiServiceTests.swift */; };
 		T1000410 /* UserWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000060 /* UserWidget.swift */; };
 		T1000408 /* WidgetTimerViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000408 /* WidgetTimerViewTests.swift */; };
 		T1000409 /* TimeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000042 /* TimeWidget.swift */; };
@@ -228,6 +229,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		T2000500 /* WifiServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WifiServiceTests.swift; sourceTree = "<group>"; };
 		B1000408 /* WidgetTimerViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetTimerViewTests.swift; sourceTree = "<group>"; };
 		B1000405 /* NetworkWidgetModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkWidgetModelsTests.swift; sourceTree = "<group>"; };
 		B1000404 /* NetworkWidgetViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkWidgetViewTests.swift; sourceTree = "<group>"; };
@@ -670,6 +672,7 @@
 				B1000350 /* SettingsNumberFieldTests.swift */,
 				B1000304 /* YabaiStateTests.swift */,
 				B1000318 /* YabaiServiceTests.swift */,
+				T2000500 /* WifiServiceTests.swift */,
 				B1000319 /* AppIconProviderTests.swift */,
 				B1000320 /* YabaiJSONSanitizerTests.swift */,
 				B1000321 /* SystemMetricsTests.swift */,
@@ -890,6 +893,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				T1000500 /* WifiServiceTests.swift in Sources */,
+				A1000024 /* WifiService.swift in Sources */,
+				A1000053 /* NetstatsWidget.swift in Sources */,
+				A1000054 /* GraphView.swift in Sources */,
 				T1000405 /* NetworkWidgetModelsTests.swift in Sources */,
 				T1000407 /* GitHubWidget.swift in Sources */,
 				T1000406 /* WeatherWidget.swift in Sources */,

@@ -10,6 +10,10 @@ class AerospaceService: ObservableObject {
     @Published private(set) var lastError: Error?
 
     private var refreshWorkItem: DispatchWorkItem?
+    private var refreshTask: Task<Void, Never>?
+    private var pendingRefresh = false
+    private var isStarted = false
+    private var refreshGeneration = 0
     private let refreshDebounceInterval: TimeInterval = 0.1
     private let settingsManager: SettingsManager
 
@@ -26,6 +30,7 @@ class AerospaceService: ObservableObject {
     }
 
     private func setupObservers() {
+        let generation = refreshGeneration
         // Observe app activation/deactivation/launch/termination/hide/unhide
         let nc = NSWorkspace.shared.notificationCenter
         let notifications: [NSNotification.Name] = [
@@ -42,7 +47,8 @@ class AerospaceService: ObservableObject {
                 object: nil,
                 queue: .main
             ) { [weak self] _ in
-                self?.debounceRefresh()
+                guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+                self.debounceRefresh()
             }
             appObservers.append(observer)
         }
@@ -53,18 +59,28 @@ class AerospaceService: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.refresh()
+            guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+            self.refresh()
         }
     }
 
     /// Start the AeroSpace service
     func start() {
+        guard !isStarted else { return }
+        isStarted = true
         setupObservers()
         refresh()
     }
 
     /// Stop the AeroSpace service
     func stop() {
+        isStarted = false
+        refreshGeneration += 1
+        refreshWorkItem?.cancel()
+        refreshWorkItem = nil
+        refreshTask?.cancel()
+        refreshTask = nil
+        pendingRefresh = false
         let nc = NSWorkspace.shared.notificationCenter
         for observer in appObservers {
             nc.removeObserver(observer)
@@ -79,45 +95,66 @@ class AerospaceService: ObservableObject {
 
     /// Manually refresh all AeroSpace data
     func refresh() {
-        Task {
-            await refreshAll()
+        guard isStarted else { return }
+        pendingRefresh = true
+        guard refreshTask == nil else { return }
+        let generation = refreshGeneration
+        refreshTask = Task { @MainActor in
+            repeat {
+                guard isStarted, generation == refreshGeneration, !Task.isCancelled else { return }
+                pendingRefresh = false
+                await refreshAll(generation: generation)
+                guard isStarted, generation == refreshGeneration, !Task.isCancelled else { return }
+            } while pendingRefresh
+            refreshTask = nil
         }
     }
 
     /// Debounced refresh to prevent overlapping events
     private func debounceRefresh() {
+        guard isStarted else { return }
+        let generation = refreshGeneration
         refreshWorkItem?.cancel()
         let workItem = DispatchWorkItem { [weak self] in
-            self?.refresh()
+            guard let self, self.isStarted, generation == self.refreshGeneration else { return }
+            self.refreshWorkItem = nil
+            self.refresh()
         }
         refreshWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + refreshDebounceInterval, execute: workItem)
     }
 
     /// Refresh all AeroSpace data in one pass
-    private func refreshAll() async {
+    @MainActor
+    private func refreshAll(generation: Int) async {
+        let path = aerospacePath
         do {
+            try Task.checkCancellation()
             // 1. Get monitors
             let monitorsOutput = try await ShellExecutor.run(
-                "\(aerospacePath) list-monitors --json"
+                "\(path) list-monitors --json"
             )
             let monitors = try JSONDecoder().decode(
                 [AerospaceMonitor].self, from: Data(monitorsOutput.utf8)
             )
 
+            try Task.checkCancellation()
+
             // 2. Get all workspaces with monitor info
             let workspacesOutput = try await ShellExecutor.run(
-                "\(aerospacePath) list-workspaces --all --json --format \"%{workspace} %{workspace-is-focused} %{workspace-is-visible} %{monitor-id} %{monitor-name}\""
+                "\(path) list-workspaces --all --json --format \"%{workspace} %{workspace-is-focused} %{workspace-is-visible} %{monitor-id} %{monitor-name}\""
             )
             let workspaces = try JSONDecoder().decode(
                 [AerospaceWorkspace].self, from: Data(workspacesOutput.utf8)
             )
 
+            try Task.checkCancellation()
+
             // 3. Get focused window
             var focusedWindowId: Int? = nil
             do {
                 let focusedOutput = try await ShellExecutor.run(
-                    "\(aerospacePath) list-windows --focused --json"
+                    "\(path) list-windows --focused --json"
                 )
                 let focusedWindows = try JSONDecoder().decode(
                     [AerospaceWindow].self, from: Data(focusedOutput.utf8)
@@ -127,9 +164,11 @@ class AerospaceService: ObservableObject {
                 // No focused window is fine
             }
 
+            try Task.checkCancellation()
+
             // 4. Get windows for all workspaces
             let allWindowsOutput = try await ShellExecutor.run(
-                "\(aerospacePath) list-windows --all --json --format \"%{window-id} %{app-name} %{window-title} %{workspace} %{monitor-id}\""
+                "\(path) list-windows --all --json --format \"%{window-id} %{app-name} %{window-title} %{workspace} %{monitor-id}\""
             )
             let allWindowsRaw = try JSONDecoder().decode(
                 [AerospaceWindow].self, from: Data(allWindowsOutput.utf8)
@@ -141,27 +180,30 @@ class AerospaceService: ObservableObject {
                 windows: allWindowsRaw,
                 focusedWindowId: focusedWindowId)
             let finalMonitors = monitors
-            await MainActor.run { [finalWorkspaces, finalMonitors] in
-                self.state = AerospaceState(workspaces: finalWorkspaces, monitors: finalMonitors)
-                self.isConnected = true
-                self.lastError = nil
-            }
+            guard isStarted, generation == refreshGeneration, !Task.isCancelled else { return }
+            state = AerospaceState(workspaces: finalWorkspaces, monitors: finalMonitors)
+            isConnected = true
+            lastError = nil
         } catch {
-            await MainActor.run {
-                self.lastError = error
-                self.isConnected = false
-            }
+            guard isStarted, generation == refreshGeneration, !Task.isCancelled else { return }
+            lastError = error
+            isConnected = false
             print("AeroSpace error: \(error)")
         }
     }
 
     /// Switch to a specific workspace
     func goToWorkspace(_ name: String) async {
+        let generation = refreshGeneration
         do {
             try await ShellExecutor.run("\(aerospacePath) workspace \(name)")
-            refresh()
+            await MainActor.run {
+                guard generation == self.refreshGeneration else { return }
+                self.refresh()
+            }
         } catch {
             await MainActor.run {
+                guard generation == self.refreshGeneration else { return }
                 self.lastError = error
             }
         }
@@ -169,11 +211,16 @@ class AerospaceService: ObservableObject {
 
     /// Focus a specific window
     func focusWindow(_ id: Int) async {
+        let generation = refreshGeneration
         do {
             try await ShellExecutor.run("\(aerospacePath) focus --window-id \(id)")
-            refresh()
+            await MainActor.run {
+                guard generation == self.refreshGeneration else { return }
+                self.refresh()
+            }
         } catch {
             await MainActor.run {
+                guard generation == self.refreshGeneration else { return }
                 self.lastError = error
             }
         }

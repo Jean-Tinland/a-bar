@@ -8,7 +8,7 @@ import Combine
 /// invalidates the old result before the latest input is queued; a failed refresh keeps the
 /// last successful value. Sources without a setting to load from pass an empty input.
 @MainActor
-final class PollingModel<Value>: ObservableObject {
+final class PollingModel<Value: Equatable>: ObservableObject {
     @Published private(set) var value: Value?
     @Published private(set) var errorMessage: String?
     @Published private(set) var lastSuccess: Date?
@@ -96,7 +96,7 @@ final class PollingModel<Value>: ObservableObject {
         if isActive && version == generation {
             switch result {
             case .success(let value):
-                self.value = value
+                if self.value != value { self.value = value }
                 errorMessage = nil
                 lastSuccess = Date()
             case .failure(let error):

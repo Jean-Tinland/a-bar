@@ -1,88 +1,17 @@
+import AppKit
 import SwiftUI
 
 /// Network statistics widget with graph
 struct NetstatsWidget: View {
-  @EnvironmentObject var settings: SettingsManager
   @EnvironmentObject var systemInfo: SystemInfoService
 
-  private var netstatsSettings: NetstatsWidgetSettings {
-    settings.settings.widgets.netstats
-  }
-
-  private var theme: ABarTheme {
-    ThemeManager.currentTheme(for: settings.settings.theme)
-  }
-
-  private var globalSettings: GlobalSettings {
-    settings.settings.global
-  }
-
   var body: some View {
-    let downloadColor = netstatsSettings.downloadColor.color(from: theme)
-    let uploadColor = netstatsSettings.uploadColor.color(from: theme)
-    
-    BaseWidgetView(noPadding: true, onClick: openNetworkUtility) {
-      ZStack {
-        // Center graph
-        GeometryReader { geometry in
-          ZStack {
-            // Download graph (magenta)
-            GraphView(
-              values: systemInfo.downloadHistory.values,
-              maxValue: max(1, systemInfo.downloadHistory.values.max() ?? 1) * 1.2,
-              fillColor: downloadColor,
-              lineColor: downloadColor,
-              showLabels: false
-            )
-            // Upload graph (blue, overlayed)
-            GraphView(
-              values: systemInfo.uploadHistory.values,
-              maxValue: max(1, systemInfo.uploadHistory.values.max() ?? 1) * 1.2,
-              fillColor: uploadColor,
-              lineColor: uploadColor,
-              showLabels: false
-            )
-          }
-          .frame(width: geometry.size.width, height: geometry.size.height)
-          .cornerRadius(globalSettings.barElementsCornerRadius)
-          .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipped()
-        .padding(.horizontal, 0)
-        .frame(width: 140)
-
-        // Download icon and speed (left)
-        HStack {
-          Image(systemName: "arrow.down")
-            .font(.system(size: 10))
-            .foregroundColor(downloadColor)
-            .padding(.leading, 6)
-            .padding(.top, -6)
-          Text(Double(systemInfo.networkStats.download).formattedTransferRate())
-            .font(globalSettings.settingsFont(scaledBy: 0.8))
-            .foregroundColor(theme.foreground)
-            .padding(.top, -6)
-            .padding(.leading, -4)
-          Spacer()
-        }
-
-        // Upload icon and speed (right)
-        HStack {
-          Spacer()
-          Text(Double(systemInfo.networkStats.upload).formattedTransferRate())
-            .font(globalSettings.settingsFont(scaledBy: 0.8))
-            .foregroundColor(theme.foreground)
-            .padding(.top, -6)
-            .padding(.trailing, -4)
-          Image(systemName: "arrow.up")
-            .font(.system(size: 10))
-            .foregroundColor(uploadColor)
-            .padding(.trailing, 6)
-            .padding(.top, -6)
-        }
-      }
-    }
+    NetstatsPanel(
+      downloadHistory: systemInfo.downloadHistory.values,
+      uploadHistory: systemInfo.uploadHistory.values,
+      download: Double(systemInfo.networkStats.download),
+      upload: Double(systemInfo.networkStats.upload),
+      onClick: openNetworkUtility)
   }
 
   private func openNetworkUtility() {
@@ -90,6 +19,88 @@ struct NetstatsWidget: View {
       _ = try? await ShellExecutor.run(
         "open /System/Library/CoreServices/Applications/Network\\ Utility.app 2>/dev/null || open -a 'Activity Monitor'"
       )
+    }
+  }
+}
+
+/// Keep the ordinary font sizes; only shrink a row that cannot fit the bar's inner height.
+struct NetstatsLayout {
+  let height: CGFloat
+  let contentScale: CGFloat
+
+  init(global: GlobalSettings) {
+    height = max(0, global.barHeight - 2 * global.barVerticalPadding)
+    let textSize = global.fontSize * 0.8
+    let textFont = NSFont(name: global.fontName, size: textSize) ?? .systemFont(ofSize: textSize)
+    let layoutManager = NSLayoutManager()
+    let rowHeight = max(layoutManager.defaultLineHeight(for: textFont),
+                        layoutManager.defaultLineHeight(for: .systemFont(ofSize: 10)))
+    contentScale = min(1, height / rowHeight)
+  }
+}
+
+/// The panel can render cached samples without starting the system information service.
+struct NetstatsPanel: View {
+  let downloadHistory: [Double]
+  let uploadHistory: [Double]
+  let download: Double
+  let upload: Double
+  var onClick: (() -> Void)? = nil
+
+  @EnvironmentObject var settings: SettingsManager
+
+  var body: some View {
+    let global = settings.settings.global
+    let netstats = settings.settings.widgets.netstats
+    let theme = ThemeManager.currentTheme(for: settings.settings.theme)
+    let downloadColor = netstats.downloadColor.color(from: theme)
+    let uploadColor = netstats.uploadColor.color(from: theme)
+    let layout = NetstatsLayout(global: global)
+
+    if layout.height > 0 {
+      BaseWidgetView(noPadding: true, onClick: onClick) {
+        ZStack {
+          ZStack {
+            GraphView(
+              values: downloadHistory,
+              maxValue: max(1, downloadHistory.max() ?? 1) * 1.2,
+              fillColor: downloadColor,
+              lineColor: downloadColor,
+              showLabels: false)
+            GraphView(
+              values: uploadHistory,
+              maxValue: max(1, uploadHistory.max() ?? 1) * 1.2,
+              fillColor: uploadColor,
+              lineColor: uploadColor,
+              showLabels: false)
+          }
+          .frame(width: 140, height: layout.height)
+          .cornerRadius(global.barElementsCornerRadius)
+
+          HStack(spacing: 4) {
+            Image(systemName: "arrow.down")
+              .font(.system(size: 10 * layout.contentScale))
+              .foregroundColor(downloadColor)
+            Text(download.formattedTransferRate())
+              .font(global.settingsFont(scaledBy: 0.8 * Double(layout.contentScale)))
+              .foregroundColor(theme.foreground)
+            Spacer(minLength: 0)
+            Text(upload.formattedTransferRate())
+              .font(global.settingsFont(scaledBy: 0.8 * Double(layout.contentScale)))
+              .foregroundColor(theme.foreground)
+            Image(systemName: "arrow.up")
+              .font(.system(size: 10 * layout.contentScale))
+              .foregroundColor(uploadColor)
+          }
+          .padding(.horizontal, 6)
+          .frame(width: 140, height: layout.height)
+        }
+        .frame(width: 140, height: layout.height)
+      }
+      .frame(width: 140, height: layout.height)
+      .clipped()
+    } else {
+      Color.clear.frame(width: 140, height: 0)
     }
   }
 }

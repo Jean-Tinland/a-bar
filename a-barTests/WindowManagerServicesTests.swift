@@ -1,8 +1,33 @@
 import XCTest
 
-/// Exactly one window-manager service polls at a time, it is started once, and it is stopped
-/// when - and only when - the user switches away from it.
+/// Visible consumers start only the selected manager; hiding the last one stops its service.
 final class WindowManagerServicesTests: XCTestCase {
+
+  func testOnlyVisibleWidgetsForTheSelectedManagerRequireAService() {
+    for widget: WidgetIdentifier in [.spaces, .process] {
+      XCTAssertEqual(WindowManagerServices.requiredService(for: .yabai, widgets: [widget]), .yabai)
+      XCTAssertNil(WindowManagerServices.requiredService(for: .aerospace, widgets: [widget]))
+    }
+    for widget: WidgetIdentifier in [.aerospaceSpaces, .aerospaceProcess] {
+      XCTAssertEqual(WindowManagerServices.requiredService(for: .aerospace, widgets: [widget]), .aerospace)
+      XCTAssertNil(WindowManagerServices.requiredService(for: .yabai, widgets: [widget]))
+    }
+    for manager in WindowManager.allCases {
+      XCTAssertNil(WindowManagerServices.requiredService(for: manager, widgets: []))
+      XCTAssertNil(WindowManagerServices.requiredService(for: manager, widgets: [.cpu, .time]))
+    }
+  }
+
+  func testHidingTheLastConsumerStopsWithoutStartingAnotherManager() {
+    for manager in WindowManager.allCases {
+      XCTAssertEqual(
+        WindowManagerServices.transition(to: nil, from: manager),
+        .init(start: nil, stop: manager))
+    }
+    XCTAssertNil(WindowManagerServices.transition(to: nil, from: nil))
+    XCTAssertNil(WindowManagerServices.transition(
+      to: nil, from: nil, executablePath: "/new/tool", runningExecutablePath: "/old/tool"))
+  }
 
   // MARK: - Starting up
 
@@ -92,7 +117,7 @@ final class WindowManagerServicesTests: XCTestCase {
         continue
       }
       if let stop = transition.stop { stopped.append(stop) }
-      started.append(transition.start)
+      if let start = transition.start { started.append(start) }
       running = transition.start
     }
 

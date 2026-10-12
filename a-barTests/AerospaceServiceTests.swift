@@ -35,6 +35,10 @@ final class AerospaceServiceTests: XCTestCase {
           *)                        name=action ;;
         esac
         [ -f "$root/$name.json" ] || exit 1
+        if [ "$name" = monitors ] && [ -f "$root/block" ]; then
+          touch "$root/entered"
+          while [ -f "$root/block" ]; do sleep 0.01; done
+        fi
         cat "$root/$name.json"
         """.write(to: executable, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes(
@@ -64,6 +68,7 @@ final class AerospaceServiceTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
+        service.stop()
         observations.removeAll()
         manager.flush()
         service = nil
@@ -114,7 +119,59 @@ final class AerospaceServiceTests: XCTestCase {
         _ description: String = "refresh",
         where predicate: @escaping (AerospaceState) -> Bool = { !$0.workspaces.isEmpty }
     ) -> AerospaceState? {
-        awaitState(description, where: predicate) { service.refresh() }
+        awaitState(description, where: predicate) {
+            service.start()
+            service.refresh()
+        }
+    }
+
+    // MARK: - Lifecycle
+
+    func testStoppingCancelsAQueuedReadAndManualRefreshCannotRestartIt() {
+        service.refresh()
+        service.start()
+        service.stop()
+        service.refresh()
+        let settled = expectation(description: "queued work has had a turn")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { settled.fulfill() }
+        wait(for: [settled], timeout: 1)
+
+        XCTAssertTrue(calls.isEmpty)
+        XCTAssertTrue(service.state.workspaces.isEmpty)
+        XCTAssertFalse(service.isConnected)
+    }
+
+    func testStoppingDuringAReadDiscardsItsResultAndRemainingQueries() throws {
+        try write("block", "")
+        defer { try? remove("block") }
+        let entered = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in
+                FileManager.default.fileExists(atPath: self.directory.appendingPathComponent("entered").path)
+            }, object: nil)
+        let publication = expectation(description: "stopped read must not publish")
+        publication.isInverted = true
+        service.$state.dropFirst().sink { _ in publication.fulfill() }.store(in: &observations)
+
+        service.start()
+        wait(for: [entered], timeout: 3)
+        service.stop()
+        try remove("block")
+        wait(for: [publication], timeout: 0.3)
+
+        XCTAssertEqual(calls.count, 1, "stop must cancel the remaining three queries")
+        XCTAssertTrue(service.state.workspaces.isEmpty)
+        XCTAssertFalse(service.isConnected)
+    }
+
+    func testRepeatedStartDoesNotReadAgain() {
+        _ = awaitRefresh()
+        let count = calls.count
+        service.start()
+        service.start()
+        let settled = expectation(description: "repeated starts have had a turn")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { settled.fulfill() }
+        wait(for: [settled], timeout: 1)
+        XCTAssertEqual(calls.count, count)
     }
 
     // MARK: - A whole snapshot
@@ -172,6 +229,7 @@ final class AerospaceServiceTests: XCTestCase {
             .sink { _ in expectation.fulfill() }
             .store(in: &observations)
 
+        service.start()
         service.refresh()
         wait(for: [expectation], timeout: 5)
 
@@ -190,6 +248,7 @@ final class AerospaceServiceTests: XCTestCase {
             .sink { _ in expectation.fulfill() }
             .store(in: &observations)
 
+        service.start()
         service.refresh()
         wait(for: [expectation], timeout: 5)
 
@@ -201,6 +260,7 @@ final class AerospaceServiceTests: XCTestCase {
         let failure = expectation(description: "first pass fails")
         service.$lastError.dropFirst().compactMap { $0 }.first()
             .sink { _ in failure.fulfill() }.store(in: &observations)
+        service.start()
         service.refresh()
         wait(for: [failure], timeout: 5)
 

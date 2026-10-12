@@ -45,11 +45,13 @@ enum BarWindowPlan {
       let networkDevice: String
     }
 
+    let systemWidgets: Set<WidgetIdentifier>
     let systemIntervals: [WidgetIdentifier: TimeInterval]
     let bluetooth: Bluetooth?
     let wifi: Wifi?
 
     init(widgets: Set<WidgetIdentifier>, settings: WidgetSettings) {
+      systemWidgets = Set(widgets.filter { !WidgetRefreshSchedule.readings(for: $0).isEmpty })
       systemIntervals = Dictionary(uniqueKeysWithValues:
         WidgetRefreshSchedule.timers(for: widgets, in: settings).map { ($0.widget, $0.interval) })
       bluetooth = widgets.contains(.bluetooth) ? Bluetooth(

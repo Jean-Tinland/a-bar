@@ -5,6 +5,94 @@ import XCTest
 
 final class NetworkWidgetViewTests: XCTestCase {
     @MainActor
+    func testNetstatsFontsShrinkOnlyWhenTheirMeasuredRowCannotFit() {
+        var global = GlobalSettings()
+        XCTAssertEqual(NetstatsLayout(global: global).height, 26)
+        XCTAssertEqual(NetstatsLayout(global: global).contentScale, 1)
+        global.barHeight = 24
+        XCTAssertEqual(NetstatsLayout(global: global).contentScale, 1,
+                       "a normal height must preserve the configured speed and arrow fonts")
+
+        global.fontName = "Menlo"
+        global.fontSize = 40
+        let custom = NetstatsLayout(global: global)
+        XCTAssertLessThan(custom.contentScale, 1)
+        let font = NSFont(name: "Menlo", size: global.fontSize * 0.8)!
+        XCTAssertLessThanOrEqual(NSLayoutManager().defaultLineHeight(for: font) * custom.contentScale,
+                                 custom.height)
+        global.barHeight = 6
+        XCTAssertEqual(NetstatsLayout(global: global).height, 0)
+        XCTAssertEqual(NetstatsLayout(global: global).contentScale, 0)
+    }
+
+    @MainActor
+    func testNetstatsPanelBoundsIncludeBackgroundGraphsAndSmallHeightText() throws {
+        _ = NSApplication.shared
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let config = directory.appendingPathComponent("settings.json")
+        var initial = ABarSettings()
+        initial.theme.appearance = .dark
+        initial.theme.colorOverrides.minor = "#808080"
+        initial.global.barVerticalPadding = 4
+        try SettingsCodec.encode(initial).write(to: config)
+        let settings = SettingsManager(store: SettingsStore(fileURL: config))
+        defer { settings.flush() }
+
+        for (barHeight, padding, fontSize, fontName) in [(34.0, 4.0, 11.0, ""), (24, 4, 11, ""),
+                                                        (24, 4, 40, "Menlo"), (12, 4, 11, ""),
+                                                        (10, 5, 11, ""), (10, 6, 11, "")] {
+            settings.update {
+                $0.global.barHeight = barHeight
+                $0.global.barVerticalPadding = padding
+                $0.global.fontSize = fontSize
+                $0.global.fontName = fontName
+            }
+            let height = NetstatsLayout(global: settings.settings.global).height
+            let panel = NetstatsPanel(downloadHistory: [0, 20, 10], uploadHistory: [4, 2, 8],
+                                      download: 20, upload: 8).environmentObject(settings)
+            let fitted = NSHostingView(rootView: panel.fixedSize())
+            fitted.layoutSubtreeIfNeeded()
+            XCTAssertEqual(fitted.fittingSize.width, 140, accuracy: 0.5)
+            XCTAssertEqual(fitted.fittingSize.height, height, accuracy: 0.5)
+
+            let host = NSHostingView(rootView: ZStack {
+                Color.black
+                panel
+            }.frame(width: 160, height: 80))
+            let window = NSWindow(contentRect: NSRect(x: -10000, y: -10000, width: 160, height: 80),
+                                  styleMask: .borderless, backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false
+            window.contentView = host
+            defer { window.contentView = nil; window.close() }
+            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+            host.layoutSubtreeIfNeeded()
+            let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: bitmap)
+            let scale = CGFloat(bitmap.pixelsHigh) / host.bounds.height
+            var escapedPixels = 0
+            var paintedPixels = 0
+            for y in 0..<bitmap.pixelsHigh {
+                let distanceFromCenter = abs((CGFloat(y) + 0.5) / scale - 40)
+                for x in 0..<bitmap.pixelsWide {
+                    let color = try XCTUnwrap(bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB))
+                    if max(color.redComponent, color.greenComponent, color.blueComponent) > 0.03 {
+                        paintedPixels += 1
+                        if height == 0 || distanceFromCenter > height / 2 + 1 {
+                            escapedPixels += 1
+                        }
+                    }
+                }
+            }
+            XCTAssertEqual(escapedPixels, 0, "all drawing must stay within the inner height \(height)")
+            if height > 0 {
+                XCTAssertGreaterThan(paintedPixels, 0, "the bounded panel must still draw")
+            }
+        }
+    }
+
+    @MainActor
     func testGitHubKeepsCachedContentDuringRefreshAndShowsFailureEvenForHiddenZero() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
