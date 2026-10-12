@@ -260,6 +260,12 @@ struct DateTimeSettingsView: View, ABarSettingsBindable {
           Toggle("Show seconds", isOn: binding(\.widgets.time.showSeconds))
           Toggle("Show day progress", isOn: binding(\.widgets.time.showDayProgress))
 
+          Picker("Open Clock on click", selection: binding(\.widgets.time.clockDestination)) {
+            ForEach(TimeWidgetSettings.ClockDestination.allCases, id: \.rawValue) { destination in
+              Text(destination.rawValue.capitalized).tag(destination)
+            }
+          }
+
           ThemeColorPicker(
             label: "Background color",
             selectedColor: Binding(

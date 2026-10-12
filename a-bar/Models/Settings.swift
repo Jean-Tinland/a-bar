@@ -377,6 +377,16 @@ struct TimeWidgetSettings: Codable, Equatable {
   var showDayProgress: Bool = false
   var backgroundColor: ThemeColor = .yellow
   var showIcon: Bool = true
+  var clockDestination: ClockDestination = .timers
+
+  enum ClockDestination: String, Codable, CaseIterable {
+    case timers
+    case alarms
+
+    var url: URL {
+      URL(string: self == .timers ? "clock-timer:default" : "clock-alarm:default")!
+    }
+  }
 }
 
 struct DateWidgetSettings: Codable, Equatable {

@@ -29,7 +29,8 @@ struct TimeWidget: View {
     BaseWidgetView(
       backgroundColor: globalSettings.noColorInDataWidgets
         ? theme.minor.opacity(0.95) : bgColor.opacity(0.95),
-      noPadding: true
+      noPadding: true,
+      onClick: openClock
     ) {
       ZStack {
         if timeSettings.showDayProgress {
@@ -47,6 +48,11 @@ struct TimeWidget: View {
       }
       .clipped()
     }
+    .help("Open Clock: \(timeSettings.clockDestination.rawValue.capitalized)")
+    .accessibilityElement(children: .combine)
+    .accessibilityAddTraits(.isButton)
+    .accessibilityHint("Open Clock: \(timeSettings.clockDestination.rawValue.capitalized)")
+    .accessibilityAction { openClock() }
     .onAppear {
       startTimer()
     }
@@ -71,6 +77,19 @@ struct TimeWidget: View {
   private var formattedTime: String {
     WidgetLabels.time(
       currentTime, hour12: timeSettings.hour12, showSeconds: timeSettings.showSeconds)
+  }
+
+  private func openClock() {
+    // Clock's section URLs are not registered with Launch Services; deliver them to Clock directly.
+    NSWorkspace.shared.open(
+      [timeSettings.clockDestination.url],
+      withApplicationAt: URL(fileURLWithPath: "/System/Applications/Clock.app"),
+      configuration: NSWorkspace.OpenConfiguration()
+    ) { _, error in
+      if let error {
+        DispatchQueue.main.async { NSApp.presentError(error) }
+      }
+    }
   }
 
   private func startTimer() {

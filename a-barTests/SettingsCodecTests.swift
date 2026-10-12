@@ -70,6 +70,44 @@ final class SettingsCodecTests: XCTestCase {
 
   // MARK: - Fields added after a config was written
 
+  func testOlderTimeSettingsDefaultToTimersWithoutLosingPreferences() {
+    var config = SettingsFixtures.json(SettingsFixtures.settings())
+    SettingsFixtures.set(true, at: "widgets.time.showSeconds", in: &config)
+    SettingsFixtures.set(5, at: "widgets.time.refreshInterval", in: &config)
+    SettingsFixtures.set(nil, at: "widgets.time.clockDestination", in: &config)
+
+    let (settings, repairs) = decodeSettings(config)
+
+    XCTAssertEqual(settings.widgets.time.clockDestination, .timers)
+    XCTAssertTrue(settings.widgets.time.showSeconds)
+    XCTAssertEqual(settings.widgets.time.refreshInterval, 5)
+    XCTAssertEqual(settings.schemaVersion, 1)
+    XCTAssertTrue(repairs.isEmpty)
+  }
+
+  func testClockDestinationsRoundTripAndSelectTheExpectedSection() {
+    for (destination, url) in [
+      (TimeWidgetSettings.ClockDestination.timers, "clock-timer:default"),
+      (.alarms, "clock-alarm:default"),
+    ] {
+      var saved = SettingsFixtures.settings()
+      saved.widgets.time.clockDestination = destination
+      saved.widgets.time.hour12 = true
+      let (settings, repairs) = decodeSettings(SettingsFixtures.json(saved))
+      XCTAssertEqual(settings.widgets.time, saved.widgets.time)
+      XCTAssertEqual(settings.widgets.time.clockDestination.url.absoluteString, url)
+      XCTAssertTrue(repairs.isEmpty)
+    }
+
+    var config = SettingsFixtures.json(SettingsFixtures.settings())
+    SettingsFixtures.set(true, at: "widgets.time.hour12", in: &config)
+    SettingsFixtures.set("unknown", at: "widgets.time.clockDestination", in: &config)
+    let (settings, repairs) = decodeSettings(config)
+    XCTAssertEqual(settings.widgets.time.clockDestination, .timers)
+    XCTAssertTrue(settings.widgets.time.hour12)
+    XCTAssertEqual(repairs.map { $0.path }, ["widgets.time.clockDestination"])
+  }
+
   func testMissingWidgetFieldKeepsItsSiblings() {
     // Adding one field to a widget's settings used to silently reset that widget's whole
     // block, because a synthesized decoder treats a missing key as an error.

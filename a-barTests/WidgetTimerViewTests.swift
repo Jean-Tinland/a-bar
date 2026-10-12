@@ -11,7 +11,57 @@ import AppKit
 import SwiftUI
 import XCTest
 
+private final class WidgetClickTestPanel: NSPanel {
+  override var canBecomeKey: Bool { true }
+  override var canBecomeMain: Bool { false }
+}
+
 final class WidgetTimerViewTests: XCTestCase {
+  @MainActor
+  func testBaseWidgetHandlesMouseClicksOnContentAndPadding() throws {
+    _ = NSApplication.shared
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let settings = SettingsManager(store: SettingsStore(fileURL: directory.appendingPathComponent("settings.json")))
+    for noPadding in [false, true] {
+      var clicks = 0
+      let host = NSHostingView(rootView:
+        BaseWidgetView(width: 100, noPadding: noPadding, onClick: { clicks += 1 }) {
+          Text("12:34").padding(.horizontal, 6).padding(.vertical, 4)
+        }
+        .environmentObject(settings)
+        .frame(width: 100, height: 26))
+      // Match the real bar's nonactivating panel; send events only to this offscreen test window.
+      let window = WidgetClickTestPanel(
+        contentRect: NSRect(x: -10000, y: -10000, width: 100, height: 26),
+        styleMask: [.borderless, .nonactivatingPanel, .hudWindow], backing: .buffered, defer: false)
+      window.isReleasedWhenClosed = false
+      window.isMovableByWindowBackground = false
+      window.becomesKeyOnlyIfNeeded = true
+      window.contentView = host
+      defer {
+        window.contentView = nil
+        window.close()
+      }
+      window.orderFront(nil)
+      host.layoutSubtreeIfNeeded()
+      RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
+      for (index, point) in [NSPoint(x: 50, y: 13), NSPoint(x: 2, y: 13)].enumerated() {
+        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+          let event = try XCTUnwrap(NSEvent.mouseEvent(
+            with: type, location: point, modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
+            context: nil, eventNumber: index + 1, clickCount: 1, pressure: type == .leftMouseDown ? 1 : 0))
+          window.sendEvent(event)
+          RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+        }
+        XCTAssertEqual(clicks, index + 1, "a mouse click must fire once, including padded background; noPadding=\(noPadding)")
+      }
+    }
+    settings.flush()
+  }
+
   func testClockUpdatesOnlyWhenItsVisiblePrecisionRequiresIt() throws {
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 0))
