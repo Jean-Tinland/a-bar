@@ -155,6 +155,10 @@ final class WidgetPopoverManager: NSObject, ObservableObject {
       }
 
       guard self.layoutPanel() else { return }
+      // The bar may have been raised above the hidden menu bar since the panel was made.
+      if let barLevel = self.anchorView?.window?.level.rawValue {
+        panel.level = NSWindow.Level(BarWindowLevel.popoverLevel(above: barLevel))
+      }
       panel.orderFrontRegardless()
 
       self.cancelClose()

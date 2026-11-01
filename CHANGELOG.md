@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.6.2 - 2026-11-01
+
+- feat: macOS 27.2 support, implement menu bar visibility monitoring and adjust bar window levels accordingly
+
 ## v1.6.1 - 2026-10-04
 
 - fix: harden settings editing, network refreshes and widget lifecycles

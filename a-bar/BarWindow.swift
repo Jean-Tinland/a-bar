@@ -3,9 +3,9 @@ import SwiftUI
 
 /// Custom window that displays the bar on a screen
 class BarWindow: NSPanel {
-  private let barScreen: NSScreen
+  let barScreen: NSScreen
   private let displayIndex: Int
-  private let barPosition: BarPosition
+  let barPosition: BarPosition
   private let networkModels: NetworkWidgetModels
   private var hostingView: NSHostingView<AnyView>?
 
@@ -41,7 +41,7 @@ class BarWindow: NSPanel {
   }
 
   private func setupWindow() {
-    self.level = .modalPanel - 9
+    self.level = NSWindow.Level(BarWindowLevel.base)
     self.collectionBehavior = [.canJoinAllSpaces, .ignoresCycle, .fullScreenNone, .stationary]
     self.isOpaque = false
     self.backgroundColor = .clear
@@ -83,6 +83,14 @@ class BarWindow: NSPanel {
     // Force a layout pass so the hosting view picks up any frame changes
     // (e.g., after a screen reconfiguration).
     hostingView?.needsLayout = true
+  }
+
+  /// Move the bar to another window-server layer without rebuilding it. Called on every menu bar
+  /// reveal and hide, so an unchanged level is a no-op.
+  func applyLevel(_ rawLevel: Int) {
+    guard level.rawValue != rawLevel else { return }
+    level = NSWindow.Level(rawLevel)
+    orderFrontRegardless()
   }
 
   func refreshWidget(_ identifier: WidgetIdentifier) {

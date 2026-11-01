@@ -43,6 +43,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   /// Layout manager for widget arrangement
   let layoutManager = LayoutManager.shared
 
+  /// Tells top bars when to rise above macOS 27's hidden menu bar
+  let menuBarMonitor = MenuBarVisibilityMonitor.shared
+
   /// User widget manager
   let userWidgetManager = UserWidgetManager.shared
 
@@ -73,6 +76,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Setup screen change observer
     setupScreenObserver()
+
+    // Keep top bars clickable under the menu bar
+    menuBarMonitor.onChange = { [weak self] in self?.applyBarLevels() }
+    menuBarMonitor.start()
 
     // Subscribe to settings changes
     subscribeToSettingsChanges()
@@ -109,6 +116,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Writes are debounced, so make sure the last change reaches disk
     settingsManager.flush()
 
+    menuBarMonitor.stop()
     barWindows.values.forEach { $0.close() }
     yabaiService.stop()
     aerospaceService.stop()
@@ -240,6 +248,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       )
       barWindows[key] = barWindow
       barWindow.makeKeyAndOrderFront(nil)
+    }
+    applyBarLevels()
+  }
+
+  /// Put each bar on the layer `BarWindowLevel` picks for it. Runs on every menu bar reveal and
+  /// hide, so it changes levels on the existing windows and never rebuilds them.
+  private func applyBarLevels() {
+    guard !barWindows.isEmpty else { return }
+    let agentLayer = menuBarMonitor.agentLayer()
+    for window in barWindows.values {
+      let state = menuBarMonitor.state(for: window.barScreen)
+      window.applyLevel(BarWindowLevel.level(
+        position: window.barPosition,
+        menuBarAutohides: state.menuBarAutohides,
+        menuBarVisible: state.menuBarVisible,
+        isFullscreenSpace: state.isFullscreenSpace,
+        agentLayer: agentLayer))
     }
   }
   

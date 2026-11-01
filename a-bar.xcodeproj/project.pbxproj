@@ -112,6 +112,10 @@
 		A1000131 /* WindowFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000131 /* WindowFilter.swift */; };
 		A1000132 /* LaunchAtLoginReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000132 /* LaunchAtLoginReconciler.swift */; };
 		A1000133 /* BarWindowPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000133 /* BarWindowPlan.swift */; };
+		A1000500 /* BarWindowLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000500 /* BarWindowLevel.swift */; };
+		A1000501 /* MenuBarVisibilityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000501 /* MenuBarVisibilityMonitor.swift */; };
+		A1000502 /* BarWindowLevel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000500 /* BarWindowLevel.swift */; };
+		A1000503 /* BarWindowLevelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000502 /* BarWindowLevelTests.swift */; };
 		A1000134 /* WindowManagerServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000134 /* WindowManagerServices.swift */; };
 		A1000225 /* ThemeColorRole.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000114 /* ThemeColorRole.swift */; };
 		A1000226 /* WidgetPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000115 /* WidgetPalette.swift */; };
@@ -320,6 +324,9 @@
 		B1000131 /* WindowFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WindowFilter.swift"; sourceTree = "<group>"; };
 		B1000132 /* LaunchAtLoginReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LaunchAtLoginReconciler.swift"; sourceTree = "<group>"; };
 		B1000133 /* BarWindowPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BarWindowPlan.swift"; sourceTree = "<group>"; };
+		B1000500 /* BarWindowLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarWindowLevel.swift; sourceTree = "<group>"; };
+		B1000501 /* MenuBarVisibilityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarVisibilityMonitor.swift; sourceTree = "<group>"; };
+		B1000502 /* BarWindowLevelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarWindowLevelTests.swift; sourceTree = "<group>"; };
 		B1000134 /* WindowManagerServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WindowManagerServices.swift"; sourceTree = "<group>"; };
 		B1000312 /* WidgetPaletteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WidgetPaletteTests.swift"; sourceTree = "<group>"; };
 		B1000313 /* VolumeLevelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VolumeLevelTests.swift"; sourceTree = "<group>"; };
@@ -468,6 +475,7 @@
 				C2000002 /* AerospaceService.swift */,
 				B1000022 /* SystemInfoService.swift */,
 				B1000023 /* BluetoothService.swift */,
+				B1000501 /* MenuBarVisibilityMonitor.swift */,
 				B1000024 /* WifiService.swift */,
 				B1000084 /* RefreshWidgetCommand.swift */,
 			B1000085 /* XBarParser.swift */,
@@ -622,6 +630,7 @@
 				B1000131 /* WindowFilter.swift */,
 				B1000132 /* LaunchAtLoginReconciler.swift */,
 				B1000133 /* BarWindowPlan.swift */,
+				B1000500 /* BarWindowLevel.swift */,
 				B1000134 /* WindowManagerServices.swift */,
 			);
 			path = Logic;
@@ -695,6 +704,7 @@
 				B1000328 /* WindowFilterTests.swift */,
 				B1000329 /* LaunchAtLoginReconcilerTests.swift */,
 				B1000330 /* BarWindowPlanTests.swift */,
+				B1000502 /* BarWindowLevelTests.swift */,
 				B1000331 /* WindowManagerServicesTests.swift */,
 			);
 			path = "a-barTests";
@@ -882,6 +892,8 @@
 				A1000131 /* WindowFilter.swift in Sources */,
 				A1000132 /* LaunchAtLoginReconciler.swift in Sources */,
 				A1000133 /* BarWindowPlan.swift in Sources */,
+				A1000500 /* BarWindowLevel.swift in Sources */,
+				A1000501 /* MenuBarVisibilityMonitor.swift in Sources */,
 				A1000134 /* WindowManagerServices.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1006,9 +1018,11 @@
 				A1000328 /* WindowFilterTests.swift in Sources */,
 				A1000245 /* LaunchAtLoginReconciler.swift in Sources */,
 				A1000246 /* BarWindowPlan.swift in Sources */,
+				A1000502 /* BarWindowLevel.swift in Sources */,
 				A1000247 /* WindowManagerServices.swift in Sources */,
 				A1000329 /* LaunchAtLoginReconcilerTests.swift in Sources */,
 				A1000330 /* BarWindowPlanTests.swift in Sources */,
+				A1000503 /* BarWindowLevelTests.swift in Sources */,
 				A1000331 /* WindowManagerServicesTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1160,7 +1174,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.6.1;
+				MARKETING_VERSION = 1.6.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.jeantinland.a-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -1190,7 +1204,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.6.1;
+				MARKETING_VERSION = 1.6.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.jeantinland.a-bar";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
