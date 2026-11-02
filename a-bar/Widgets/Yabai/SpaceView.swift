@@ -1,17 +1,24 @@
 import SwiftUI
 
 /// View for a single yabai space
-struct SpaceView: View {
+struct SpaceView: View, Equatable {
     let space: YabaiSpace
     let displayIndex: Int
     
     @EnvironmentObject var settings: SettingsManager
-    @EnvironmentObject var yabaiService: YabaiService
+    let yabaiService: YabaiService
+    let windows: [YabaiWindowPresentation]
     
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.space.id == rhs.space.id && lhs.space.index == rhs.space.index &&
+        lhs.space.display == rhs.space.display && lhs.space.displayLabel == rhs.space.displayLabel &&
+        lhs.space.hasFocus == rhs.space.hasFocus && lhs.space.isVisible == rhs.space.isVisible &&
+        lhs.windows == rhs.windows && lhs.yabaiService === rhs.yabaiService
+    }
+
     @State private var isHovered = false
     @State private var isEditing = false
     @State private var editedLabel: String = ""
-    @State private var isPressed = false
     
     private var spacesSettings: SpacesWidgetSettings {
         settings.settings.widgets.spaces
@@ -52,7 +59,7 @@ struct SpaceView: View {
                   .truncationMode(.tail)
           }
               // Opened apps icons
-          OpenedAppsView(space: space, displayIndex: displayIndex)
+          OpenedAppsView(windows: windows, service: yabaiService).equatable()
       }
       .padding(.horizontal, 8)
       .padding(.vertical, 4)
@@ -71,11 +78,7 @@ struct SpaceView: View {
         }
       )
       .clipShape(RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius))
-      .scaleEffect(isPressed ? 0.94 : 1.0)
-      .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isPressed)
-      .onLongPressGesture(minimumDuration: .infinity, pressing: { pressing in
-          isPressed = pressing
-      }) {}
+      .contentShape(Rectangle())
       .onTapGesture {
           goToSpace()
       }

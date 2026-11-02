@@ -71,6 +71,16 @@ struct GeneralSettingsView: View, ABarSettingsBindable {
             Text("Default: /opt/homebrew/bin/yabai")
               .font(.caption)
               .foregroundColor(.secondary)
+            if settings.settings.global.windowManager == .yabai {
+              Text("Allow Accessibility access to keep window positions and titles up to date.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+              Button("Enable window tracking…") {
+                YabaiService.shared.requestWindowObservationAccess()
+              }
+              .buttonStyle(.link)
+              .font(.caption)
+            }
           }
 
           // AeroSpace Path

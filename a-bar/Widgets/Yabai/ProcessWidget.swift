@@ -1,16 +1,38 @@
 import SwiftUI
 
-/// Widget showing the currently focused application and window
+/// Compute ordering from raw geometry before comparing the values the widget renders.
 struct ProcessWidget: View {
     @EnvironmentObject var settings: SettingsManager
     @EnvironmentObject var yabaiService: YabaiService
-    
+
+    var body: some View {
+        let state = yabaiService.state
+        let windows: [YabaiWindow] = {
+            guard settings.settings.widgets.process.showCurrentSpaceOnly else { return state.windows }
+            guard let space = state.focusedSpace else { return [] }
+            return state.windows.filter {
+                $0.space == space.index || ($0.isSticky && $0.id == state.focusedWindow?.id)
+            }
+        }()
+        let ordered = WindowFilter.orderedByStackThenPosition(windows, stackIndex: \.stackIndex, x: \.frame.x)
+        ProcessContent(windows: ordered.map(YabaiWindowPresentation.init),
+                       layout: state.focusedSpace?.type, service: yabaiService)
+            .equatable()
+    }
+}
+
+private struct ProcessContent: View, Equatable {
+    let windows: [YabaiWindowPresentation]
+    let layout: YabaiSpace.SpaceType?
+    let service: YabaiService
+    @EnvironmentObject var settings: SettingsManager
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.windows == rhs.windows && lhs.layout == rhs.layout && lhs.service === rhs.service
+    }
+
     @State private var focusedWindowPressed = false
     @State private var unfocusedWindowPressed: Set<Int> = []
-    
-    private var processSettings: ProcessWidgetSettings {
-        settings.settings.widgets.process
-    }
     
     private var theme: ABarTheme {
         ThemeManager.currentTheme(for: settings.settings.theme)
@@ -18,63 +40,20 @@ struct ProcessWidget: View {
     
     var body: some View {
         let globalSettings = settings.settings.global
+        // 显式捕获配置值，让窗口数据不变时列表也能响应设置更新。
+        let processSettings = settings.settings.widgets.process
         let userFont: Font = globalSettings.fontName.isEmpty ? .system(size: CGFloat(globalSettings.fontSize)) : .custom(globalSettings.fontName, size: CGFloat(globalSettings.fontSize))
         let userFontSmall: Font = globalSettings.fontName.isEmpty ? .system(size: CGFloat(Double(globalSettings.fontSize) * 0.9)) : .custom(globalSettings.fontName, size: CGFloat(Double(globalSettings.fontSize) * 0.9))
 
-        let state = yabaiService.state
-        let focusedWin = state.focusedWindow
-
-        let windowsOnCurrentSpace: [YabaiWindow] = {
-            if processSettings.showCurrentSpaceOnly {
-                guard let focusedSpace = state.focusedSpace else { return [] }
-                return state.windows.filter { $0.space == focusedSpace.index }
-            }
-            return state.windows
-        }()
-
-        // Order windows the same way as OpenedAppsView, by the same call
-        let orderedWindows = WindowFilter.orderedByStackThenPosition(
-            windowsOnCurrentSpace, stackIndex: \.stackIndex, x: \.frame.x
-        )
-
-        // Determine current space and layout mode for this view
-        let currentSpace: YabaiSpace? = {
-            if processSettings.showCurrentSpaceOnly {
-                return state.focusedSpace
-            }
-            if let firstSpaceIndex = windowsOnCurrentSpace.first?.space {
-                return state.spaces.first { $0.index == firstSpaceIndex }
-            }
-            return nil
-        }()
-
-        let layoutMode = currentSpace?.type.rawValue
+        let orderedWindows = windows
+        let focusedWin = windows.first { $0.hasFocus }
 
       HStack(spacing: globalSettings.barElementGap) {
-        if let layoutMode = layoutMode, processSettings.showLayoutMode {
-          HStack {
-            Text(layoutMode)
-              .font(userFont.weight(.medium))
-              .foregroundColor(theme.foreground.opacity(0.9))
-          }
-          .frame(maxHeight: .infinity)
-          .padding(.horizontal, 6)
-          .padding(.vertical, 3)
-          .background(
-            RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-              .fill(theme.mainAlt.opacity((globalSettings.barElementsBackgroundOpacity / 100) * 0.5))
-          )
-          .overlay(
-            Group {
-              if (globalSettings.showElementsBorder) {
-                
-                RoundedRectangle(
-                  cornerRadius: globalSettings.barElementsCornerRadius
-                )
-                .stroke(theme.foreground.opacity(0.1), lineWidth: 1)
-              }
-            }
-          )
+        if processSettings.spaceLayoutDisplay != .off, let layout {
+          stateBadge("Space \(layout.rawValue)", font: userFontSmall,
+                     systemImage: processSettings.spaceLayoutDisplay == .icon ? layout.systemImage : nil)
+            .help("Current space layout: \(layout.rawValue)")
+            .accessibilityLabel("Current space layout: \(layout.rawValue)")
         }
         if orderedWindows.isEmpty {
             // No windows: show desktop
@@ -93,7 +72,7 @@ struct ProcessWidget: View {
         } else {
           ForEach(orderedWindows, id: \.id) { window in
             if window.id == focusedWin?.id {
-                // Focused window: show icon, app name, title, and optional stack index badge on the right
+                // Focused window state comes from the shared, event-driven yabai snapshot.
               HStack(spacing: globalSettings.barElementGap) {
                 AppIconView(appName: window.app, size: 16)
                 if !processSettings.displayOnlyIcon {
@@ -108,16 +87,19 @@ struct ProcessWidget: View {
                     }
                   }
                 }
+                if processSettings.showLayoutMode {
+                  stateBadge(window.layoutLabel, font: userFontSmall,
+                             systemImage: processSettings.layoutModeUsesIcon ? window.layoutType.systemImage : nil)
+                    .help("Focused window layout: \(window.layoutLabel)")
+                    .accessibilityLabel("Focused window layout: \(window.layoutLabel)")
+                }
+                if window.isSticky {
+                  stateBadge("sticky", font: userFontSmall)
+                    .help("Focused window is visible on all spaces")
+                    .accessibilityLabel("Focused window is sticky: visible on all spaces")
+                }
                 if let idx = window.stackIndex, idx != 0 {
-                  Text("\(idx)")
-                    .font(userFontSmall.weight(.medium))
-                    .foregroundColor(theme.foreground.opacity(0.9))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                      RoundedRectangle(cornerRadius: globalSettings.barElementsCornerRadius)
-                        .fill(theme.minor.opacity((globalSettings.barElementsBackgroundOpacity / 100) * 0.5))
-                    )
+                  stateBadge("\(idx)", font: userFontSmall)
                 }
               }
               .padding(.horizontal, 4)
@@ -195,9 +177,28 @@ struct ProcessWidget: View {
         }
       }
     }
-    private func focusWindow(_ window: YabaiWindow) {
+    private func stateBadge(_ label: String, font: Font, systemImage: String? = nil) -> some View {
+      let global = settings.settings.global
+      return Group {
+        if let systemImage {
+          Image(systemName: systemImage)
+        } else {
+          Text(label)
+        }
+      }
+        .font(font.weight(.medium))
+        .foregroundColor(theme.foreground.opacity(0.9))
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(
+          RoundedRectangle(cornerRadius: global.barElementsCornerRadius)
+            .fill(theme.minor.opacity((global.barElementsBackgroundOpacity / 100) * 0.5))
+        )
+    }
+
+    private func focusWindow(_ window: YabaiWindowPresentation) {
         Task {
-            await yabaiService.focusWindow(window.id)
+            await service.focusWindow(window.id)
         }
     }
 }

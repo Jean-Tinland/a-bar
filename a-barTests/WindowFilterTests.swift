@@ -314,7 +314,9 @@ final class WindowFilterTests: XCTestCase {
     XCTAssertEqual(WindowFilter.deduplicatedByApp(windows, appName: \.app).map { $0.id }, [1])
   }
 
-  func testOpenedAppsSortsByStackIndexThenPosition() {
+  // MARK: - ProcessWidget: spatial ordering
+
+  func testProcessWidgetSortsByStackIndexThenPosition() {
     // Two unstacked windows - yabai reports stack index 0 for those - order left to right.
     let windows = [
       window("Xcode", x: 900, stackIndex: 0, id: 1),
@@ -328,7 +330,7 @@ final class WindowFilterTests: XCTestCase {
     XCTAssertEqual(ordered.map { $0.app }, ["Safari", "Notes", "Xcode"])
   }
 
-  func testOpenedAppsPutsAStackInItsOwnOrderBeforePosition() {
+  func testProcessWidgetPutsAStackInItsOwnOrderBeforePosition() {
     // Windows in a stack share a frame, so x cannot separate them - the stack index must win.
     let windows = [
       window("third", x: 100, stackIndex: 3, id: 1),
@@ -342,11 +344,7 @@ final class WindowFilterTests: XCTestCase {
     XCTAssertEqual(ordered.map { $0.app }, ["first", "second", "third"])
   }
 
-  // MARK: - ProcessWidget: the same ordering, over the whole space
-
-  func testProcessWidgetOrdersWindowsExactlyLikeOpenedApps() {
-    // The comment above the old copy said "order windows the same way as OpenedAppsView". It is
-    // now the same call, so it cannot stop being true.
+  func testProcessWidgetPlacesUnstackedWindowsBeforeStacks() {
     let windows = [
       window("Xcode", x: 900, stackIndex: 0, id: 1),
       window("Safari", x: 100, stackIndex: 2, id: 2),
@@ -425,10 +423,7 @@ final class WindowFilterTests: XCTestCase {
   // MARK: - AerospaceOpenedAppsView: the same rules, without the ordering
 
   func testAerospaceOpenedAppsPreservesSourceOrder() {
-    // AeroSpace reports neither a stack index nor a frame, so there is nothing to sort by. The
-    // row is drawn in the order `aerospace list-windows` returned, and filtering must not
-    // disturb it. This is the one difference from `OpenedAppsView` that is structural rather
-    // than a setting.
+    // The row follows `aerospace list-windows` order, which filtering must preserve.
     let windows = [
       aeroWindow("Xcode", id: 1), aeroWindow("Safari", id: 2), aeroWindow("Notes", id: 3),
     ]

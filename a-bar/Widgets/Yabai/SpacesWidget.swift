@@ -21,7 +21,7 @@ struct SpacesWidget: View {
             if spacesSettings.displayStickyWindowsSeparately {
                 let stickyWindows = yabaiService.state.stickyWindows()
                 if !stickyWindows.isEmpty {
-                    StickyWindowsView(windows: stickyWindows)
+                    StickyWindowsView(apps: WindowFilter.deduplicatedByApp(stickyWindows, appName: \.app).map(\.app)).equatable()
                 }
             }
             
@@ -29,8 +29,10 @@ struct SpacesWidget: View {
             ForEach(filteredSpaces) { space in
                 SpaceView(
                     space: space,
-                    displayIndex: displayIndex
-                )
+                    displayIndex: displayIndex,
+                    yabaiService: yabaiService,
+                    windows: OpenedAppsView.windows(for: space, state: yabaiService.state, settings: spacesSettings)
+                ).equatable()
             }
             
             // Create space button (requires SIP disabled)
@@ -70,8 +72,10 @@ struct SpacesWidget: View {
     
 }
 
-struct StickyWindowsView: View {
-    let windows: [YabaiWindow]
+struct StickyWindowsView: View, Equatable {
+    let apps: [String]
+
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.apps == rhs.apps }
     
     @EnvironmentObject var settings: SettingsManager
     
@@ -89,8 +93,8 @@ struct StickyWindowsView: View {
                 .font(.system(size: 8))
                 .foregroundColor(theme.foreground.opacity(0.8))
             
-            ForEach(uniqueApps, id: \.id) { window in
-                AppIconView(appName: window.app, size: 14)
+            ForEach(apps, id: \.self) { app in
+                AppIconView(appName: app, size: 14)
             }
         }
         .frame(maxHeight: .infinity)
@@ -105,11 +109,7 @@ struct StickyWindowsView: View {
         )
     }
     
-    /// One icon per app: the pinned row says which apps follow you between spaces, not how
-    /// many windows each one has, so this is not gated on `hideDuplicateApps`.
-    private var uniqueApps: [YabaiWindow] {
-        WindowFilter.deduplicatedByApp(windows, appName: \.app)
-    }
+
 }
 
 struct CreateSpaceButton: View {

@@ -125,7 +125,14 @@ struct ProcessSettingsView: View, ABarSettingsBindable {
           VStack(alignment: .leading, spacing: 12) {
             Toggle("Hide window title", isOn: binding(\.widgets.process.hideWindowTitle))
             Toggle("Display only icon", isOn: binding(\.widgets.process.displayOnlyIcon))
-            Toggle("Show layout type indicator", isOn: binding(\.widgets.process.showLayoutMode))
+            Toggle("Show window layout indicator", isOn: binding(\.widgets.process.showLayoutMode))
+            Toggle("Use icon for window layout indicator", isOn: binding(\.widgets.process.layoutModeUsesIcon))
+              .disabled(!settings.draftSettings.widgets.process.showLayoutMode)
+            Picker("Space layout indicator (Yabai)", selection: binding(\.widgets.process.spaceLayoutDisplay)) {
+              Text("Off").tag(ProcessWidgetSettings.SpaceLayoutDisplay.off)
+              Text("Text").tag(ProcessWidgetSettings.SpaceLayoutDisplay.text)
+              Text("Icon").tag(ProcessWidgetSettings.SpaceLayoutDisplay.icon)
+            }
           }
           .frame(maxWidth: .infinity, alignment: .leading)
         }

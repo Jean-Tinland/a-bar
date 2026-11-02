@@ -340,6 +340,14 @@ struct ProcessWidgetSettings: Codable, Equatable {
   var hideWindowTitle: Bool = false
   var displayOnlyIcon: Bool = false
   var showLayoutMode: Bool = true
+  var layoutModeUsesIcon: Bool = false
+  var spaceLayoutDisplay: SpaceLayoutDisplay = .text
+
+  enum SpaceLayoutDisplay: String, Codable, CaseIterable {
+    case off
+    case text
+    case icon
+  }
 }
 
 struct BatteryWidgetSettings: Codable, Equatable {

@@ -51,6 +51,10 @@
 		A1000026 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000026 /* SettingsStore.swift */; };
 		A1000025 /* SettingsCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000025 /* SettingsCodec.swift */; };
 		A1000020 /* YabaiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000020 /* YabaiService.swift */; };
+		A8000401 /* YabaiWindowEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8000401 /* YabaiWindowEvents.swift */; };
+		A8000402 /* YabaiWindowEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8000401 /* YabaiWindowEvents.swift */; };
+		A8000403 /* YabaiWindowEventsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8000402 /* YabaiWindowEventsTests.swift */; };
+		A8000404 /* OpenedAppsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000032 /* OpenedAppsView.swift */; };
 		A1000022 /* SystemInfoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000022 /* SystemInfoService.swift */; };
 		A1000023 /* BluetoothService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000023 /* BluetoothService.swift */; };
 		A1000024 /* WifiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000024 /* WifiService.swift */; };
@@ -263,6 +267,8 @@
 		B1000026 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		B1000025 /* SettingsCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCodec.swift; sourceTree = "<group>"; };
 		B1000020 /* YabaiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YabaiService.swift; sourceTree = "<group>"; };
+		B8000401 /* YabaiWindowEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YabaiWindowEvents.swift; sourceTree = "<group>"; };
+		B8000402 /* YabaiWindowEventsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YabaiWindowEventsTests.swift; sourceTree = "<group>"; };
 		B1000022 /* SystemInfoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemInfoService.swift; sourceTree = "<group>"; };
 		B1000023 /* BluetoothService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothService.swift; sourceTree = "<group>"; };
 		B1000024 /* WifiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WifiService.swift; sourceTree = "<group>"; };
@@ -472,6 +478,7 @@
 				B1000140 /* WidgetCommandDispatch.swift */,
 				B1000139 /* UserWidgetManager.swift */,
 				B1000020 /* YabaiService.swift */,
+				B8000401 /* YabaiWindowEvents.swift */,
 				C2000002 /* AerospaceService.swift */,
 				B1000022 /* SystemInfoService.swift */,
 				B1000023 /* BluetoothService.swift */,
@@ -678,6 +685,7 @@
 				B1000303 /* ThemeColorTests.swift */,
 				B1000350 /* SettingsNumberFieldTests.swift */,
 				B1000304 /* YabaiStateTests.swift */,
+				B8000402 /* YabaiWindowEventsTests.swift */,
 				B1000318 /* YabaiServiceTests.swift */,
 				B1000319 /* AppIconProviderTests.swift */,
 				B1000320 /* YabaiJSONSanitizerTests.swift */,
@@ -822,6 +830,7 @@
 				A1000025 /* SettingsCodec.swift in Sources */,
 				0FEC2C322F2E59FE00CDA90B /* StorageWidget.swift in Sources */,
 				A1000020 /* YabaiService.swift in Sources */,
+				A8000401 /* YabaiWindowEvents.swift in Sources */,
 				A1000022 /* SystemInfoService.swift in Sources */,
 				A1000023 /* BluetoothService.swift in Sources */,
 				A1000024 /* WifiService.swift in Sources */,
@@ -969,6 +978,10 @@
 				A1000327 /* NetworkInterfacesTests.swift in Sources */,
 				A1000233 /* AppIconProvider.swift in Sources */,
 				A1000232 /* YabaiService.swift in Sources */,
+				A8000402 /* YabaiWindowEvents.swift in Sources */,
+				A8000403 /* YabaiWindowEventsTests.swift in Sources */,
+				A8000404 /* OpenedAppsView.swift in Sources */,
+				A1000033 /* ProcessWidget.swift in Sources */,
 				A1000305 /* FormattingTests.swift in Sources */,
 				A1000306 /* ShellExecutorTests.swift in Sources */,
 				A1000307 /* XBarParserTests.swift in Sources */,

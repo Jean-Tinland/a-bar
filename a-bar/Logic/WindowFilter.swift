@@ -8,9 +8,7 @@ import Foundation
 /// were not identical. The disagreements were invisible from the settings panel: the same
 /// pattern hid an app under one window manager and left it on screen under the other.
 ///
-/// The rules live here now. Where the two families genuinely differ - AeroSpace has no stack
-/// index and no frame, so its icon row cannot be ordered the way yabai's is - the difference is
-/// a call the widget makes or does not make, not a copy that drifted.
+/// Filtering is shared; each widget chooses its own ordering separately.
 ///
 /// Generic over key paths rather than a protocol: `YabaiWindow` and `AerospaceWindow` spell the
 /// same two fields `app`/`appName` and `title`/`windowTitle`, and neither is worth a conformance
