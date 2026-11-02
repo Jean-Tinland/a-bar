@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 _No changes yet._
 
+## v1.6.3 - 2026-11-02
+
+- fix: re-release (broken Homebrew formula for 1.6.2)
+
 ## v1.6.2 - 2026-11-01
 
 - feat: macOS 27.2 support, implement menu bar visibility monitoring and adjust bar window levels accordingly
